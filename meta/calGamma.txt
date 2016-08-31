@@ -1,0 +1,38 @@
+! **************************************************************************************************************
+! **************************************************************************************************************
+! ***** Calibration GAMMA PARAMETER TABLE **********************************************************************
+! **************************************************************************************************************
+! **************************************************************************************************************
+! NOTES:
+! (1) lines starting with "!" are treated as comment lines -- there is no limit on the number of comment lines
+! (2) the format definition defines the format of the file, which can be changed
+! (3) the format definition must be the first non-comment line
+! (4) the delimiters "| " must be present (format a2), as these are used to check the integrety of the file
+! columns are:
+! 1:  gamma parameter name
+! 4:  Calibrate? T=yes, F=No 
+! **************************************************************************************************************
+! format of the descriptions that follow (must be in single quotes)
+! **************************************************************************************************************
+'(a15,(1x,a1,1x),l1)' 
+! **************************************************************************************************************
+! model soil parameter data information
+! **************************************************************************************************************
+ks1gamma1       | T
+ks1gamma2       | F
+ks1gamma3       | F
+phi1gamma1      | F
+phi1gamma2      | F
+phi1gamma3      | F
+fc1gamma1       | F
+wp1gamma1       | F
+b1gamma1        | F
+b1gamma2        | F
+b1gamma3        | F
+psis1gamma1     | F
+psis1gamma2     | F
+psis1gamma3     | F
+z1gamma1        | T
+h1gamma1        | T
+h1gamma2        | T
+! **************************************************************************************************************

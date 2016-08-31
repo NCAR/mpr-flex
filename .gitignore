@@ -27,3 +27,8 @@
 *.exe
 *.out
 *.app
+
+# personal
+tmp
+*.local
+*.bak
