@@ -25,8 +25,8 @@ SRC90 = nrtype.f90 \
         mo_xor4096.f90 \
         mo_opt_run.f90 \
         mo_dds.f90 \
-        vic_subroutines_parallel.f90 \
         vic_routines.f90 \
+        vic_subroutines_parallel.f90 \
         eval_obj.f90 \
         main_calibration.f90
 
@@ -44,8 +44,8 @@ OBJS = nrtype.o \
        mo_xor4096.o \
        mo_opt_run.o \
        mo_dds.o \
-       vic_subroutines_parallel.o \
        vic_routines.o \
+       vic_subroutines_parallel.o \
        eval_obj.o \
        main_calibration.o
 
