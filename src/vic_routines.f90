@@ -1,5 +1,7 @@
 module vic_routines
 
+! Routines specific to VIC model
+
   use nrtype 
   use public_var
   use strings
@@ -7,9 +9,11 @@ module vic_routines
 
   implicit none
   public :: vic_soil_param 
+  public :: read_vic_sim
 
 contains
 
+! Adjust VIC soil parameters 
 subroutine vic_soil_param(param, err, message)
 !! This routine takes the adjustable parameter set "param" from namelist, reads into "origparam_name",
 !! computes the new parameters, writes them into "calibparam_name" 
@@ -56,7 +60,7 @@ subroutine vic_soil_param(param, err, message)
         case('SD');       realline(37:39) = param( iPar )*realline(37:39)
         case('WcrFrac');  realline(41:43) = param( iPar )*realline(41:43)
         case('WpwpFrac'); realline(44:46) = param( iPar )*realline(44:46)
-        case default; err=10; message=trim(message)//'parameter name not found';return 
+        case default; print*, parSubset(iPar)%pname//'is not VIC soil parameters'
        end select
     end do
 
@@ -117,5 +121,55 @@ subroutine vic_soil_param(param, err, message)
   return
 
 end subroutine vic_soil_param
+
+! Read VIC output file
+subroutine read_vic_sim(sim, err, message)
+  implicit none
+  !input variables
+  integer(i4b),          intent(in)  :: nTime
+  !output variables
+  real(dp),              intent(out) :: sim(:,:)
+  integer(i4b),          intent(out) :: err            ! error code
+  character(*),          intent(out) :: message        ! error message
+  !local variables
+  character(len=strLen)              :: filename
+  real(dp)                           :: cellfraction,basin_area
+  real(dp)                           :: auxflux(5)                 ! This is only in case of water balance mode
+  integer(i4b)                       :: ibasin, itime, ivar, icell ! index 
+  integer(i4b)                       :: ncell
+  integer(i4b)                       :: dum,c_cell
+
+  ! initialize error control
+  err=0; message='read_vic_sim/'
+
+  !set output variable to zero
+  sim = 0.0_dp
+  !cell counter
+  c_cell = 1
+  !open a few files
+  open (UNIT=53,file=trim(filelist_name),form='formatted',status='old')
+  open (UNIT=54,file=trim(cellfrac_name),form='formatted',status='old')
+  open (UNIT=51,file=trim(region_info),form='formatted',status='old')
+  do ibasin = 1,nbasin
+    read (UNIT=51,*) dum,dum,basin_area,ncell
+    do icell = 1,ncell
+      read (UNIT=53,*) filename
+      read (UNIT=54,*) cellfraction
+      filename=trim(sim_dir)//trim(filename)
+      open (UNIT=55,file= filename,form='formatted',status='old')
+      do itime = 1,sim_len
+        read (UNIT=55,*) (auxflux(ivar), ivar=1,5)
+        sim(c_cell,itime) = (auxflux(4) + auxflux(5))*cellfraction
+      enddo
+      close(UNIT=55)
+      c_cell = c_cell + 1
+    enddo
+  enddo
+  close(UNIT=51)
+  close(UNIT=53)
+  close(UNIT=54)
+
+  return
+end subroutine read_vic_sim
 
 end module vic_routines

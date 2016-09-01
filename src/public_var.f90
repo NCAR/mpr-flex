@@ -18,10 +18,9 @@ module public_var
   character(len=strLen),public    :: origparam_name
   character(len=strLen),public    :: calibparam_name
   character(len=strLen),public    :: region_info
-  character(len=strLen),public    :: outputmod_name
-  character(len=strLen),public    :: outputobs_name
+  character(len=strLen),public    :: sim_dir
+  character(len=strLen),public    :: obs_name
   character(len=strLen),public    :: executable
-  character(len=strLen),public    :: spin_exe
   character(len=strLen),public    :: basin_objfun_weight_file
   integer(i4b),public             :: dt
   integer(i4b),public             :: sim_len 
@@ -31,10 +30,8 @@ module public_var
   integer(i4b),public             :: Ncells
   integer(i4b),public             :: ntot
   integer(i4b),public             :: nbasin
-  real(dp),public                 :: BasinArea
-  integer(i4b),public             :: Npro
-  integer(i4b),public             :: region_flag = 0
   integer(i4b),public             :: upscale_flag = 0
+  integer(i4b),public             :: Npro
   real,dimension(16),public       :: initcell,endcell
   character(len=strLen),public    :: eval_length
   character(len=strLen),public    :: calpar 

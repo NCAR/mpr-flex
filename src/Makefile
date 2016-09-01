@@ -23,7 +23,6 @@ SRC90 = nrtype.f90 \
         subset_meta.f90 \
         mo_nml.f90 \
         mo_xor4096.f90 \
-        uh.f90 \
         mo_opt_run.f90 \
         mo_dds.f90 \
         vic_subroutines_parallel.f90 \
@@ -43,7 +42,6 @@ OBJS = nrtype.o \
        subset_meta.o \
        mo_nml.o \
        mo_xor4096.o \
-       uh.o \
        mo_opt_run.o \
        mo_dds.o \
        vic_subroutines_parallel.o \

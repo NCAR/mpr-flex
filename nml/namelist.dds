@@ -3,10 +3,10 @@ filelist_name            = "FILELIST"
 cellfrac_name            = "CELLFRAC"
 origparam_name           = "ORIGPARAM"
 calibparam_name          = "CALIPARAM"
-outputmod_name           = "OUTDIR"
-outputobs_name           = "CALIBFLOW"
-executable               = "EXE"
 region_info              = "INFO"
+sim_dir                  = "OUTDIR"
+obs_name                 = "CALIBFLOW"
+executable               = "EXE"
 basin_objfun_weight_file = "OBJWEIGHT"
 calpar                   = "calBeta.txt"
 
@@ -17,13 +17,11 @@ sim_len       = 6940
 start_cal     = 3652
 end_cal       = 6940
 opt           = 1      !opt = 1 runs optimization code
-region_flag   = 1      !flag to run regional calibration or not
 upscale_flag  = 0      !flag to run Naoki's upscaling code
 
 nbasin    = 1 
 Ncells    = 1          ! Number of grid cells containing the basin
 ntot      = 1          ! Number of total grid cells including duplicates
-BasinArea = 1000.      ! Total basin area in Km^2
 
 Npro     = 1           ! Number of processors to use
 initcell = 1           ! index of the first cell assigned to each processor

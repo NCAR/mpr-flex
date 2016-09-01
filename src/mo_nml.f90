@@ -9,30 +9,28 @@ module mo_nml
   private
 
 ! time control namelist for running models
-  namelist / INIT_CONTROL /  filelist_name,  &
-                             cellfrac_name,  &
-                             origparam_name, & 
-                             calibparam_name,&
-                             outputmod_name, &
-                             outputobs_name, &
-                             executable,     & 
-                             dt,             &
-                             sim_len,        & 
-                             start_cal,      &
-                             end_cal,        &
-                             opt,            & 
-                             Ncells,         &
-                             BasinArea,      &
-                             Npro,           & 
-                             initcell,       &
-                             endcell,        &
-                             region_flag,    &
-                             region_info,    &
-                             nbasin,         &
-                             upscale_flag,   &
-                             ntot,           &
-                             eval_length,    &
+  namelist / INIT_CONTROL /  filelist_name,           &
+                             cellfrac_name,           &
+                             origparam_name,          & 
+                             calibparam_name,         &
+                             region_info,             &
+                             sim_dir,                 &
+                             obs_name,                &
+                             executable,              & 
                              basin_objfun_weight_file,&
+                             dt,                      &
+                             sim_len,                 & 
+                             start_cal,               &
+                             end_cal,                 &
+                             opt,                     & 
+                             Ncells,                  &
+                             ntot,                    &
+                             nbasin,                  &
+                             upscale_flag,            &
+                             Npro,                    & 
+                             initcell,                & 
+                             endcell,                 &
+                             eval_length,             &
                              calpar
 
 ! DDS algorithm 
