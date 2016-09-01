@@ -125,8 +125,6 @@ end subroutine vic_soil_param
 ! Read VIC output file
 subroutine read_vic_sim(sim, err, message)
   implicit none
-  !input variables
-  integer(i4b),          intent(in)  :: nTime
   !output variables
   real(dp),              intent(out) :: sim(:,:)
   integer(i4b),          intent(out) :: err            ! error code
