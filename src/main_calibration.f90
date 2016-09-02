@@ -14,6 +14,7 @@ program main_calibration
  
   character(len=strLen)            :: nmlfile         ! namelist containing configuration
   real(dp),allocatable             :: param(:,:)      ! initial value for parameter to be calibrated 
+  integer(i4b),allocatable         :: ptype(:)        ! parameter type 
   logical,allocatable              :: mask(:)         ! mask of parameter to be calibrated
   integer(i4b)                     :: ierr            ! error code 
   character(len=strLen)            :: cmessage        ! error message of downwind routine
@@ -27,9 +28,12 @@ program main_calibration
   call get_parm_meta( trim(calpar), ierr,cmessage); call handle_err(ierr,cmessage)
   ! initialize parameter and mask arrays 
   allocate(param(nParCal,3))
+  allocate(ptype(nParCal))
   allocate(mask(nParCal))
-  call param_setup(param, mask)
+  call param_setup(param, ptype, mask)
   call vic_soil_param(param(:,1), ierr, cmessage); call handle_err(ierr,cmessage)
+  print*,param
+  print*,ptype
   stop
 
   ! optimization start

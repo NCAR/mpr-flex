@@ -82,7 +82,6 @@ subroutine vic_soil_param(param, err, message)
       realline(7) = 0.00001
     elseif(realline(7) .gt. 1.0) then
       realline(7) = 1.0
-      print*, realline(7)
     endif
     !Ws
     if(realline(8) .lt. 0.0001) then

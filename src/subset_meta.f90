@@ -18,9 +18,9 @@ subroutine get_parm_meta(infile, err, message)
 
   ! used to read metadata from an input file and populate the appropriate metadata structure
   use data_type,  only:cpar_meta              ! metadata structure
-  use globalData, only:gammaMaster, betaMaster, parSubset
+  use globalData, only:parMaster, parSubset
   use ascii_util, only:file_open
-  use get_ixname, only:get_ixGamma, get_ixBeta
+  use get_ixname, only:get_ixPar
  
   implicit none
  
@@ -74,25 +74,14 @@ subroutine get_parm_meta(infile, err, message)
       err=32; return
     endif
     ! identify the index of the named variable from master parameter 
-    select case(upscale_flag)
-      case(1); ivar = get_ixGamma(parSubset(ixLocal)%pname)
-      case(0); ivar = get_ixBeta(parSubset(ixLocal)%pname)
-      case default; err=50; message=trim(message)//"upscale_flag need to be 0 or 1";return 
-    end select
+    ivar = get_ixPar(parSubset(ixLocal)%pname)
     if(ivar<=0)then; err=40; message=trim(message)//"variableNotFound[var="//trim(parSubset(ixLocal)%pname)//"]"; return; endif
     ! copy the index of the named variable from master parameter and their info (init.val, lwr, upr)
-    parSubset(ixLocal)%ixMaster=ivar
-    select case(upscale_flag)
-      case(1); 
-        parSubset(ixLocal)%val=gammaMaster(ivar)%val
-        parSubset(ixLocal)%lwr=gammaMaster(ivar)%lwr
-        parSubset(ixLocal)%upr=gammaMaster(ivar)%upr
-      case(0); 
-        parSubset(ixLocal)%val=betaMaster(ivar)%val
-        parSubset(ixLocal)%lwr=betaMaster(ivar)%lwr
-        parSubset(ixLocal)%upr=betaMaster(ivar)%upr
-      case default; err=50; message=trim(message)//"upscale_flag need to be 0 or 1";return 
-    end select
+    parSubset(ixLocal)%ixMaster = ivar
+    parSubset(ixLocal)%val      = parMaster(ivar)%val
+    parSubset(ixLocal)%lwr      = parMaster(ivar)%lwr
+    parSubset(ixLocal)%upr      = parMaster(ivar)%upr
+    parSubset(ixLocal)%ptype    = parMaster(ivar)%ptype
     ixLocal = ixLocal+1
   enddo  ! looping through lines in the file
  
@@ -112,12 +101,13 @@ end subroutine get_parm_meta
 ! ************************************************************************************************
 ! Subroutine: convert parameter data structure to simple arrays 
 ! ************************************************************************************************
-subroutine param_setup( param, mask)
+subroutine param_setup( param,ptype, mask)
   use globalData,  only:parSubset
   implicit none
   ! output variables
-  real(dp),dimension(:,:),intent(out)        :: param 
-  logical,dimension(:),   intent(out)        :: mask
+  real(dp),dimension(:,:),   intent(out)     :: param 
+  integer(i4b),dimension(:), intent(out)     :: ptype 
+  logical,dimension(:),      intent(out)     :: mask
   ! local variables
   integer(i4b)                               :: iPar  ! loop indices
   
@@ -125,10 +115,10 @@ subroutine param_setup( param, mask)
     param(iPar,1) = parSubset(iPar)%val
     param(iPar,2) = parSubset(iPar)%lwr
     param(iPar,3) = parSubset(iPar)%upr
+    ptype(iPar)   = parSubset(iPar)%ptype
     mask(iPar)    = parSubset(iPar)%flag
   enddo  
 
 end subroutine param_setup
-
 
 end module subset_meta 

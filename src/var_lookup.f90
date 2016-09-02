@@ -1,8 +1,7 @@
 MODULE var_lookup
 
  ! Define index arrays for named variables
- ! 1. list of models 
- ! 2. list of gamma parameters 
+ ! list of all the parameters including gamma and beta parameters
 
  USE nrtype
  USE public_var
@@ -14,7 +13,8 @@ MODULE var_lookup
 ! ***********************************************************************************************************
 ! 1.Define indices for gamma (global) parameters
 ! ***********************************************************************************************************
- type, public  ::  iLook_gamma
+ type, public  ::  iLook_Par
+   !Gamma parameter
    integer(i4b)     :: ks1gamma1       = imiss  ! 
    integer(i4b)     :: ks1gamma2       = imiss  ! 
    integer(i4b)     :: ks1gamma3       = imiss  ! 
@@ -58,50 +58,43 @@ MODULE var_lookup
    integer(i4b)     :: SD1gamma1       = imiss  ! 
    integer(i4b)     :: WcrFrac1gamma1  = imiss  ! 
    integer(i4b)     :: WpwpFrac1gamma1 = imiss  ! 
- endtype iLook_gamma
-
-! ***********************************************************************************************************
-! 1.Define indices for beta (model) parameters
-! ***********************************************************************************************************
- type, public  ::  iLook_beta
-   integer(i4b)     :: binfilt  = imiss  ! 
-   integer(i4b)     :: D1       = imiss  ! 
-   integer(i4b)     :: D2       = imiss  ! 
-   integer(i4b)     :: D3       = imiss  ! 
-   integer(i4b)     :: D4       = imiss  ! 
-   integer(i4b)     :: expt     = imiss  ! 
-   integer(i4b)     :: ks       = imiss  ! 
-   integer(i4b)     :: h1       = imiss  ! 
-   integer(i4b)     :: h2       = imiss  ! 
-   integer(i4b)     :: h3       = imiss  !
-   integer(i4b)     :: h4       = imiss  ! 
-   integer(i4b)     :: h5       = imiss  ! 
-   integer(i4b)     :: bbl      = imiss  ! 
-   integer(i4b)     :: BD       = imiss  ! 
-   integer(i4b)     :: SD       = imiss  ! 
-   integer(i4b)     :: WcrFrac  = imiss  ! 
-   integer(i4b)     :: WpwpFrac = imiss  ! 
-   integer(i4b)     :: rmin     = imiss
-   integer(i4b)     :: lai      = imiss
- endtype iLook_beta
+   ! Beta parameter
+   integer(i4b)     :: binfilt         = imiss  ! 
+   integer(i4b)     :: D1              = imiss  ! 
+   integer(i4b)     :: D2              = imiss  ! 
+   integer(i4b)     :: D3              = imiss  ! 
+   integer(i4b)     :: D4              = imiss  ! 
+   integer(i4b)     :: expt            = imiss  ! 
+   integer(i4b)     :: ks              = imiss  ! 
+   integer(i4b)     :: h1              = imiss  ! 
+   integer(i4b)     :: h2              = imiss  ! 
+   integer(i4b)     :: h3              = imiss  !
+   integer(i4b)     :: h4              = imiss  ! 
+   integer(i4b)     :: h5              = imiss  ! 
+   integer(i4b)     :: bbl             = imiss  ! 
+   integer(i4b)     :: BD              = imiss  ! 
+   integer(i4b)     :: SD              = imiss  ! 
+   integer(i4b)     :: WcrFrac         = imiss  ! 
+   integer(i4b)     :: WpwpFrac        = imiss  ! 
+   integer(i4b)     :: rmin            = imiss
+   integer(i4b)     :: lai             = imiss
+ endtype iLook_par
 
 ! ***********************************************************************************************************
 ! define data vectors
 ! ***********************************************************************************************************
- type(iLook_gamma),public,parameter  :: ixGamma = iLook_gamma(1,2,3,4,5,6,7,8,9,10,&
-                                                             11,12,13,14,15,16,17,18,19,20,&
-                                                             21,22,23,24,25,26,27,28,29,30,&
-                                                             31,32,33,34,35,36,37,38,39,40,&
-                                                             41,42,43)
-
- type(iLook_beta),public,parameter  :: ixBeta = iLook_beta(1,2,3,4,5,6,7,8,9,10,&
-                                                          11,12,13,14,15,16,17,18,19)
+ type(iLook_par),public,parameter  :: ixPar = iLook_Par(1,2,3,4,5,6,7,8,9,10,&
+                                                       11,12,13,14,15,16,17,18,19,20,&
+                                                       21,22,23,24,25,26,27,28,29,30,&
+                                                       31,32,33,34,35,36,37,38,39,40,&
+                                                       41,42,43,44,45,46,47,48,49,50,&
+                                                       51,52,53,54,55,56,57,58,59,60,&
+                                                       61,62)
 
 ! ***********************************************************************************************************
 ! define size of data vectors
 ! ***********************************************************************************************************
 ! Number of vairables defined
- integer(i4b),parameter,public    :: nGamma = 43
- integer(i4b),parameter,public    :: nBeta  = 19
+ integer(i4b),parameter,public    :: nPar = 62 
 
 END MODULE var_lookup
