@@ -59,6 +59,8 @@ MODULE var_lookup
    integer(i4b)     :: WcrFrac1gamma1  = imiss  ! 
    integer(i4b)     :: WpwpFrac1gamma1 = imiss  ! 
    ! Beta parameter
+   integer(i4b)     :: uhshape         = imiss  ! uh gamma pdf shape parameter
+   integer(i4b)     :: uhscale         = imiss  ! uh gamma pdf scale parameter
    integer(i4b)     :: binfilt         = imiss  ! 
    integer(i4b)     :: D1              = imiss  ! 
    integer(i4b)     :: D2              = imiss  ! 
@@ -89,12 +91,12 @@ MODULE var_lookup
                                                        31,32,33,34,35,36,37,38,39,40,&
                                                        41,42,43,44,45,46,47,48,49,50,&
                                                        51,52,53,54,55,56,57,58,59,60,&
-                                                       61,62)
+                                                       61,62,63,64)
 
 ! ***********************************************************************************************************
 ! define size of data vectors
 ! ***********************************************************************************************************
 ! Number of vairables defined
- integer(i4b),parameter,public    :: nPar = 62 
+ integer(i4b),parameter,public    :: nPar = 64 
 
 END MODULE var_lookup

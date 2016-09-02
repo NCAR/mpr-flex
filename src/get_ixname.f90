@@ -70,6 +70,9 @@ contains
    case('BD1gamma1');        get_ixPar = ixPar%BD1gamma1       ! soil particle density [kg/m^3]
    case('WcrFrac1gamma1');   get_ixPar = ixPar%WcrFrac1gamma1  ! Fractional soil moisture content at critical point [-] 
    case('WpwpFrac1gamma1');  get_ixPar = ixPar%WpwpFrac1gamma1 ! Fractional soil moisture content at wilting point [-]  
+
+   case('ushape');           get_ixPar = ixPar%ushape          ! top layer thickness [m] 
+   case('uscale');           get_ixPar = ixPar%uscale          ! top layer thickness [m] 
    case('h1');               get_ixPar = ixPar%h1                ! top layer thickness [m] 
    case('h2');               get_ixPar = ixPar%h2                ! 2nd layer thickness [m] 
    case('h3');               get_ixPar = ixPar%h3                ! 3rd layer thickness [m] 

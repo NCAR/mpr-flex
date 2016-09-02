@@ -32,8 +32,6 @@ program main_calibration
   allocate(mask(nParCal))
   call param_setup(param, ptype, mask)
   call vic_soil_param(param(:,1), ierr, cmessage); call handle_err(ierr,cmessage)
-  print*,param
-  print*,ptype
   stop
 
   ! optimization start
