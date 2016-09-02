@@ -64,7 +64,6 @@ function objfn( param )
   call route_q(simBasin, simBasinRouted, ushape, uscale, err, message)
   if (err/=0)then; stop message; endif
   !call rmse calculation
-  objfn = 0.0
   call calc_rmse_region(simBasinRouted, obs, objfn, err, message)
   if (err/=0)then; stop message; endif
   ! allocate array
@@ -558,7 +557,7 @@ subroutine route_q(qin,qroute,ushape,uscale, err, message)
     enddo
   else
     do iEle=1,nEle
-      call duamel(qin(iEle,1:sim_len-1),ushape, uscale, sim_len-1, qroute(iEle,1:sim_len-1), 0)
+      call duamel(qin(iEle,1:sim_len-1), ushape, uscale, 1.0_dp, sim_len-1, qroute(iEle,1:sim_len-1), 0)
     enddo
   end if
 end subroutine route_q
@@ -566,13 +565,14 @@ end subroutine route_q
 !************************************
 ! unit hydrograph construction and convolution routine
 !************************************
-  subroutine duamel(Q,un1,ut,nq,QB,ntau,inUH)
+  subroutine duamel(Q,un1,ut,dt,nq,QB,ntau,inUH)
     implicit none
 
     ! input 
     real(dp),   dimension(:),          intent(in)  :: Q      ! instantaneous flow
     real(dp),                          intent(in)  :: un1    ! scale parameter
     real(dp),                          intent(in)  :: ut     ! time parameter
+    real(dp),                          intent(in)  :: dt     ! time step 
     integer(i4b),                      intent(in)  :: nq     ! size of instantaneous flow series
     integer(i4b),                      intent(in)  :: ntau 
     real(dp),   dimension(:),optional, intent(in)  :: inUH   ! optional input unit hydrograph  
@@ -606,7 +606,7 @@ end subroutine route_q
         toc=gf(un1)
         toc=log(toc*ut)
         do i=1,m
-          top=i*DT/ut
+          top=i*dt/ut
           tor=(UN1-1)*log(top)-top-toc
           uh(i)=0.0_dp
           if(tor.GT.-8.0_dp) then 

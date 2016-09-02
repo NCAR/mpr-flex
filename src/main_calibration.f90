@@ -14,13 +14,12 @@ program main_calibration
  
   character(len=strLen)            :: nmlfile         ! namelist containing configuration
   real(dp),allocatable             :: param(:,:)      ! initial value for parameter to be calibrated 
-  integer(i4b),allocatable         :: ptype(:)        ! parameter type 
   logical,allocatable              :: mask(:)         ! mask of parameter to be calibrated
   integer(i4b)                     :: ierr            ! error code 
   character(len=strLen)            :: cmessage        ! error message of downwind routine
 
   ! read calibration namelists and save variables 
-  nmlfile='../nml/namelist.dds.local'
+  nmlfile='namelist.dds.local'
   call read_nml( trim(nmlfile), ierr, cmessage ); call handle_err(ierr,cmessage)
   ! Populate master parameter meta  
   call popMeta( ierr, cmessage ); call handle_err(ierr,cmessage)
@@ -31,7 +30,6 @@ program main_calibration
   allocate(mask(nParCal))
   call param_setup(param, mask)
   call vic_soil_param(param(:,1), ierr, cmessage); call handle_err(ierr,cmessage)
-  stop
 
   ! optimization start
   select case (opt)

@@ -93,7 +93,7 @@ contains
     parMaster(ixPar%D1)                = par_meta('D1'      ,     1.0_dp , 0.8_dp , 1.2_dp, 2, .False.)
     parMaster(ixPar%D2)                = par_meta('D2'      ,     1.0_dp , 0.8_dp , 1.2_dp, 2, .False.)
     parMaster(ixPar%D3)                = par_meta('D3'      ,     1.0_dp , 0.8_dp , 1.2_dp, 2, .False.)
-    parMaster(ixPar%D4)                = par_meta('D4'      ,     1.0_dp , 1.8_dp , 1.2_dp, 2, .False.)
+    parMaster(ixPar%D4)                = par_meta('D4'      ,     1.0_dp , 0.8_dp , 1.2_dp, 2, .False.)
     parMaster(ixPar%expt)              = par_meta('expt'    ,     1.0_dp , 0.8_dp , 1.2_dp, 2, .False.)
     parMaster(ixPar%ks)                = par_meta('ks'      ,     1.0_dp , 0.8_dp , 1.2_dp, 2, .False.)
     parMaster(ixPar%bbl)               = par_meta('bbl'     ,     1.0_dp , 0.8_dp , 1.2_dp, 2, .False.)
