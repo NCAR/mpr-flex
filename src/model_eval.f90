@@ -1,4 +1,4 @@
-module vic_subroutines_parallel
+module eval_model 
 
   use nrtype 
   use public_var
@@ -6,25 +6,26 @@ module vic_subroutines_parallel
   use data_type 
 
   implicit none
-  public :: eval_objfn
+  public :: objfn 
 
 contains
 
 !************************************
 ! perform model evaluation 
 !************************************
-subroutine eval_objfn( param, objfnval, err, message )
+function objfn( param )
+  use globalData,   only: parSubset
   use vic_routines, only: vic_soil_param
   use vic_routines, only: read_vic_sim 
   implicit none
   !input variables
   real(dp),dimension(:),intent(in)    :: param        ! parameter in namelist, not necessarily all parameters are calibrated
   !output variables
-  real(dp),             intent(out)   :: objfnval     ! object function value 
-  integer(i4b),         intent(out)   :: err          ! error code
-  character(*),         intent(out)   :: message      ! error message
+  real(dp)                            :: objfn        ! object function value 
   !local variables
-  integer(i4b)                        :: stat
+  integer(i4b)                        :: err          ! error code
+  character(len=strLen)               :: message      ! error message
+  integer(i4b)                        :: iPar 
   real(dp),dimension(:)  ,allocatable :: obs
   real(dp),dimension(:,:),allocatable :: sim 
   real(dp),dimension(:,:),allocatable :: simBasin 
@@ -40,28 +41,32 @@ subroutine eval_objfn( param, objfnval, err, message )
   allocate(simBasinRouted(nbasin,sim_len))
   ! Adjust model parameters (Model specific)
   call vic_soil_param( param, err, message)
-  if (err/=0)then; return; endif
+  if (err/=0)then; stop message; endif
   ! Run hydrologic model   
   call system(executable)
   ! post-process of model output
   call read_obs(obs, err, message)
-  if (err/=0)then; return; endif
+  if (err/=0)then; stop message; endif
   !read model output  place into array of ncells (model specific)
   call read_vic_sim(sim, err, message)
-  if (err/=0)then; return; endif
+  if (err/=0)then; stop message; endif
   !aggregate UH routed grid cell runoff to basin total runoff
   call agg_hru_to_basin(sim,simBasin, err, message)
-  if (err/=0)then; return; endif
+  if (err/=0)then; stop message; endif
   !call function to route flow for each basin
-  ushape = param(1)
-  uscale = param(2)
+  do iPar=1,nParCal
+    select case( parSubset(iPar)%pname )
+      case('uhshape');  ushape  = param( iPar )
+      case('uhscale');  uscale  = param( iPar )
+     end select
+  end do
   !call function to perform UH on every grid cell
   call route_q(simBasin, simBasinRouted, ushape, uscale, err, message)
-  if (err/=0)then; return; endif
+  if (err/=0)then; stop message; endif
   !call rmse calculation
-  objfnval = 0.0
-  call calc_rmse_region(simBasinRouted, obs, objfnval, err, message)
-  if (err/=0)then; return; endif
+  objfn = 0.0
+  call calc_rmse_region(simBasinRouted, obs, objfn, err, message)
+  if (err/=0)then; stop message; endif
   ! allocate array
   deallocate(obs)
   deallocate(sim)
@@ -69,7 +74,7 @@ subroutine eval_objfn( param, objfnval, err, message )
   deallocate(simBasinRouted)
 
   return
-end subroutine eval_objfn
+end function objfn
 
 !************************************
 ! compute weighted RMSE 
@@ -77,16 +82,15 @@ end subroutine eval_objfn
 subroutine calc_rmse_region(sim, obs, rmse, err, message)
 
   implicit none
-
-!input variables 
+  !input variables 
   real(dp), dimension(:,:), intent(in)    :: sim 
   real(dp), dimension(:),   intent(in)    :: obs 
-!output variables
+  !output variables
   real(dp),                 intent(out)   :: rmse
   integer(i4b),             intent(out)   :: err          ! error code
   !input/output variables
   character(*),             intent(inout) :: message      ! error message
-!local variables
+  !local variables
   integer                                 :: itime,ibasin,total_len,offset
   real(dp)                                :: sum_sqr
   integer(i4b)                            :: nargs,nstream,nb,nday
@@ -451,32 +455,35 @@ subroutine pearsn(x,y,r)
   syy=dot_product(yt,yt)
   sxy=dot_product(xt,yt)
   r=sxy/(sqrt(sxx*syy)+tiny)
-
+  return
 end subroutine pearsn
 
 !******************************
 ! Read observed streamflow
 !******************************
 subroutine read_obs(obs, err, message)
+  use ascii_util, only:file_open
   implicit none
 
   !output variables
-  real(dp), dimension(:),intent(out)     :: obs
-  !local variables
-  integer                                :: itime   ! loop index
-  integer(i4b),            intent(out)   :: err     ! error code
+  real(dp), dimension(:),  intent(out)   :: obs
+  integer(i4b),            intent(out)   :: err      ! error code
   !input/output variables
-  character(*),            intent(inout) :: message      ! error message
+  character(*),            intent(inout) :: message  ! error message
+  !local variables
+  character(len=256)                     :: cmessage ! error message for downwind routine
+  integer(i4b)                           :: unt      ! DK: need to either define units globally, or use getSpareUnit
+  integer(i4b)                           :: itime    ! loop index
 
   ! initialize error control
   err=0; message=trim(message)//'read_obs/'
   !read observed streamflow
-  open (UNIT=52,file=trim(obs_name),form='formatted',status='old')
+  call file_open(trim(obs_name),unt, err, cmessage)
+  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
   do itime = 1,sim_len*nbasin
-    read (UNIT=52,*) obs(itime)
+    read (unt,*) obs(itime)
   enddo
-  close(UNIT=52)
-
+  close(unt)
   return
 end subroutine read_obs
 
@@ -484,6 +491,7 @@ end subroutine read_obs
 ! Aggregate hru value to basin
 !******************************
 subroutine agg_hru_to_basin(simHru,simBasin,err,message)
+  use ascii_util, only:file_open
   implicit none
 
   !input variables
@@ -494,6 +502,8 @@ subroutine agg_hru_to_basin(simHru,simBasin,err,message)
   !input/output variables
   character(*),           intent(inout) :: message                 ! error message
   !local variables
+  character(len=256)                    :: cmessage                ! error message for downwind routine
+  integer(i4b)                          :: unt                     ! DK: need to either define units globally, or use getSpareUnit
   real(dp)                              :: basin_area
   real(dp)                              :: auxflux(5)              ! This is only in case of water balance mode
   integer(i4b)                          :: ibasin,itime,ivar,icell ! loop index
@@ -507,15 +517,16 @@ subroutine agg_hru_to_basin(simHru,simBasin,err,message)
   !cell counter
   c_cell = 1
   !open a few files
-  open (UNIT=51,file=region_info,form='formatted',status='old')
+  call file_open(trim(region_info),unt, err, cmessage)
+  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
   do ibasin = 1,nbasin
-    read (UNIT=51,*) dum, dum, basin_area, ncell
+    read (unt,*) dum, dum, basin_area, ncell
     do icell = 1,ncell
       simBasin(ibasin,:) = simBasin(ibasin,:) + simHru(c_cell,:)
       c_cell = c_cell + 1
     enddo !end of cell  
   enddo !end basin loop
-  close(UNIT=51)
+  close(unt)
   return
 end subroutine agg_hru_to_basin
 
@@ -534,39 +545,34 @@ subroutine route_q(qin,qroute,ushape,uscale, err, message)
   !input/output variables
   character(*),            intent(inout) :: message      ! error message
   !local variables
-  integer(i4b)                           :: ntau
   integer(i4b)                           :: iEle         ! loop index of spatial elements
   integer(i4b)                           :: nEle         ! number of spatial elements (e.g., hru, basin)
-  real(dp)                               :: dtuh
 
   ! initialize error control
   err=0; message=trim(message)//'route_q/'
   nEle=size(qin,1) 
   ! route flow for each basin in the region now
-  dtuh = real(86400./86400.) 
-  ntau = 0.0_dp
   if (ushape .le. 0.0 .and. uscale .le. 0.0) then 
     do iEle=1,nEle
       qroute(iEle,:) = qin(iEle,:)
     enddo
   else
     do iEle=1,nEle
-      call duamel(qin(iEle,1:sim_len-1),ushape, uscale, dtuh, sim_len-1, qroute(iEle,1:sim_len-1), ntau)
+      call duamel(qin(iEle,1:sim_len-1),ushape, uscale, sim_len-1, qroute(iEle,1:sim_len-1), 0)
     enddo
   end if
 end subroutine route_q
 
 !************************************
-! perform unit hydrograph convolution 
+! unit hydrograph construction and convolution routine
 !************************************
-  subroutine duamel(Q,un1,ut,dt,nq,QB,ntau,inUH)
+  subroutine duamel(Q,un1,ut,nq,QB,ntau,inUH)
     implicit none
 
     ! input 
     real(dp),   dimension(:),          intent(in)  :: Q      ! instantaneous flow
     real(dp),                          intent(in)  :: un1    ! scale parameter
     real(dp),                          intent(in)  :: ut     ! time parameter
-    real(dp),                          intent(in)  :: dt     ! time step 
     integer(i4b),                      intent(in)  :: nq     ! size of instantaneous flow series
     integer(i4b),                      intent(in)  :: ntau 
     real(dp),   dimension(:),optional, intent(in)  :: inUH   ! optional input unit hydrograph  
@@ -621,7 +627,7 @@ end subroutine route_q
     endif
       
     ! do unit hydrograph convolution
-    IOC=nq+NTAU
+    IOC=nq+ntau
     if (nq.LE.m) then
       do i=1,IOC
         QB(i)=0.0_dp
@@ -690,4 +696,4 @@ end subroutine route_q
   
   end function gf
 
-end module vic_subroutines_parallel
+end module eval_model 

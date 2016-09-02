@@ -8,7 +8,7 @@ program main_calibration
   use mo_dds,                   only: dds
   use mo_opt_run,               only: opt_run
   use vic_routines,             only: vic_soil_param 
-  use eval_obj,                 only: functn
+  use eval_model,               only: objfn
 
   implicit none
  
@@ -28,16 +28,15 @@ program main_calibration
   call get_parm_meta( trim(calpar), ierr,cmessage); call handle_err(ierr,cmessage)
   ! initialize parameter and mask arrays 
   allocate(param(nParCal,3))
-  allocate(ptype(nParCal))
   allocate(mask(nParCal))
-  call param_setup(param, ptype, mask)
+  call param_setup(param, mask)
   call vic_soil_param(param(:,1), ierr, cmessage); call handle_err(ierr,cmessage)
   stop
 
   ! optimization start
   select case (opt)
     case (1)     ! DDS
-      call dds(functn,                  & ! function to evaluate object function
+      call dds(objfn,                   & ! function to get object function
                param(:,1),              & ! initial parameter values
                param(:,2:3),            & ! lower and upper bounds of each parameters
                isRestart,               & ! .true. - use restart file to start, otherwise from beginning 
@@ -49,7 +48,7 @@ program main_calibration
                maxit=maxit,             & ! minimzation (0) or maximization (1)
                tmp_file=state_file)       !
     case (2)     ! just output ascii of sim and obs series 
-      call opt_run(functn, restrt_file) 
+      call opt_run(objfn, restrt_file) 
     case default
       print*, 'integer to specify optimization scheme is not valid' 
   end select 

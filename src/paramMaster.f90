@@ -82,8 +82,8 @@ contains
     ! -----
     !  Master list of beta parameters  
     ! -----------------------
-    parMaster(ixPar%ushape)            = par_meta('ushape'  ,     1.0_dp,  0.1_dp , 3.0_dp, 2, .False.)
-    parMaster(ixPar%h1)                = par_meta('uscale'  ,     1.0_dp,  0.5_dp , 3.0_dp, 2, .False.)
+    parMaster(ixPar%uhshape)           = par_meta('uhshape' ,     1.0_dp,  0.1_dp , 3.0_dp, 2, .False.)
+    parMaster(ixPar%uhscale)           = par_meta('uhscale' ,     1.0_dp,  0.5_dp , 3.0_dp, 2, .False.)
     parMaster(ixPar%h1)                = par_meta('h1'      ,     1.0_dp,  0.8_dp , 1.2_dp, 2, .False.)
     parMaster(ixPar%h2)                = par_meta('h2'      ,     1.0_dp,  0.8_dp , 1.2_dp, 2, .False.)
     parMaster(ixPar%h3)                = par_meta('h3'      ,     1.0_dp,  0.8_dp , 1.2_dp, 2, .False.)

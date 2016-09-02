@@ -101,12 +101,11 @@ end subroutine get_parm_meta
 ! ************************************************************************************************
 ! Subroutine: convert parameter data structure to simple arrays 
 ! ************************************************************************************************
-subroutine param_setup( param,ptype, mask)
+subroutine param_setup( param, mask)
   use globalData,  only:parSubset
   implicit none
   ! output variables
   real(dp),dimension(:,:),   intent(out)     :: param 
-  integer(i4b),dimension(:), intent(out)     :: ptype 
   logical,dimension(:),      intent(out)     :: mask
   ! local variables
   integer(i4b)                               :: iPar  ! loop indices
@@ -115,7 +114,6 @@ subroutine param_setup( param,ptype, mask)
     param(iPar,1) = parSubset(iPar)%val
     param(iPar,2) = parSubset(iPar)%lwr
     param(iPar,3) = parSubset(iPar)%upr
-    ptype(iPar)   = parSubset(iPar)%ptype
     mask(iPar)    = parSubset(iPar)%flag
   enddo  
 
