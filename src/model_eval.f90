@@ -42,18 +42,21 @@ function objfn( param )
   ! Adjust model parameters (Model specific)
   call vic_soil_param( param, err, message)
   if (err/=0)then; stop message; endif
+  call check_gammaPar( param, err, message)
+  if (err/=0)then; stop message; endif
   ! Run hydrologic model   
   call system(executable)
-  ! post-process of model output
+  !read observation 
   call read_obs(obs, err, message)
   if (err/=0)then; stop message; endif
   !read model output  place into array of ncells (model specific)
   call read_vic_sim(sim, err, message)
   if (err/=0)then; stop message; endif
-  !aggregate UH routed grid cell runoff to basin total runoff
+  ! post-process of model output
+  ! aggregate UH routed grid cell runoff to basin total runoff
   call agg_hru_to_basin(sim,simBasin, err, message)
   if (err/=0)then; stop message; endif
-  !call function to route flow for each basin
+  ! call function to route flow for each basin
   do iPar=1,nParCal
     select case( parSubset(iPar)%pname )
       case('uhshape');  ushape  = param( iPar )
@@ -75,11 +78,45 @@ function objfn( param )
   return
 end function objfn
 
+!**********************************
+!check gamma parameter
+!**********************************
+subroutine check_gammaPar(param, err, message)
+  use globalData,   only: parSubset
+  implicit none
+  !output variables
+  real(dp),dimension(:),   intent(in)    :: param    ! parameter in namelist, not necessarily all parameters are calibrated
+  integer(i4b),            intent(out)   :: err      ! error code
+  !input/output variables
+  character(*),            intent(inout) :: message  ! error message
+  !local variables
+  logical(lgt)                           :: isGamma
+  integer(i4b)                           :: unt      ! DK: need to either define units globally, or use getSpareUnit
+  integer(i4b)                           :: iPar     ! loop index 
+
+  ! initialize error control
+  err=0; message=trim(message)//'check_gammaPar/'
+  ! Look for gamma parameter in calibration parameter list
+  isGamma=.False.
+  do iPar=1,nParCal 
+    if ( parSubset(iPar)%ptype == 1 ) isGamma=.True.
+  enddo
+  if ( isGamma ) then
+    open(unit=unt,file='./gammaPar.txt',action='write',status='replace')
+    do iPar=1,nParCal
+      if ( parSubset(iPar)%ptype == 1 )then
+        write(unit=unt,"(a15,1x,ES17.10)") parSubset(iPar)%pname, param(iPar)
+      endif
+    end do
+    close(unit=unt)
+  endif
+
+end subroutine check_gammaPar
+
 !************************************
 ! compute weighted RMSE 
 !************************************
 subroutine calc_rmse_region(sim, obs, rmse, err, message)
-
   implicit none
   !input variables 
   real(dp), dimension(:,:), intent(in)    :: sim 

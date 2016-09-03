@@ -60,7 +60,6 @@ subroutine vic_soil_param(param, err, message)
         case('SD');       realline(37:39) = param( iPar )*realline(37:39)
         case('WcrFrac');  realline(41:43) = param( iPar )*realline(41:43)
         case('WpwpFrac'); realline(44:46) = param( iPar )*realline(44:46)
-        case default; print*, parSubset(iPar)%pname//'is not VIC soil parameters'
        end select
     end do
 
