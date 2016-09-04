@@ -13,6 +13,8 @@ module mo_nml
                              cellfrac_name,           &
                              origparam_name,          & 
                              calibparam_name,         &
+                             origvege_name,           & 
+                             calivege_name,           &
                              region_info,             &
                              sim_dir,                 &
                              obs_name,                &

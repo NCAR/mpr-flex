@@ -15,8 +15,7 @@ contains
 !************************************
 function objfn( param )
   use globalData,   only: parSubset
-  use vic_routines, only: vic_soil_param
-  use vic_routines, only: read_vic_sim 
+  use vic_routines, only: vic_soil_param,vic_vege_param,read_vic_sim
   implicit none
   !input variables
   real(dp),dimension(:),intent(in)    :: param        ! parameter in namelist, not necessarily all parameters are calibrated
@@ -42,6 +41,10 @@ function objfn( param )
   ! Adjust model parameters (Model specific)
   call vic_soil_param( param, err, message)
   if (err/=0)then; stop message; endif
+  ! Adjust vege parameters (Model specific)
+  call vic_vege_param( param, err, message)
+  if (err/=0)then; stop message; endif
+  ! Check if gamma parameter is included
   call check_gammaPar( param, err, message)
   if (err/=0)then; stop message; endif
   ! Run hydrologic model   

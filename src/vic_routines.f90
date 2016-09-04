@@ -9,28 +9,29 @@ module vic_routines
 
   implicit none
   public :: vic_soil_param 
+  public :: vic_vege_param 
   public :: read_vic_sim
 
 contains
 
+!***************************
 ! Adjust VIC soil parameters 
+!***************************
 subroutine vic_soil_param(param, err, message)
 !! This routine takes the adjustable parameter set "param" from namelist, reads into "origparam_name",
 !! computes the new parameters, writes them into "calibparam_name" 
-
   use globalData, only: parSubset
-
   implicit none
 
-!input variables
-  real(dp),dimension(:),intent(in)    :: param            ! parameter in namelist, not necessarily all parameters are calibrated
-! output
-  integer(i4b),intent(out)             :: err            ! error code
-  character(*),intent(out)             :: message        ! error message
-!local variables
-  integer(i4b)                        :: ipar,iHru    ! loop index
-  integer(i4b)                        :: stat
-  real(dp),dimension(TotNparVic)      :: realline
+  !input variables
+  real(dp),dimension(:),intent(in)   :: param        ! calibrating parameter list 
+  ! output
+  integer(i4b),intent(out)           :: err          ! error code
+  character(*),intent(out)           :: message      ! error message
+  ! local variables
+  integer(i4b)                       :: ipar,iHru    ! loop index
+  integer(i4b)                       :: stat
+  real(dp),dimension(TotNparVic)     :: realline
 
   ! initialize error control
   err=0; message='vic_soil_param/'
@@ -62,7 +63,6 @@ subroutine vic_soil_param(param, err, message)
         case('WpwpFrac'); realline(44:46) = param( iPar )*realline(44:46)
        end select
     end do
-
     ! Limit parameters to correct possible values without physical meaning: this applies for all configurations
     !binfilt
     if(realline(5) .lt. 0.001) then
@@ -96,7 +96,6 @@ subroutine vic_soil_param(param, err, message)
         realline(iPar) = 1880.
       endif
     enddo
-
     ! Write the modified parameter file for the entire basin/region for traditional upscaling
       write(51,'(I,2X)',advance='no') 1
       write(51,'(I8,2X)',advance='no') int(realline(2))
@@ -111,16 +110,71 @@ subroutine vic_soil_param(param, err, message)
       write(51,'(I2,X)',advance='no') int(realline(53))
       write(51,'(f9.4)') realline(54)
   enddo  !end cell loop
-
   ! Close original and modified basin parameter files
   close(UNIT=50)
   close(UNIT=51)
-
   return
-
 end subroutine vic_soil_param
 
+!***************************
+! Adjust VIC vege parameters 
+!***************************
+subroutine vic_vege_param(param, err, message)
+  use globalData, only: parSubset
+  implicit none
+
+  ! input variables
+  real(dp),dimension(:),intent(in) :: param                     ! list of calibratin parameters 
+  ! output
+  integer(i4b),intent(out)         :: err                       ! error code
+  character(*),intent(out)         :: message                   ! error message
+  ! local variables
+  integer(i4b)                     :: vegClass                  ! vegetation class 
+  real(dp)                         :: vegFrac                   ! fraction of vage class
+  real(dp),dimension(nLyr)         :: rootDepth                 ! root zone depth
+  real(dp),dimension(nLyr)         :: rootFrac                  ! root zone fraction
+  real(dp),dimension(12)           :: laiMonth                  ! monthly LAI
+  integer(i4b)                     :: hruID                     ! hru ID
+  integer(i4b)                     :: nTile                     ! number of vege tile 
+  integer(i4b)                     :: iPar,iHru,iTile,iMon,iLyr ! loop index
+  character(50)                    :: rowfmt                    ! string specifying write format for real value
+  integer(i4b)                     :: stat
+
+  ! initialize error control
+  err=0; message='vic_vege_param/'
+  !Open original and modified vege parameter files
+  open (UNIT=50,file=origvege_name,form='formatted',status='old',IOSTAT=stat)
+  open (UNIT=51,file=calivege_name,action='write',status='unknown' )
+ ! Read original vege parameter file
+  hru:do iHru = 1,Ncells
+    read(unit=50,*) hruID,nTile
+    write(51,'(I10,1X,I2)') (hruID,nTile)
+    tile:do iTile = 1,nTile
+      read(unit=50,*) vegClass,vegFrac,(rootDepth(iLyr), iLyr=1,nLyr),(rootFrac(iLyr), iLyr=1,nLyr)
+      read(unit=50,*) (laiMonth(iMon), iMon=1,12)
+      ! Modify parameter values
+      par:do iPar=1,nParCal
+        select case( parSubset(iPar)%pname )
+          case('lai');    laiMonth = param( iPar )*laiMonth
+        end select
+      enddo par
+    ! Write the modified parameter file for the entire basin/region for traditional upscaling
+      write(rowfmt,'(A,I2,A)') '(',nLyr,'(1X,F4.2))'
+      write(51,'(3X,I2,1X,F8.6)',advance='no') (vegClass,vegFrac)
+      write(51,rowfmt,advance='no')            (rootDepth(iLyr), iLyr=1,nLyr)
+      write(51,rowfmt)                         (rootFrac(iLyr), iLyr=1,nLyr)
+      write(51,'(5X,12(1X,F6.3))')             (laiMonth(iMon), iMon=1,12)
+    enddo tile 
+  enddo hru
+  ! Close original and modified basin parameter files
+  close(UNIT=50)
+  close(UNIT=51)
+  return
+end subroutine vic_vege_param
+
+!***************************
 ! Read VIC output file
+!***************************
 subroutine read_vic_sim(sim, err, message)
   implicit none
   !output variables
@@ -137,7 +191,6 @@ subroutine read_vic_sim(sim, err, message)
 
   ! initialize error control
   err=0; message='read_vic_sim/'
-
   !set output variable to zero
   sim = 0.0_dp
   !cell counter

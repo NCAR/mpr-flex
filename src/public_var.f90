@@ -17,6 +17,8 @@ module public_var
   character(len=strLen),public    :: cellfrac_name
   character(len=strLen),public    :: origparam_name
   character(len=strLen),public    :: calibparam_name
+  character(len=strLen),public    :: origvege_name
+  character(len=strLen),public    :: calivege_name
   character(len=strLen),public    :: region_info
   character(len=strLen),public    :: sim_dir
   character(len=strLen),public    :: obs_name
@@ -49,5 +51,6 @@ module public_var
   !
   ! VIC parameters
   integer, parameter,public       :: TotNparVic = 54
+  integer, parameter,public       :: nLyr = 3 
 
 end module public_var

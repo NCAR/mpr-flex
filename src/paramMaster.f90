@@ -82,8 +82,10 @@ contains
     ! -----
     !  Master list of beta parameters  
     ! -----------------------
+    ! uh parameters
     parMaster(ixPar%uhshape)           = par_meta('uhshape' ,     1.0_dp,  0.1_dp , 3.0_dp, 2, .False.)
     parMaster(ixPar%uhscale)           = par_meta('uhscale' ,     1.0_dp,  0.5_dp , 3.0_dp, 2, .False.)
+    ! soil parameters 
     parMaster(ixPar%h1)                = par_meta('h1'      ,     1.0_dp,  0.8_dp , 1.2_dp, 2, .False.)
     parMaster(ixPar%h2)                = par_meta('h2'      ,     1.0_dp,  0.8_dp , 1.2_dp, 2, .False.)
     parMaster(ixPar%h3)                = par_meta('h3'      ,     1.0_dp,  0.8_dp , 1.2_dp, 2, .False.)
@@ -101,6 +103,8 @@ contains
     parMaster(ixPar%SD)                = par_meta('SD'      ,     1.0_dp , 0.9_dp , 1.1_dp, 2, .False.)
     parMaster(ixPar%WcrFrac)           = par_meta('WcrFrac' ,     1.0_dp , 0.8_dp , 1.2_dp, 2, .False.)
     parMaster(ixPar%WpwpFrac)          = par_meta('WpwpFrac',     1.0_dp , 0.8_dp , 1.2_dp, 2, .False.)
+    ! vege parameter
+    parMaster(ixPar%lai)               = par_meta('lai'     ,     1.0_dp , 0.8_dp , 1.2_dp, 2, .False.)
 
   end subroutine popMeta
 
