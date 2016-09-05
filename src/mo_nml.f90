@@ -25,8 +25,7 @@ module mo_nml
                              start_cal,               &
                              end_cal,                 &
                              opt,                     & 
-                             Ncells,                  &
-                             ntot,                    &
+                             nHru,                    &
                              nbasin,                  &
                              upscale_flag,            &
                              Npro,                    & 

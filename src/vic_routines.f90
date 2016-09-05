@@ -41,7 +41,7 @@ subroutine vic_soil_param(param, err, message)
   open (UNIT=51,file=calibparam_name,action='write',status='unknown' )
 
  ! Read original soil parameter file
-  do iHru = 1,Ncells
+  do iHru = 1,nHru
     read(unit=50,*) (realline(ipar), ipar=1,TotNparVic)
     ! Modify parameter values
     do iPar=1,nParCal
@@ -147,7 +147,7 @@ subroutine vic_vege_param(param, err, message)
   open (UNIT=51,file=calivege_name,action='write',status='replace' )
   write(rowfmt,'(A,I2,A)') '(',nLyr,'(1X,F4.2))'
  ! Read original vege parameter file
-  hru:do iHru = 1,Ncells
+  hru:do iHru = 1,nHru
     read(unit=50,*) hruID,nTile
     write(51,'(I10,1X,I2)') (hruID,nTile)
     tile:do iTile = 1,nTile

@@ -36,7 +36,7 @@ function objfn( param )
 
   ! allocate array
   allocate(obs(nbasin*sim_len))
-  allocate(sim(nbasin*ntot,sim_len))
+  allocate(sim(nHru,sim_len))
   allocate(simBasin(nbasin,sim_len))
   allocate(simBasinRouted(nbasin,sim_len))
   ! Adjust model parameters (Model specific)

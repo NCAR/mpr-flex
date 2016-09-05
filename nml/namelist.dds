@@ -21,8 +21,7 @@ opt           = 1      !opt = 1 runs optimization code
 upscale_flag  = 0      !flag to run Naoki's upscaling code
 
 nbasin    = 1 
-Ncells    = 1          ! Number of grid cells containing the basin
-ntot      = 1          ! Number of total grid cells including duplicates
+nHru      = 1          ! Sum of hrus consisting of each basin
 
 Npro     = 1           ! Number of processors to use
 initcell = 1           ! index of the first cell assigned to each processor
