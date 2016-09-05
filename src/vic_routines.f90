@@ -144,7 +144,8 @@ subroutine vic_vege_param(param, err, message)
   err=0; message='vic_vege_param/'
   !Open original and modified vege parameter files
   open (UNIT=50,file=origvege_name,form='formatted',status='old',IOSTAT=stat)
-  open (UNIT=51,file=calivege_name,action='write',status='unknown' )
+  open (UNIT=51,file=calivege_name,action='write',status='replace' )
+  write(rowfmt,'(A,I2,A)') '(',nLyr,'(1X,F4.2))'
  ! Read original vege parameter file
   hru:do iHru = 1,Ncells
     read(unit=50,*) hruID,nTile
@@ -158,8 +159,7 @@ subroutine vic_vege_param(param, err, message)
           case('lai');    laiMonth = param( iPar )*laiMonth
         end select
       enddo par
-    ! Write the modified parameter file for the entire basin/region for traditional upscaling
-      write(rowfmt,'(A,I2,A)') '(',nLyr,'(1X,F4.2))'
+      ! Write the modified parameter file for the entire basin/region for traditional upscaling
       write(51,'(3X,I2,1X,F8.6)',advance='no') (vegClass,vegFrac)
       write(51,rowfmt,advance='no')            (rootDepth(iLyr), iLyr=1,nLyr)
       write(51,rowfmt)                         (rootFrac(iLyr), iLyr=1,nLyr)

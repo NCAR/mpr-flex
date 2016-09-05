@@ -29,8 +29,6 @@ program main_calibration
   allocate(param(nParCal,3))
   allocate(mask(nParCal))
   call param_setup(param, mask)
-  call vic_soil_param(param(:,1), ierr, cmessage); call handle_err(ierr,cmessage)
-
   ! optimization start
   select case (opt)
     case (1)     ! DDS

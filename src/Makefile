@@ -26,6 +26,7 @@ SRC90 = nrtype.f90 \
         mo_opt_run.f90 \
         mo_dds.f90 \
         vic_routines.f90 \
+        model_wrapper.f90 \
         model_eval.f90 \
         main_calibration.f90
 
@@ -44,6 +45,7 @@ OBJS = nrtype.o \
        mo_opt_run.o \
        mo_dds.o \
        vic_routines.o \
+       model_wrapper.o \
        model_eval.o \
        main_calibration.o
 

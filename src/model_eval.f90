@@ -14,8 +14,8 @@ contains
 ! perform model evaluation 
 !************************************
 function objfn( param )
-  use globalData,   only: parSubset
-  use vic_routines, only: vic_soil_param,vic_vege_param,read_vic_sim
+  use globalData,    only: parSubset
+  use model_wrapper, only: adjust_param, read_sim
   implicit none
   !input variables
   real(dp),dimension(:),intent(in)    :: param        ! parameter in namelist, not necessarily all parameters are calibrated
@@ -33,16 +33,14 @@ function objfn( param )
 
   ! initialize error control
   err=0; message='eval_objfn/'
+
   ! allocate array
   allocate(obs(nbasin*sim_len))
   allocate(sim(nbasin*ntot,sim_len))
   allocate(simBasin(nbasin,sim_len))
   allocate(simBasinRouted(nbasin,sim_len))
   ! Adjust model parameters (Model specific)
-  call vic_soil_param( param, err, message)
-  if (err/=0)then; stop message; endif
-  ! Adjust vege parameters (Model specific)
-  call vic_vege_param( param, err, message)
+  call adjust_param(idModel, param, err, message)
   if (err/=0)then; stop message; endif
   ! Check if gamma parameter is included
   call check_gammaPar( param, err, message)
@@ -52,12 +50,12 @@ function objfn( param )
   !read observation 
   call read_obs(obs, err, message)
   if (err/=0)then; stop message; endif
-  !read model output  place into array of ncells (model specific)
-  call read_vic_sim(sim, err, message)
+  !read model output place into array of ncells 
+  call read_sim(idModel, sim, err, message)
   if (err/=0)then; stop message; endif
   ! post-process of model output
   ! aggregate UH routed grid cell runoff to basin total runoff
-  call agg_hru_to_basin(sim,simBasin, err, message)
+  call agg_hru_to_basin(sim, simBasin, err, message)
   if (err/=0)then; stop message; endif
   ! call function to route flow for each basin
   do iPar=1,nParCal
@@ -69,9 +67,13 @@ function objfn( param )
   !call function to perform UH on every grid cell
   call route_q(simBasin, simBasinRouted, ushape, uscale, err, message)
   if (err/=0)then; stop message; endif
-  !call rmse calculation
-  call calc_rmse_region(simBasinRouted, obs, objfn, err, message)
-  if (err/=0)then; stop message; endif
+  !call object function calculation or just output sim and obs 
+  if (opt/=2) then
+    call calc_rmse_region(simBasinRouted, obs, objfn, err, message)
+    if (err/=0)then; stop message; endif
+  else
+    call out_opt_sim(simBasinRouted, obs)
+  endif
   ! allocate array
   deallocate(obs)
   deallocate(sim)

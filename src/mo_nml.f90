@@ -33,7 +33,8 @@ module mo_nml
                              initcell,                & 
                              endcell,                 &
                              eval_length,             &
-                             calpar
+                             calpar,                  &
+                             idModel 
 
 ! DDS algorithm 
   namelist / DDS / NparCal,     & 

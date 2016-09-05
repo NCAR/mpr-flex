@@ -37,6 +37,7 @@ module public_var
   real,dimension(16),public       :: initcell,endcell
   character(len=strLen),public    :: eval_length
   character(len=strLen),public    :: calpar 
+  integer(i4b),public             :: idModel 
   !
   !DDS 
   !input parameters
