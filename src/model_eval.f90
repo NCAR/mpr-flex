@@ -92,15 +92,15 @@ subroutine check_gammaPar(param, err, message)
   !output variables
   real(dp),dimension(:),   intent(in)    :: param    ! parameter in namelist, not necessarily all parameters are calibrated
   integer(i4b),            intent(out)   :: err      ! error code
-  !input/output variables
-  character(*),            intent(inout) :: message  ! error message
+  character(*),            intent(out)   :: message  ! error message
   !local variables
+  character(len=strLen)                  :: cmessage ! error message from downward subroutine
   logical(lgt)                           :: isGamma
   integer(i4b)                           :: unt      ! DK: need to either define units globally, or use getSpareUnit
   integer(i4b)                           :: iPar     ! loop index 
 
   ! initialize error control
-  err=0; message=trim(message)//'check_gammaPar/'
+  err=0; message='check_gammaPar/'
   ! Look for gamma parameter in calibration parameter list
   isGamma=.False.
   do iPar=1,nParCal 
@@ -487,15 +487,14 @@ subroutine read_obs(obs, err, message)
   !output variables
   real(dp), dimension(:),  intent(out)   :: obs
   integer(i4b),            intent(out)   :: err      ! error code
-  !input/output variables
-  character(*),            intent(inout) :: message  ! error message
+  character(*),            intent(out)   :: message  ! error message
   !local variables
-  character(len=256)                     :: cmessage ! error message for downwind routine
+  character(len=256)                     :: cmessage ! error message from downward subroutine
   integer(i4b)                           :: unt      ! DK: need to either define units globally, or use getSpareUnit
   integer(i4b)                           :: itime    ! loop index
 
   ! initialize error control
-  err=0; message=trim(message)//'read_obs/'
+  err=0; message='read_obs/'
   !read observed streamflow
   call file_open(trim(obs_name),unt, err, cmessage)
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
@@ -518,10 +517,9 @@ subroutine agg_hru_to_basin(simHru,simBasin,err,message)
   !output variables
   real(dp),dimension(:,:),intent(out)   :: simBasin
   integer(i4b),           intent(out)   :: err                     ! error code
-  !input/output variables
-  character(*),           intent(inout) :: message                 ! error message
+  character(*),           intent(out)   :: message                 ! error message
   !local variables
-  character(len=256)                    :: cmessage                ! error message for downwind routine
+  character(len=256)                    :: cmessage                ! error message from downward routine
   integer(i4b)                          :: unt                     ! DK: need to either define units globally, or use getSpareUnit
   real(dp)                              :: basin_area
   real(dp)                              :: auxflux(5)              ! This is only in case of water balance mode
@@ -530,7 +528,7 @@ subroutine agg_hru_to_basin(simHru,simBasin,err,message)
   integer(i4b)                          :: dum,c_cell
 
   ! initialize error control
-  err=0; message=trim(message)//'agg_hru_to_basin/'
+  err=0; message='agg_hru_to_basin/'
   !set output variable to zero
   simBasin = 0.0
   !cell counter
@@ -561,14 +559,14 @@ subroutine route_q(qin,qroute,ushape,uscale, err, message)
   !output variables
   real(dp),dimension(:,:), intent(out)   :: qroute
   integer(i4b),            intent(out)   :: err          ! error code
-  !input/output variables
-  character(*),            intent(inout) :: message      ! error message
+  character(*),            intent(out)   :: message      ! error message
   !local variables
+  character(len=strLen)                  :: cmessage     ! error message from downward subroutine
   integer(i4b)                           :: iEle         ! loop index of spatial elements
   integer(i4b)                           :: nEle         ! number of spatial elements (e.g., hru, basin)
 
   ! initialize error control
-  err=0; message=trim(message)//'route_q/'
+  err=0; message='route_q/'
   nEle=size(qin,1) 
   ! route flow for each basin in the region now
   if (ushape .le. 0.0 .and. uscale .le. 0.0) then 

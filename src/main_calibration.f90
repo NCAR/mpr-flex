@@ -7,7 +7,6 @@ program main_calibration
   use subset_meta,              only: get_parm_meta, param_setup
   use mo_dds,                   only: dds
   use mo_opt_run,               only: opt_run
-  use vic_routines,             only: vic_soil_param 
   use eval_model,               only: objfn
 
   implicit none
