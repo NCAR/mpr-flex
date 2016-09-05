@@ -2,11 +2,11 @@ module eval_model
 
   use nrtype 
   use public_var
-  use strings
   use data_type 
 
   implicit none
   public :: objfn 
+  public :: out_opt_sim
 
 contains
 
@@ -160,16 +160,6 @@ subroutine calc_rmse_region(sim, obs, rmse, err, message)
   allocate(basin_rmse(nbasin))
   allocate(basin_id(nbasin))
 
-!want to output streamflow to a different file if opt .ne. 1
-  delims='/'
-  if(opt .ne. 1) then
-    call parse(obs_name,delims,tokens,nargs)
-    last_token = tokens(nargs)
-
-    out_name = trim(sim_dir)//last_token(1:9)//"_flow.txt"
-    open(unit=88,file=out_name)
-  endif
-
 !read in basin weight file
 !this file determines how much each basin contributes to the total rmse
 !weights need to sum to 1 in the file
@@ -181,7 +171,6 @@ subroutine calc_rmse_region(sim, obs, rmse, err, message)
 
   log_streamflow = obs 
   log_model      = sim
-
   !need to make sure i'm using the appropriate parts of the catenated region observed streamflow timeseries
   do ibasin = 0,nbasin-1
     !offset places me at the start of each basin
@@ -192,9 +181,6 @@ subroutine calc_rmse_region(sim, obs, rmse, err, message)
         sum_sqr = 0.0
         do itime = start_cal,end_cal-1
           sum_sqr = sum_sqr + ((log_model(ibasin+1,itime)-log_streamflow(itime+offset))**2)
-          if(opt .ne. 1) then
-            write(unit=88,*) sim(ibasin+1,itime),obs(itime+offset)
-          endif
         enddo
         basin_rmse(ibasin+1) = sqrt(sum_sqr/real((end_cal-start_cal)+1))
       case ("monthly","Monthly","MONTHLY")
@@ -240,15 +226,10 @@ subroutine calc_rmse_region(sim, obs, rmse, err, message)
         sum_sqr = 0.0
         do itime = start_cal,end_cal-1
           sum_sqr = sum_sqr + ((log_model(ibasin+1,itime)-log_streamflow(itime+offset))**2.0)
-          if(opt .ne. 1) then
-            write(unit=88,*) sim(ibasin+1,itime),obs(itime+offset)
-          endif
         enddo
+        basin_rmse(ibasin+1) = sqrt(sum_sqr/real((end_cal-start_cal)+1))
     end select
   enddo
-  if(opt .ne. 1) then
-    close(unit=88)
-  endif
   !calculate rmse
   rmse = sum(basin_rmse*obj_fun_weight)
 
@@ -258,13 +239,13 @@ end subroutine calc_rmse_region
 !*****************************************************
 ! Compute weighted NSE
 !*****************************************************
-subroutine calc_nse_region(qsim,qobs,nse)
+subroutine calc_nse_region(sim,obs,nse)
 
   implicit none
 
-!input variables (model: simulations, qobs: observations)
-  real(dp), dimension(:,:), intent(in)  :: qsim 
-  real(dp), dimension(:),   intent(in)  :: qobs
+!input variables
+  real(dp), dimension(:,:), intent(in)  :: sim 
+  real(dp), dimension(:),   intent(in)  :: obs
 !output variables
   real(dp),                 intent(out) :: nse 
 !local variables
@@ -284,7 +265,7 @@ subroutine calc_nse_region(qsim,qobs,nse)
   integer(i4b)                          :: nmonths            ! for monthly rmse calculation
   integer(i4b)                          :: start_ind, end_ind
   integer(i4b)                          :: start_obs, end_obs
-  real(dp)                              :: month_qsim, month_qobs
+  real(dp)                              :: month_sim, month_obs
 
   total_len = (end_cal-start_cal)*nbasin
   
@@ -292,21 +273,6 @@ subroutine calc_nse_region(qsim,qobs,nse)
   allocate(obj_fun_weight(nbasin))
   allocate(basin_nse(nbasin))
   allocate(basin_id(nbasin))
-  ! Output qobs to a different file if opt .ne. 1
-  delims='/'
-  if(opt .ne. 1) then
-    call parse(obs_name,delims,tokens,nargs)
-    last_token = tokens(nargs)
-    out_name = trim(sim_dir)//last_token(1:9)//"_flow.txt"
-    open(unit=88,file=out_name)
-    do ibasin = 0,nbasin-1
-      offset = ibasin*sim_len
-      do itime = start_cal,end_cal-1
-        write(unit=88,*) qsim(ibasin+1,itime),qobs(itime+offset)
-      enddo
-    enddo
-    close(unit=88)
-  endif
   ! Read basin weight file
   ! this file determines how much each basin contributes to the total objective function 
   ! weights need to sum to 1 in the file
@@ -316,7 +282,7 @@ subroutine calc_nse_region(qsim,qobs,nse)
   enddo
   close(UNIT=58)
 
-  !need to make sure i'm using the appropriate parts of the catenated region observed qobs timeseries
+  !need to make sure i'm using the appropriate parts of the catenated region observed obs timeseries
   do ibasin = 0,nbasin-1
     !offset places me at the start of each basin
     offset = ibasin*sim_len
@@ -327,12 +293,12 @@ subroutine calc_nse_region(qsim,qobs,nse)
     select case (eval_length)
       case ("daily","Daily","DAILY")
         ! Compute Qob mean
-        sumQ = sum(qobs(start_cal+offset:end_cal-1+offset))
+        sumQ = sum(obs(start_cal+offset:end_cal-1+offset))
         meanQ = sumQ/real((end_cal-start_cal))
-        ! Compute sum of squre of error and deviation from menan (for qobs) 
+        ! Compute sum of squre of error and deviation from menan (for obs) 
         do itime = start_cal,end_cal-1
-          sumSqrDev = sumSqrDev + (qobs(itime+offset)-meanQ)**2
-          sumSqrErr = sumSqrErr + (qsim(ibasin+1,itime)-qobs(itime+offset))**2
+          sumSqrDev = sumSqrDev + (obs(itime+offset)-meanQ)**2
+          sumSqrErr = sumSqrErr + (sim(ibasin+1,itime)-obs(itime+offset))**2
         enddo
         ! Compute nse for current basin 
         basin_nse(ibasin+1) = sumSqrErr/sumSqrDev
@@ -343,37 +309,37 @@ subroutine calc_nse_region(qsim,qobs,nse)
         start_ind = start_cal
         end_ind = start_cal + 29
         do itime = 1,nmonths
-          month_qobs = sum(qobs(offset+start_ind:offset+end_ind))
-          sumQ       = sumQ+month_qobs
+          month_obs = sum(obs(offset+start_ind:offset+end_ind))
+          sumQ       = sumQ+month_obs
         enddo
         meanQ = sumQ/real(nmonths)
-        ! Compute sum of squre of error and deviation from menan (for qobs) 
+        ! Compute sum of squre of error and deviation from menan (for obs) 
         start_ind = start_cal
         end_ind = start_cal + 29
         do itime = 1,nmonths
-          month_qsim = sum(qsim(ibasin+1,start_ind:end_ind))
-          month_qobs = sum(qobs(offset+start_ind:offset+end_ind))
-          sumSqrErr = sumSqrErr + ((month_qsim-month_qobs)**2)
-          sumSqrDev = sumSqrDev + ((month_qobs-meanQ)**2)
+          month_sim = sum(sim(ibasin+1,start_ind:end_ind))
+          month_obs = sum(obs(offset+start_ind:offset+end_ind))
+          sumSqrErr = sumSqrErr + ((month_sim-month_obs)**2)
+          sumSqrDev = sumSqrDev + ((month_obs-meanQ)**2)
           !update starting and ending indice for next month step
           start_ind = end_ind+1
           end_ind = end_ind + 29
         enddo
         !grab remainder portion and weight it by number of days
-        month_qsim = sum(qsim(ibasin+1,end_ind+1:end_cal-1))
-        month_qobs = sum(qobs(offset+end_ind+1:end_cal-1))
-        sumSqrErr = sumSqrErr + ((month_qsim-month_qobs)**2) * real((end_cal-1-(offset+end_ind+1))/30.0)
-        sumSqrDev = sumSqrDev + ((month_qobs-meanQ)**2) * real((end_cal-1-(offset+end_ind+1))/30.0)
+        month_sim = sum(sim(ibasin+1,end_ind+1:end_cal-1))
+        month_obs = sum(obs(offset+end_ind+1:end_cal-1))
+        sumSqrErr = sumSqrErr + ((month_sim-month_obs)**2) * real((end_cal-1-(offset+end_ind+1))/30.0)
+        sumSqrDev = sumSqrDev + ((month_obs-meanQ)**2) * real((end_cal-1-(offset+end_ind+1))/30.0)
         ! Compute nse for current basin 
         basin_nse(ibasin+1) = sumSqrErr/sumSqrDev
       case default
         ! Compute Qob mean
-        sumQ = sum(qobs(start_cal+offset:end_cal-1+offset))
+        sumQ = sum(obs(start_cal+offset:end_cal-1+offset))
         meanQ = sumQ/real((end_cal-start_cal)+1)
-        ! Compute sum of squre of error and deviation from menan (for qobs) 
+        ! Compute sum of squre of error and deviation from menan (for obs) 
         do itime = start_cal,end_cal-1
-          sumSqrDev = sumSqrDev + (qobs(itime+offset)-meanQ)**2
-          sumSqrErr = sumSqrErr + (qsim(ibasin+1,itime)-qobs(itime+offset))**2
+          sumSqrDev = sumSqrDev + (obs(itime+offset)-meanQ)**2
+          sumSqrErr = sumSqrErr + (sim(ibasin+1,itime)-obs(itime+offset))**2
         enddo
         ! Compute nse for current basin 
         basin_nse(ibasin+1) = sumSqrErr/sumSqrDev
@@ -391,7 +357,6 @@ end subroutine calc_nse_region
 subroutine calc_kge_region(model,streamflow,kge)
   implicit none
 
-!  use strings
 !input variables (model: simulations, streamflow: observations)
   real(dp), dimension(:,:), intent(in)  :: model
   real(dp), dimension(:),   intent(in)  :: streamflow
@@ -402,28 +367,13 @@ subroutine calc_kge_region(model,streamflow,kge)
   real(dp)                              :: cc,alpha,betha,mu_s,mu_o,sigma_s,sigma_o
   integer                               :: ibasin,total_len,offset,cnt
   double precision                      :: sum_sqr
-  integer                               :: nargs,nstream,nb,nday
-  character(len=2000)                   :: out_name
-  character(len=1000),dimension(10)     :: tokens
-  character(len=1000)                   :: last_token
-  character(len=1)                      :: delims
+  integer                               :: nstream,nb,nday
   real(dp),dimension(:),allocatable     :: model_local
   real(dp),dimension(:),allocatable     :: obs_local
 
   total_len = (end_cal-start_cal)*nbasin
-
   allocate(model_local(total_len))
   allocate(obs_local(total_len))
-
-!want to output streamflow to a different file of opt .ne. 1
-  delims='/'
-  if(opt .ne. 1) then
-    call parse(obs_name,delims,tokens,nargs)
-    last_token = tokens(nargs)
-    out_name = trim(sim_dir)//last_token(1:9)//"_flow.txt"
-    print *,trim(out_name)
-    open(unit=88,file=out_name)
-  endif
   cnt = 1
   do ibasin = 0,nbasin-1
     !offset places me at the start of each basin
@@ -434,7 +384,6 @@ subroutine calc_kge_region(model,streamflow,kge)
       cnt = cnt + 1
     enddo
   enddo
-
   !!set variables to zero
   mu_s = 0.0
   mu_o = 0.0
@@ -445,14 +394,10 @@ subroutine calc_kge_region(model,streamflow,kge)
   mu_s = sum(model_local)/real(total_len)
   mu_o = sum(obs_local)/real(total_len)
   betha = mu_s/mu_o
-
   !Now we compute the standard deviation
   do itime = 1,total_len
     sigma_s = sigma_s + (model_local(itime)-mu_s)**2
     sigma_o = sigma_o + (obs_local(itime)-mu_o)**2
-    if(opt .ne. 1) then
-      write(unit=88,*) model_local(itime),obs_local(itime)
-    endif
   enddo   !end itime loop
   sigma_s = sqrt(mu_s/real(total_len))
   sigma_o = sqrt(mu_s/real(total_len))
@@ -460,9 +405,6 @@ subroutine calc_kge_region(model,streamflow,kge)
   !Compute linear correlation coefficient
   call pearsn(model_local,obs_local,cc)
   kge =( sqrt((cc-1.0)**2 + (alpha-1.0)**2 + (betha-1.0)**2) )
-  if(opt .ne. 1) then
-    close(unit=88)
-  endif
   
   return
 end subroutine calc_kge_region
@@ -474,12 +416,12 @@ subroutine pearsn(x,y,r)
 
   implicit none
 
-!input variables
+  !input variables
   real(dp), dimension(:), intent(in)  :: x
   real(dp), dimension(:), intent(in)  :: y
-!output variables
+  !output variables
   real(dp),               intent(out) :: r
-!local variables
+  !local variables
   real(dp)                            :: tiny = 1.0e-20
   real(dp), dimension(size(x))        :: xt,yt
   real(dp)                            :: ax,ay,sxx,sxy,syy
@@ -496,6 +438,42 @@ subroutine pearsn(x,y,r)
   r=sxy/(sqrt(sxx*syy)+tiny)
   return
 end subroutine pearsn
+
+!***********************************
+! Output sim and obs in separate file 
+!******************************
+subroutine out_opt_sim(sim, obs)
+  use strings
+  implicit none
+
+  !input variables 
+  real(dp), dimension(:,:), intent(in)  :: sim 
+  real(dp), dimension(:), intent(in)    :: obs 
+  !local variables
+  integer(i4b)                          :: itime,ibasin
+  integer(i4b)                          :: offset
+  character(len=1000),dimension(10)     :: tokens
+  character(len=1000)                   :: last_token
+  integer(i4b)                          :: nargs
+  character(len=2000)                   :: out_name
+  character(len=1)                      :: delims
+
+  delims='/'
+  call parse(obs_name,delims,tokens,nargs)
+  last_token = tokens(nargs)
+  out_name = trim(sim_dir)//last_token(1:9)//"_flow.txt"
+  open(unit=88,file=out_name)
+
+  do ibasin = 0,nbasin-1
+    offset = ibasin*sim_len
+    do itime = start_cal,end_cal-1
+      write(unit=88,*) sim(ibasin+1,itime),obs(itime+offset)
+    enddo
+  enddo
+  close(unit=88)
+  return
+end subroutine
+
 
 !******************************
 ! Read observed streamflow
