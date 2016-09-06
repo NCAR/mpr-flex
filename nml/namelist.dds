@@ -19,7 +19,7 @@ upscale_flag             = 0                  ! use MPR (MAYBE DELETED)
 !---------------------------------------
 eval_length              = "daily"
 basin_objfun_weight_file = "OBJWEIGHT"        ! name of ascii listing weight of each basin that is appplied to basin objective function   
-objfn                    = IDOBJFNC
+objfntype                = IDOBJFNC
 
 !---------------------------------------
 ! calibration period

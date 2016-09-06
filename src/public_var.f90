@@ -23,7 +23,7 @@ module public_var
   character(len=strLen),public    :: obs_name
   character(len=strLen),public    :: executable
   character(len=strLen),public    :: basin_objfun_weight_file
-  integer(i4b),public             :: objfn 
+  integer(i4b),public             :: objfntype 
   integer(i4b),public             :: dt
   integer(i4b),public             :: sim_len 
   integer(i4b),public             :: start_cal
