@@ -20,6 +20,7 @@ module mo_nml
                              obs_name,                &
                              executable,              & 
                              basin_objfun_weight_file,&
+                             objfn,                   &
                              dt,                      &
                              sim_len,                 & 
                              start_cal,               &

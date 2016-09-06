@@ -11,7 +11,6 @@ module public_var
   integer(i4b),parameter, public  :: imiss=-9999 
 
   ! Namelist variables
-  !
   ! Control variables
   character(len=strLen),public    :: filelist_name
   character(len=strLen),public    :: cellfrac_name
@@ -24,6 +23,7 @@ module public_var
   character(len=strLen),public    :: obs_name
   character(len=strLen),public    :: executable
   character(len=strLen),public    :: basin_objfun_weight_file
+  integer(i4b),public             :: objfn 
   integer(i4b),public             :: dt
   integer(i4b),public             :: sim_len 
   integer(i4b),public             :: start_cal
@@ -49,8 +49,9 @@ module public_var
   character(len=strLen),public    :: restrt_file    ! restart file
   logical,public                  :: isRestart      ! ues restart option? 
   !
+  ! Model specific parameters
   ! VIC parameters
-  integer, parameter,public       :: TotNparVic = 54
-  integer, parameter,public       :: nLyr = 3 
+  integer,parameter,public        :: TotNparVic = 54
+  integer,parameter,public        :: nLyr = 3 
 
 end module public_var

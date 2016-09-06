@@ -1,43 +1,52 @@
 &INIT_CONTROL
-filelist_name            = "FILELIST"
-cellfrac_name            = "CELLFRAC"
-origparam_name           = "ORIGPARAM"
-calibparam_name          = "CALIPARAM"
-region_info              = "INFO"
-sim_dir                  = "OUTDIR"
-obs_name                 = "CALIBFLOW"
-executable               = "EXE"
-basin_objfun_weight_file = "OBJWEIGHT"
-calpar                   = "calBeta.txt"
-idModel                  = "IDMODEL"
+filelist_name            = "FILELIST"         ! name of ascii listing model output name
+cellfrac_name            = "CELLFRAC"         ! name of ascii listing fraction of all the hru contributing to basin 
+origparam_name           = "ORIGPARAM"        ! name of original parameter file
+calibparam_name          = "CALIPARAM"        ! name of adjusted parameter file (updated with each model run iteration)
+origvege_name            = "ORIGVEG"          ! name of original vege parameter file 
+calivege_name            = "CALIVEG"          ! name of adjusted vege parameter file
+region_info              = "INFO"             ! name of ascii listing basin_id, number of hru
+sim_dir                  = "OUTDIR"           ! name of directory where model outputs
+obs_name                 = "CALIBFLOW"        ! name of ascii observed flow data
+executable               = "EXE"              ! name of model executable
+calpar                   = "calBeta.txt"      ! name of ascii meta listing calibration parameter
+idModel                  = IDMODEL            ! id of model
+opt                      = 1                  ! opt = 1 runs optimization code
+upscale_flag             = 0                  ! use MPR (MAYBE DELETED) 
 
-eval_length = "daily"
+!---------------------------------------
+! calibration 
+!---------------------------------------
+eval_length              = "daily"
+basin_objfun_weight_file = "OBJWEIGHT"        ! name of ascii listing weight of each basin that is appplied to basin objective function   
+objfn                    = IDOBJFNC
 
-dt            = 86400
-sim_len       = 6940
-start_cal     = 3652
-end_cal       = 6940
-opt           = 1      !opt = 1 runs optimization code
-upscale_flag  = 0      !flag to run Naoki's upscaling code
+!---------------------------------------
+! calibration period
+!---------------------------------------
+dt                       = 86400              ! simulation time step [sec]
+sim_len                  = 6940               ! number of simulation time step 
+start_cal                = 3652               ! time step when calibration starts
+end_cal                  = 6940               ! time step when calibration end
 
-nbasin    = 1 
-nHru      = 1          ! Sum of hrus consisting of each basin
+nbasin                   = 1                  ! number of calibrating basins
+nHru                     = 1                  ! sum of hrus consisting of each basin
 
-Npro     = 1           ! Number of processors to use
-initcell = 1           ! index of the first cell assigned to each processor
-endcell  = 1           ! index of the last cell assigned to each processor
+Npro                     = 1                  ! number of processors to use
+initcell                 = 1                  ! index of the first cell assigned to each processor
+endcell                  = 1                  ! index of the last cell assigned to each processor
 /
 
 !---------------------------------------
 ! DDS parameters
 !---------------------------------------
 &DDS
-NparCal       =  6                            ! number of parameters listed in namelist
+NparCal       =  6                             ! number of parameters listed in namelist
 r             =  0.2                           ! perturbation window (default 0.2)
-isRestart     =  T                             ! F -> start with the begining, T -> start with restart file
+isRestart     =  F                             ! F -> start with the begining, T -> start with restart file
 seed          =  32                            ! starting seed for random number generator
 maxiter       =  1000                          ! maximum number of objective function evaluation (i.e., iteration) 
 maxit         =  F                             ! maximization (.True.) or minimization (.False.) 
-restrt_file   = "./restart_dds.txt"
-state_file    = "./region_xx_sceua_output.txt"
+restrt_file   = "./restart_dds.txt"            ! name of ascii restart file 
+state_file    = "./region_xx_sceua_output.txt" ! name of ascii history file
 /

@@ -45,6 +45,8 @@ function objfn( param )
   ! Check if gamma parameter is included
   call check_gammaPar( param, err, message)
   if (err/=0)then; stop message; endif
+  ! NEED TO INCLUDE MPR run here
+
   ! Run hydrologic model   
   call system(executable)
   !read observation 
@@ -475,7 +477,6 @@ subroutine out_opt_sim(sim, obs)
   close(unit=88)
   return
 end subroutine
-
 
 !******************************
 ! Read observed streamflow
