@@ -6,9 +6,12 @@ module public_var
   save
 
   ! some common variables
-  integer,parameter,public        :: strLen=256          ! length of character string
+  integer,     parameter,public  :: strLen=256             ! length of character string
   ! some constant variables
-  integer(i4b),parameter, public  :: imiss=-9999 
+  integer(i4b),parameter,public  :: imiss=-9999            ! missing value for integer value
+  real(dp),    parameter,public  :: dmiss=-999.0_dp        ! missing value for floating value
+  real(dp),    parameter,public  :: verySmall=tiny(1.0_dp) ! a very small number 
+  real(dp),    parameter,public  :: valMin=1.e-10_dp       ! minimum value for positive value
 
   ! Namelist variables
   ! Control variables

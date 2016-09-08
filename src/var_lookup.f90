@@ -78,8 +78,14 @@ MODULE var_lookup
    integer(i4b)     :: SD              = imiss  ! 
    integer(i4b)     :: WcrFrac         = imiss  ! 
    integer(i4b)     :: WpwpFrac        = imiss  ! 
-   integer(i4b)     :: rmin            = imiss
-   integer(i4b)     :: lai             = imiss
+   integer(i4b)     :: phi             = imiss  ! 
+   integer(i4b)     :: fc              = imiss  ! 
+   integer(i4b)     :: wp              = imiss  ! 
+   integer(i4b)     :: b               = imiss  ! 
+   integer(i4b)     :: psis            = imiss  ! 
+   integer(i4b)     :: myu             = imiss  ! 
+   integer(i4b)     :: rmin            = imiss  ! minimum stomatal resistance
+   integer(i4b)     :: lai             = imiss  ! Lai
  endtype iLook_par
 
 ! ***********************************************************************************************************
@@ -91,12 +97,12 @@ MODULE var_lookup
                                                        31,32,33,34,35,36,37,38,39,40,&
                                                        41,42,43,44,45,46,47,48,49,50,&
                                                        51,52,53,54,55,56,57,58,59,60,&
-                                                       61,62,63,64)
+                                                       61,62,63,64,65,66,67,68,69,70)
 
 ! ***********************************************************************************************************
 ! define size of data vectors
 ! ***********************************************************************************************************
 ! Number of vairables defined
- integer(i4b),parameter,public    :: nPar = 64 
+ integer(i4b),parameter,public    :: nPar = 70 
 
 END MODULE var_lookup

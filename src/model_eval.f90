@@ -14,7 +14,7 @@ contains
 ! perform model evaluation 
 !************************************
 function objfn( param )
-  use globalData,    only: parSubset
+  use globalData,    only: parSubset, gammaSubset, betaInGamma
   use model_wrapper, only: adjust_param, read_sim
   implicit none
   !input variables
@@ -42,11 +42,12 @@ function objfn( param )
   ! Adjust model parameters (Model specific)
   call adjust_param(idModel, param, err, message)
   if (err/=0)then; stop message; endif
-  ! Check if gamma parameter is included
-  call check_gammaPar( param, err, message)
-  if (err/=0)then; stop message; endif
   ! NEED TO INCLUDE MPR run here
-
+  print*, size(betaInGamma)
+  do iPar=1,size(betaInGamma)
+    print*, betaInGamma(iPar)
+  enddo
+  stop
   ! Run hydrologic model   
   call system(executable)
   !read observation 
@@ -84,41 +85,6 @@ function objfn( param )
 
   return
 end function objfn
-
-!**********************************
-!check gamma parameter
-!**********************************
-subroutine check_gammaPar(param, err, message)
-  use globalData,   only: parSubset
-  implicit none
-  !output variables
-  real(dp),dimension(:),   intent(in)    :: param    ! parameter in namelist, not necessarily all parameters are calibrated
-  integer(i4b),            intent(out)   :: err      ! error code
-  character(*),            intent(out)   :: message  ! error message
-  !local variables
-  character(len=strLen)                  :: cmessage ! error message from downward subroutine
-  logical(lgt)                           :: isGamma
-  integer(i4b)                           :: unt      ! DK: need to either define units globally, or use getSpareUnit
-  integer(i4b)                           :: iPar     ! loop index 
-
-  ! initialize error control
-  err=0; message='check_gammaPar/'
-  ! Look for gamma parameter in calibration parameter list
-  isGamma=.False.
-  do iPar=1,nParCal 
-    if ( parSubset(iPar)%ptype == 1 ) isGamma=.True.
-  enddo
-  if ( isGamma ) then
-    open(unit=unt,file='./gammaPar.txt',action='write',status='replace')
-    do iPar=1,nParCal
-      if ( parSubset(iPar)%ptype == 1 )then
-        write(unit=unt,"(a15,1x,ES17.10)") parSubset(iPar)%pname, param(iPar)
-      endif
-    end do
-    close(unit=unt)
-  endif
-
-end subroutine check_gammaPar
 
 !************************************
 ! compute weighted RMSE 

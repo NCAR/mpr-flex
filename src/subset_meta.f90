@@ -7,6 +7,7 @@ module subset_meta
 
   private
   public::get_parm_meta
+  public::check_gammaPar
   public::param_setup 
 
 contains
@@ -15,10 +16,9 @@ contains
 ! Subroutine: read calibrating parameter metadata from a meta file 
 ! ************************************************************************************************
 subroutine get_parm_meta(infile, err, message)
-
-  ! used to read metadata from an input file and populate the appropriate metadata structure
-  use data_type,  only:cpar_meta              ! metadata structure
-  use globalData, only:parMaster, parSubset
+  ! used to read parameter list ascii and obtain meta data from master parameter list (paramMaster.f90) 
+  use data_type,  only:cpar_meta
+  use globalData, only:parMaster, parSubset, gammaSubset  ! data type definition
   use ascii_util, only:file_open
   use get_ixname, only:get_ixPar
  
@@ -31,9 +31,11 @@ subroutine get_parm_meta(infile, err, message)
   character(*),intent(out)             :: message        ! error message
   ! local variables
   character(len=256)                   :: cmessage       ! error message for downwind routine
+  type(cpar_meta),allocatable          :: tempMeta(:)
   integer(i4b)                         :: unt            ! DK: need to either define units globally, or use getSpareUnit
   integer(i4b)                         :: iline          ! loop through lines in the file 
   integer(i4b)                         :: ixLocal        ! index for calibrationg parameter list 
+  integer(i4b)                         :: ixGamma        ! index for calibrationg gamma parameter list 
   integer(i4b),parameter               :: maxLines=1000  ! maximum lines in the file 
   character(LEN=256)                   :: temp           ! single lime of information
   integer(i4b)                         :: iend           ! check for the end of the file
@@ -43,8 +45,9 @@ subroutine get_parm_meta(infile, err, message)
  
   ! Start procedure here
   err=0; message="get_param_meta/"
-  
+
   allocate(parSubset(nParCal))
+  allocate(tempMeta(nParCal))
 
   ! open file
   call file_open(trim(infile),unt,err, cmessage)
@@ -59,6 +62,7 @@ subroutine get_parm_meta(infile, err, message)
   read(temp,*)ffmt
   ! loop through the lines in the file
   ixLocal=1
+  ixGamma=1
   do iline=1,maxLines
     ! read a line of data and exit iif an error code (character read, so only possible error is end of file)
     read(unt,'(a)',iostat=iend)temp; if (iend/=0)exit
@@ -81,10 +85,25 @@ subroutine get_parm_meta(infile, err, message)
     parSubset(ixLocal)%val      = parMaster(ivar)%val
     parSubset(ixLocal)%lwr      = parMaster(ivar)%lwr
     parSubset(ixLocal)%upr      = parMaster(ivar)%upr
-    parSubset(ixLocal)%ptype    = parMaster(ivar)%ptype
+    parSubset(ixLocal)%beta     = parMaster(ivar)%beta
     ixLocal = ixLocal+1
+    ! extract only gamma parameter list 
+    associate( partype => parSubset(ixLocal-1)%beta )
+    if ( trim(partype)/="beta") then 
+      tempMeta(ixGamma)%pname    = parMaster(ivar)%pname
+      tempMeta(ixGamma)%ixMaster = ivar
+      tempMeta(ixGamma)%val      = parMaster(ivar)%val
+      tempMeta(ixGamma)%lwr      = parMaster(ivar)%lwr
+      tempMeta(ixGamma)%upr      = parMaster(ivar)%upr
+      tempMeta(ixGamma)%beta     = trim(partype) 
+      ixGamma = ixGamma+1
+    endif
+    end associate
   enddo  ! looping through lines in the file
- 
+  if (ixGamma > 1) then
+    allocate(gammaSubset(ixGamma-1))
+    gammaSubset=tempMeta(1:ixGamma) 
+  endif
   ! check that all elements are populated
   if(any(parSubset(:)%pname==''))then
     do iline=1,size(parSubset)
@@ -92,11 +111,51 @@ subroutine get_parm_meta(infile, err, message)
     end do
     err=40; message=trim(message)//"someVariablesNotPopulated"; return
   endif
- 
   ! close file unit
   close(unt)
-
+  return
 end subroutine get_parm_meta
+
+!**********************************
+!check gamma parameter
+!**********************************
+subroutine check_gammaPar( err, message)
+  use globalData,   only: gammaSubset
+  use globalData,   only: betaInGamma 
+  implicit none
+  !output variables
+  integer(i4b),                      intent(out)   :: err         ! error code
+  character(*),                      intent(out)   :: message     ! error message
+  !local variables
+  character(len=strLen),allocatable                :: res(:)      ! 
+  character(len=strLen)                            :: cmessage    ! error message from downward subroutine
+  logical(lgt)                                     :: isGamma
+  integer(i4b)                                     :: unt         ! DK: need to either define units globally, or use getSpareUnit
+  integer(i4b)                                     :: iPar        ! loop index 
+  integer(i4b)                                     :: i,j,k 
+
+  ! initialize error control
+  err=0; message='check_gammaPar/'
+  if ( allocated(gammaSubset) ) then
+    allocate(res(size(gammaSubset)))
+    k = 1
+    res(1) = gammaSubset(1)%beta
+    outer: do i=2,size(gammaSubset)
+      do j=1,k
+        ! if find a match so start looking again
+        if (res(j)==gammaSubset(i)%beta)then; cycle outer; endif
+      end do
+      ! No match found so add it to the output
+      k = k + 1
+      res(k) = gammaSubset(i)%beta
+    end do outer
+    allocate(betaInGamma(k))
+    betaInGamma=res(1:k) 
+  else
+    print*, 'NO gamma parameters'
+  endif
+  return
+end subroutine check_gammaPar
 
 ! ************************************************************************************************
 ! Subroutine: convert parameter data structure to simple arrays 
