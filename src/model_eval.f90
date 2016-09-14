@@ -16,6 +16,7 @@ contains
 function objfn( param )
   use globalData,    only: parSubset, gammaSubset, betaInGamma
   use model_wrapper, only: adjust_param, read_sim
+!  use mpr_routine, only:mpr
   implicit none
   !input variables
   real(dp),dimension(:),intent(in)    :: param        ! parameter in namelist, not necessarily all parameters are calibrated
@@ -42,8 +43,8 @@ function objfn( param )
   ! Adjust model parameters (Model specific)
   call adjust_param(idModel, param, err, message)
   if (err/=0)then; stop message; endif
-  ! NEED TO INCLUDE MPR run here
-  print*, size(betaInGamma)
+  ! Execute MPR if gamma parameters exist in calibrating parameter set
+  ! call mpr(mpr_ctlfile,  err, message) 
   do iPar=1,size(betaInGamma)
     print*, betaInGamma(iPar)
   enddo

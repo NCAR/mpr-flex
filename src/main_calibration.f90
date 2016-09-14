@@ -24,8 +24,6 @@ program main_calibration
   call popMeta( ierr, cmessage ); call handle_err(ierr,cmessage)
   ! read calibrating parameter list, get meta data from master, & subset gamma parameter - "parSubset","gammaSubset"
   call get_parm_meta( trim(calpar), ierr,cmessage); call handle_err(ierr,cmessage)
-  ! get beta parameter to be estimated via MPR - "betaInGamma"
-  call check_gammaPar(ierr, cmessage)
   ! initialize parameter and mask arrays 
   allocate(param(nParCal,3))
   allocate(mask(nParCal))

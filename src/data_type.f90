@@ -16,6 +16,8 @@ type,public  :: par_meta
   real(dp)            :: upr  =-999.0_dp ! lower and upper bounds
   character(len=64)   :: beta ='beta'    ! name of parent beta parameter - if parameter is beta parameter, use "beta"
   logical(lgt)        :: flag =.False.   ! flag to calibrate or not 
+  character(len=64)   :: hups ='wamean'  ! name of parent beta parameter - if parameter is beta parameter, use "beta"
+  character(len=64)   :: vups ='wamean'  ! name of parent beta parameter - if parameter is beta parameter, use "beta"
 endtype par_meta
 
 ! extended parameter meta data for selected set 
