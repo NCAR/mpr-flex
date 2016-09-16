@@ -13,6 +13,35 @@ module vic_routines
   public :: read_vic_sim
 
 contains
+!***************************
+! Read VIC soil layer parameters 
+!***************************
+subroutine vic_soil_layer(hlyr, err, message)
+  implicit none
+
+  !input variables
+  real(dp),dimension(nLyr),intent(out)  :: hlyr        ! calibrating parameter list 
+  ! output
+  integer(i4b),intent(out)              :: err             ! error code
+  character(*),intent(out)              :: message         ! error message
+  ! local variables
+  real(dp),dimension(TotNparVic)        :: realline
+  integer(i4b)                          :: ipar,iHru,iLyr  ! loop index
+  integer(i4b)                          :: stat
+
+  ! initialize error control
+  err=0; message='vic_soil_layer/'
+
+ !Open original and modified basin parameter files
+  open (UNIT=50,file=origparam_name,form='formatted',status='old',IOSTAT=stat)
+
+ ! Read original soil parameter file
+  do iHru = 1,nHru
+    read(unit=50,*) (realline(ipar), ipar=1,TotNparVic)
+    hlyr=realline(4*nLyr+11:5*nLyr+10)
+  end do
+  return
+end subroutine vic_soil_layer
 
 !***************************
 ! Adjust VIC soil parameters 
