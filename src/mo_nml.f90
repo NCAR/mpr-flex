@@ -28,10 +28,8 @@ module mo_nml
                           sim_len,                 & 
                           start_cal,               &
                           end_cal,                 &
-                          opt,                     & 
                           nHru,                    &
                           nbasin,                  &
-                          upscale_flag,            &
                           Npro,                    & 
                           initcell,                & 
                           endcell,                 &
@@ -68,10 +66,10 @@ subroutine read_nml(nmlfile, err, message)
   if(err/=0)then; message=trim(message)//"Error:Open namelist"; return; endif
   ! read "runconfig" group 
   read(unit=30, NML=runconfig, iostat=err)
-  if (err/=0)then; message=trim(message)//"Error:Read INIT_CONTROL"; return; endif
+  if (err/=0)then; message=trim(message)//"Error:Read runconfig"; return; endif
   ! read "calconfig" group 
   read(unit=30, NML=calconfig, iostat=err)
-  if (err/=0)then; message=trim(message)//"Error:Read INIT_CONTROL"; return; endif
+  if (err/=0)then; message=trim(message)//"Error:Read calconfig"; return; endif
   ! read DDS group 
   read(UNIT=30, NML=DDS, iostat=err)
   if (err/=0)then; message=trim(message)//"Error:Read DDS"; return; endif

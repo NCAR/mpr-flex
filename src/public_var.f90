@@ -36,7 +36,6 @@ module public_var
   integer(i4b),public             :: end_cal 
   integer(i4b),public             :: nHru
   integer(i4b),public             :: nbasin
-  integer(i4b),public             :: upscale_flag = 0
   integer(i4b),public             :: Npro
   real,dimension(16),public       :: initcell,endcell
   character(len=strLen),public    :: eval_length

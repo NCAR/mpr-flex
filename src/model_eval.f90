@@ -40,14 +40,16 @@ function objfn( param )
   allocate(sim(nHru,sim_len))
   allocate(simBasin(nbasin,sim_len))
   allocate(simBasinRouted(nbasin,sim_len))
-  ! Adjust model parameters (Model specific)
-  call adjust_param(idModel, param, err, message)
-  if (err/=0)then; stop message; endif
-  ! Execute MPR if gamma parameters exist in calibrating parameter set
-  ! call mpr(mpr_ctlfile,  err, message) 
-  do iPar=1,size(betaInGamma)
-    print*, betaInGamma(iPar)
-  enddo
+  ! Adjust model parameters if beta parameter exist in calibrating parameter set (Model specific)
+  if ( any(parSubset(:)%beta == "beta") )then
+    call adjust_param(idModel, param, err, message)
+    if (err/=0)then; stop message; endif
+  endif
+  ! Execute MPR if gamma parameters exist in calibrating parameter set (model specific)
+  if ( any(parSubset(:)%beta /= "beta") )then
+  ! call mpr(mpr_ctlfile, iModel, param, err, message) 
+    print*,"gamma parameter= ",gammaSubset
+  endif
   stop
   ! Run hydrologic model   
   call system(executable)
@@ -83,7 +85,6 @@ function objfn( param )
   deallocate(sim)
   deallocate(simBasin)
   deallocate(simBasinRouted)
-
   return
 end function objfn
 
