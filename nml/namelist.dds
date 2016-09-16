@@ -1,4 +1,20 @@
-&INIT_CONTROL
+!---------------------------------------
+! Run configuration 
+!---------------------------------------
+&runconfig
+!> Option to run only MPR to compute parameter values 
+!> 0 = run model calibration or model run with given parameter 
+!> 1 = run only MPR and skip model calibration or run
+mprOnly                  = 0          
+!> Option to run only MPR to compute parameter values 
+!> 1 = calibrate with DDS 
+!> 2 = run only parameter
+opt                      = 1                  
+
+!---------------------------------------
+! calibration 
+!---------------------------------------
+&calconfig
 filelist_name            = "FILELIST"         ! name of ascii listing model output name
 cellfrac_name            = "CELLFRAC"         ! name of ascii listing fraction of all the hru contributing to basin 
 origparam_name           = "ORIGPARAM"        ! name of original parameter file
@@ -11,16 +27,9 @@ obs_name                 = "CALIBFLOW"        ! name of ascii observed flow data
 executable               = "EXE"              ! name of model executable
 calpar                   = "calBeta.txt"      ! name of ascii meta listing calibration parameter
 idModel                  = IDMODEL            ! id of model
-opt                      = 1                  ! opt = 1 runs optimization code
-upscale_flag             = 0                  ! use MPR (MAYBE DELETED) 
-
-!---------------------------------------
-! calibration 
-!---------------------------------------
 eval_length              = "daily"
 basin_objfun_weight_file = "OBJWEIGHT"        ! name of ascii listing weight of each basin that is appplied to basin objective function   
 objfntype                = IDOBJFNC
-
 !---------------------------------------
 ! calibration period
 !---------------------------------------
@@ -36,7 +45,6 @@ Npro                     = 1                  ! number of processors to use
 initcell                 = 1                  ! index of the first cell assigned to each processor
 endcell                  = 1                  ! index of the last cell assigned to each processor
 /
-
 !---------------------------------------
 ! DDS parameters
 !---------------------------------------

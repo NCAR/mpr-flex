@@ -14,7 +14,10 @@ module public_var
   real(dp),    parameter,public  :: valMin=1.e-10_dp       ! minimum value for positive value
 
   ! Namelist variables
-  ! Control variables
+  ! runconfig 
+  integer(i4b),public             :: mprOnly 
+  integer(i4b),public             :: opt
+  ! calconfig 
   character(len=strLen),public    :: filelist_name
   character(len=strLen),public    :: cellfrac_name
   character(len=strLen),public    :: origparam_name
@@ -31,7 +34,6 @@ module public_var
   integer(i4b),public             :: sim_len 
   integer(i4b),public             :: start_cal
   integer(i4b),public             :: end_cal 
-  integer(i4b),public             :: opt
   integer(i4b),public             :: nHru
   integer(i4b),public             :: nbasin
   integer(i4b),public             :: upscale_flag = 0
