@@ -1,12 +1,31 @@
 module nrtype
-    integer, parameter :: i8b = SELECTED_INT_KIND(18)  ! 8byte integer
-    integer, parameter :: I4B = SELECTED_INT_KIND(9)   ! 4byte interer
-    integer, parameter :: I2B = SELECTED_INT_KIND(4)   ! 2byte integer
-    integer, parameter :: I1B = SELECTED_INT_KIND(2)   ! 1byte integer
-    integer, parameter :: SP = KIND(1.0)
-    integer, parameter :: DP = KIND(1.0D0)
-    integer, parameter :: SPC = KIND((1.0,1.0))
-    integer, parameter :: DPC = KIND((1.0D0,1.0D0))
+    use, intrinsic :: iso_c_binding,   only: &
+             c_short, c_int, c_long, c_float, c_double, c_float_complex, c_double_complex, c_bool
+
+    !> 8byte integer
+    !integer, parameter :: i8b = SELECTED_INT_KIND(18)  ! 8byte integer
+    integer, parameter :: i8b = c_long 
+    !> 2byte integer
+    !integer, parameter :: I4B = SELECTED_INT_KIND(9)   
+    integer, parameter :: I4B = c_int 
+    !> 2byte integer
+    !integer, parameter :: I2B = SELECTED_INT_KIND(4)
+    integer, parameter :: I2B = c_short 
+    !> 1byte integer
+    integer, parameter :: I1B = SELECTED_INT_KIND(2)
+    !> single precision  real
+    !integer, parameter :: SP = KIND(1.0)
+    integer, parameter :: SP = c_float 
+    !> double precision real
+    !integer, parameter :: DP = KIND(1.0D0)
+    integer, parameter :: DP = c_double 
+    !> single precision  complex 
+    !integer, parameter :: SPC = KIND((1.0,1.0))
+    integer, parameter :: SPC = c_float_complex
+    !> double precision  complex 
+    !integer, parameter :: DPC = KIND((1.0D0,1.0D0))
+    integer, parameter :: DPC = c_double_complex 
+    !> logical
     integer, parameter :: LGT = KIND(.true.)
     ! Real kinds
     integer, parameter :: kr4 = selected_real_kind(6,37)       ! single precision real
