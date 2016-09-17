@@ -8,8 +8,9 @@ module vic_routines
   use data_type 
 
   implicit none
-  public :: vic_soil_param 
-  public :: vic_vege_param 
+  public :: adj_soil_param_vic 
+  public :: adj_vege_param_vic 
+  public :: vic_soil_layer
   public :: read_vic_sim
 
 contains
@@ -19,34 +20,58 @@ contains
 subroutine vic_soil_layer(hlyr, err, message)
   implicit none
 
-  !input variables
-  real(dp),dimension(nLyr),intent(out)  :: hlyr        ! calibrating parameter list 
+  ! input 
   ! output
-  integer(i4b),intent(out)              :: err             ! error code
-  character(*),intent(out)              :: message         ! error message
+  real(dp),    intent(out)                   :: hlyr(:,:) ! calibrating parameter list 
+  integer(i4b),intent(out)                   :: err             ! error code
+  character(*),intent(out)                   :: message         ! error message
   ! local variables
-  real(dp),dimension(TotNparVic)        :: realline
-  integer(i4b)                          :: ipar,iHru,iLyr  ! loop index
-  integer(i4b)                          :: stat
+  real(dp),dimension(TotNparVic)             :: realline
+  integer(i4b)                               :: ipar,iHru,iLyr  ! loop index
+  integer(i4b)                               :: stat
 
   ! initialize error control
   err=0; message='vic_soil_layer/'
-
  !Open original and modified basin parameter files
   open (UNIT=50,file=origparam_name,form='formatted',status='old',IOSTAT=stat)
-
  ! Read original soil parameter file
   do iHru = 1,nHru
     read(unit=50,*) (realline(ipar), ipar=1,TotNparVic)
-    hlyr=realline(4*nLyr+11:5*nLyr+10)
+    hlyr(iHru,:)=realline(4*nLyr+11:5*nLyr+10)
   end do
   return
 end subroutine vic_soil_layer
 
 !***************************
-! Adjust VIC soil parameters 
+! Read VIC soil parameters 
 !***************************
 subroutine vic_soil_param(param, err, message)
+  implicit none
+
+  ! input 
+  ! output
+  real(dp),    intent(out)                   :: param(:,:)   ! calibrating parameter list 
+  integer(i4b),intent(out)                   :: err          ! error code
+  character(*),intent(out)                   :: message      ! error message
+  ! local variables
+  integer(i4b)                               :: ipar,iHru    ! loop index
+  integer(i4b)                               :: stat
+
+  ! initialize error control
+  err=0; message='vic_soil_param/'
+ !Open original and modified basin parameter files
+  open (UNIT=50,file=origparam_name,form='formatted',status='old',IOSTAT=stat)
+ ! Read original soil parameter file
+  do iHru = 1,nHru
+    read(unit=50,*) (param(iHru,ipar), ipar=1,TotNparVic)
+  end do
+  return
+end subroutine vic_soil_param
+
+!***************************
+! Adjust VIC soil parameters 
+!***************************
+subroutine adj_soil_param_vic(param, err, message)
 !! This routine takes the adjustable parameter set "param" from namelist, reads into "origparam_name",
 !! computes the new parameters, writes them into "calibparam_name" 
   use globalData, only: parSubset
@@ -63,7 +88,7 @@ subroutine vic_soil_param(param, err, message)
   real(dp),dimension(TotNparVic)     :: realline
 
   ! initialize error control
-  err=0; message='vic_soil_param/'
+  err=0; message='adj_soil_param_vic/'
 
  !Open original and modified basin parameter files
   open (UNIT=50,file=origparam_name,form='formatted',status='old',IOSTAT=stat)
@@ -143,12 +168,12 @@ subroutine vic_soil_param(param, err, message)
   close(UNIT=50)
   close(UNIT=51)
   return
-end subroutine vic_soil_param
+end subroutine adj_soil_param_vic
 
 !***************************
 ! Adjust VIC vege parameters 
 !***************************
-subroutine vic_vege_param(param, err, message)
+subroutine adj_vege_param_vic(param, err, message)
   use globalData, only: parSubset
   implicit none
 
@@ -170,7 +195,7 @@ subroutine vic_vege_param(param, err, message)
   integer(i4b)                     :: stat
 
   ! initialize error control
-  err=0; message='vic_vege_param/'
+  err=0; message='adj_vege_param_vic/'
   !Open original and modified vege parameter files
   open (UNIT=50,file=origvege_name,form='formatted',status='old',IOSTAT=stat)
   open (UNIT=51,file=calivege_name,action='write',status='replace' )
@@ -199,7 +224,7 @@ subroutine vic_vege_param(param, err, message)
   close(UNIT=50)
   close(UNIT=51)
   return
-end subroutine vic_vege_param
+end subroutine adj_vege_param_vic
 
 !***************************
 ! Read VIC output file

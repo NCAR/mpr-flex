@@ -7,8 +7,10 @@ module subset_meta
 
   private
   public::get_parm_meta
-  public::check_gammaPar
+  public::get_betaInGamma
   public::param_setup 
+  public::check_gammaZ
+  public::check_gammaH
 
 contains
 
@@ -121,9 +123,9 @@ subroutine get_parm_meta(infile, err, message)
 end subroutine get_parm_meta
 
 !**********************************
-!check gamma parameter
+! Subroutine: get beta parameter name from gamma parameter
 !**********************************
-subroutine check_gammaPar( err, message)
+subroutine get_betaInGamma( err, message)
   use globalData,   only: gammaSubset
   use globalData,   only: betaInGamma 
   implicit none
@@ -139,7 +141,7 @@ subroutine check_gammaPar( err, message)
   integer(i4b)                                     :: i,j,k 
 
   ! initialize error control
-  err=0; message='check_gammaPar/'
+  err=0; message='get_betaInGamma/'
   if ( allocated(gammaSubset) ) then
     allocate(res(size(gammaSubset)))
     k = 1
@@ -159,7 +161,75 @@ subroutine check_gammaPar( err, message)
     print*, 'NO gamma parameters'
   endif
   return
-end subroutine check_gammaPar
+end subroutine get_betaInGamma
+
+!**********************************
+! Subroutine: check if z parameters exist in gamma parameter
+!**********************************
+subroutine check_gammaZ( err, message)
+  use globalData,   only: gammaSubset
+  implicit none
+  !output variables
+  integer(i4b),                      intent(out)   :: err         ! error code
+  character(*),                      intent(out)   :: message     ! error message
+  !local variables
+  logical(lgt)                                     :: checkZ 
+  character(len=strLen)                            :: cmessage    ! error message from downward subroutine
+  integer(i4b)                                     :: unt         ! DK: need to either define units globally, or use getSpareUnit
+  integer(i4b)                                     :: i           ! loop index
+
+  ! initialize error control
+  err=0; message='check_gammaZ/'
+  checkZ=.false.
+  if ( allocated(gammaSubset) )then
+    !check z parameter
+    do i=1,size(gammaSubset)
+      if (gammaSubset(i)%pname=="z1gamma1") checkZ=.true.
+    end do
+    if ( .not. checkZ ) stop 'Calibrating Gamma parameter require z1gamma1'
+  else
+    print*, 'NO gamma parameters'
+  endif
+  return
+end subroutine check_gammaZ
+
+!**********************************
+! Subroutine: check if h parameters exist in gamma parameter
+!**********************************
+subroutine check_gammaH( err, message)
+  use globalData,   only: gammaSubset
+  implicit none
+  !output variables
+  integer(i4b),         intent(out) :: err         ! error code
+  character(*),         intent(out) :: message     ! error message
+  !local variables
+  integer(i4b)                      :: id(20) 
+  logical(lgt)                      :: mask(20) 
+  logical(lgt),allocatable          :: checkH(:) 
+  character(len=strLen)             :: cmessage    ! error message from downward subroutine
+  integer(i4b)                      :: unt         ! DK: need to either define units globally, or use getSpareUnit
+  integer(i4b)                      :: i,j 
+
+  ! initialize error control
+  err=0; message='check_gammaH/'
+  allocate(checkH(nLyr-1))
+  id=-999
+  if ( allocated(gammaSubset) )then
+    !check h parameters - now can chcek up to 5 layers
+    do i=1,size(gammaSubset)
+      if (gammaSubset(i)%pname=="h1gamma1")then;id(1)=1;cycle;endif 
+      if (gammaSubset(i)%pname=="h1gamma2")then;id(2)=1;cycle;endif
+      if (gammaSubset(i)%pname=="h1gamma3")then;id(3)=1;cycle;endif
+      if (gammaSubset(i)%pname=="h1gamma4")then;id(4)=1;cycle;endif
+    enddo
+    mask=(id>0)
+    checkH=mask(1:nLyr-1) 
+    if ( any(.not. checkH) ) stop 'Calibrating Gamma parameter require (nLyr-1) hgamma parameters '
+  else
+    print*, 'NO gamma parameters'
+  endif
+  return
+end subroutine check_gammaH
 
 ! ************************************************************************************************
 ! Subroutine: convert parameter data structure to simple arrays 

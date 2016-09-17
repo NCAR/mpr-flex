@@ -17,6 +17,24 @@ module public_var
   ! runconfig 
   integer(i4b),public             :: mprOnly 
   integer(i4b),public             :: opt
+  ! mprconfig
+  character(len=strLen),public    :: mpr_input_dir 
+  character(len=strLen),public    :: mpr_output_dir
+  character(len=strLen),public    :: fname_soil
+  character(len=strLen),public    :: fname_veg
+  character(len=strLen),public    :: fname_smapping
+  character(len=strLen),public    :: fname_vmapping
+  character(len=strLen),public    :: dname_overSpoly
+  character(len=strLen),public    :: dname_overVpoly
+  character(len=strLen),public    :: dname_hru
+  character(len=strLen),public    :: sclass_table
+  integer(i4b)                    :: nSclass
+  character(len=strLen),public    :: vclass_table
+  character(len=strLen),public    :: dname_spoly 
+  character(len=strLen),public    :: dname_slyrs
+  character(len=strLen),public    :: dname_vpoly 
+  character(len=strLen),public    :: dname_mhru
+  character(len=strLen),public    :: dname_mlyrs
   ! calconfig 
   character(len=strLen),public    :: filelist_name
   character(len=strLen),public    :: cellfrac_name

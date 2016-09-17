@@ -3,24 +3,21 @@ module read_soildata
 USE nrtype
 USE netcdf
 USE data_type 
-USE multconst                                     ! Including common constant (physical constant, other e.g., missingVal, etc.)
+USE public_var                                     ! Including common constant (physical constant, other e.g., missingVal, etc.)
 USE ascii_util,only:file_open                     !
 USE ascii_util,only:split_line                    !
 USE ascii_util,only:get_vlines                    !
+USE var_lookup,only:ixPar,nPar                    ! index of soil polygon variables and number of variables
 USE var_lookup,only:ixVarSoilData,nVarSoilData    ! index of soil polygon variables and number of variables
 USE var_lookup,only:ixVarTopo,nVarTopo            ! index of topographic variables and number of variables
 USE var_lookup,only:ixVarSoil,nVarSoil            ! index of topographic variables and number of variables
-USE var_lookup,only:ixPrpSoil,nPrpSoil            ! index of soil variables and number of variables
-USE def_slyrmod                                   ! Public variables- multipliers of soil layer thickness
 
 implicit none
 
 private
 
 public::getData
-public::read_scls
 public::mod_hslyrs
-public::map_scls2prp
 public::get_topoinfo
 
 contains
@@ -39,7 +36,7 @@ contains
  implicit none
  ! input variables
  character(*), intent(in)        :: fname          ! filename
- type(var_info),intent(in)       :: sdata_meta(:)  ! soil data meta
+ type(var_meta),intent(in)       :: sdata_meta(:)  ! soil data meta
  character(*), intent(in)        :: dname_spoly    ! dimension name for polygon
  character(*), intent(in)        :: dname_slyrs    ! dimension name for layer 
  ! input-output
@@ -122,98 +119,6 @@ contains
  end subroutine getData
 
 ! *****
-! Public Subroutine: Read in USDA soil class text data...
-! *********************************************
- subroutine read_scls(in_soilTable,  &  ! input: look up table to map soil class and soil properties
-                      nSclass,       &  ! input:
-                      soilClass,     &  ! output: soil class
-                      scls2prp,      &  ! output: soil properties in 
-                      ierr, message)    ! output: error control 
-
-! Purpose: read look-up table to map soil class and soil properties
-  
-  implicit none
-
-  ! input
-  character(*),intent(in)           :: in_soilTable       ! ascii table that containing soil class and properties
-  integer(i4b),intent(in)           :: nSclass            ! number of soil classes (e.g., STATSGO=16)
-  ! output
-  integer(i4b),intent(out)          :: soilClass(:)       ! storage of soil class ID
-  type(var_d),intent(out)           :: scls2prp(:)       ! storage of property value for each soil class
-  integer(i4b),intent(out)          :: ierr               ! error code
-  character(*),intent(out)          :: message            ! error message
-  ! local
-  character(len=strLen)             :: spName,spData      ! name and data from cLines(iLine) soil data, respectively
-  character(len=strLen),allocatable :: sLines(:)          ! vector of character strings
-  integer(i4b)                      :: ibeg_name          ! start index of variable name in string sLines(iLine)
-  integer(i4b)                      :: iend_name          ! end index of variable name in string sLines(iLine)
-  integer(i4b)                      :: iSclass            ! ID (= index) of soil class 
-  integer(i4b)                      :: iLine              ! loop index of line in sLines
-  integer(i4b)                      :: iunit              ! file unit
-
-  ierr=0; message="read_scls/"
-  !allocation
-  do iSclass=1,nSclass; allocate(scls2prp(iSclass)%var(nPrpSoil-2)); end do
-    
-  ! open file (also returns un-used file unit used to open the file)
-  call file_open(in_soilTable,iunit,ierr,message)
-  ! get a list of character strings from non-comment lines
-  call get_vlines(iunit,sLines,ierr,message)
-  ! close the file unit
-  close(iunit)
-  do iLine=1,size(sLines) ! looping through lines in the soil data file 
-    ! identify start and end of the name and the data
-    ibeg_name = index(sLines(iLine),'<'); if(ibeg_name==0) ierr=20
-    iend_name = index(sLines(iLine),'>'); if(iend_name==0) ierr=20
-    if(ierr/=0)then; message='problem disentangling sLines(iLine) [string='//trim(sLines(iLine))//']'; return; endif
-    ! extract name of the information, and the information itself
-    spName = adjustl(sLines(iLine)(ibeg_name:iend_name))
-    spData = adjustl(sLines(iLine)(iend_name+1:))
-    select case(trim(spName))
-      ! define directories 
-      case('<sclass>')
-        read(spData,*,iostat=ierr) soilClass(:)
-        if(ierr/=0)then; message=trim(message)//'problem with internal read of USDA_sclass'; return; endif
-      case('<sand_frac>')
-        read(spData,*,iostat=ierr) (scls2prp(iSclass)%var(ixPrpSoil%sand_frac),iSclass=1,nSclass)
-        if(ierr/=0)then; message=trim(message)//'problem with internal read of '//trim(spName); return; endif
-      case('<clay_frac>')
-        read(spData,*,iostat=ierr) (scls2prp(iSclass)%var(ixPrpSoil%clay_frac),iSclass=1,nSclass)
-        if(ierr/=0)then; message=trim(message)//'problem with internal read of '//trim(spName); return; endif
-      case('<bulk_density>')
-        read(spData,*,iostat=ierr) (scls2prp(iSclass)%var(ixPrpSoil%bulk_density),iSclass=1,nSclass) 
-        if(ierr/=0)then; message=trim(message)//'problem with internal read of '//trim(spName); return; endif
-      case('<soil_density>')
-        read(spData,*,iostat=ierr) (scls2prp(iSclass)%var(ixPrpSoil%soil_density),iSclass=1,nSclass) 
-        if(ierr/=0)then; message=trim(message)//'problem with internal read of '//trim(spName); return; endif
-      case('<field_capacity>')
-        read(spData,*,iostat=ierr) (scls2prp(iSclass)%var(ixPrpSoil%field_capacity),iSclass=1,nSclass)
-        if(ierr/=0)then; message=trim(message)//'problem with internal read of '//trim(spName); return; endif
-      case('<wilting_point>')
-        read(spData,*,iostat=ierr) (scls2prp(iSclass)%var(ixPrpSoil%wilting_point),iSclass=1,nSclass)
-        if(ierr/=0)then; message=trim(message)//'problem with internal read of '//trim(spName); return; endif
-      case('<porosity>')
-        read(spData,*,iostat=ierr) (scls2prp(iSclass)%var(ixPrpSoil%porosity),iSclass=1,nSclass)
-        if(ierr/=0)then; message=trim(message)//'problem with internal read of '//trim(spName); return; endif
-      case('<ks>')
-        read(spData,*,iostat=ierr) (scls2prp(iSclass)%var(ixPrpSoil%ks),iSclass=1,nSclass)
-        if(ierr/=0)then; message=trim(message)//'problem with internal read of '//trim(spName); return; endif
-      case('<slope_ret_curve>')
-        read(spData,*,iostat=ierr) (scls2prp(iSclass)%var(ixPrpSoil%slope_ret_curve),iSclass=1,nSclass)
-        if(ierr/=0)then; message=trim(message)//'problem with internal read of '//trim(spName); return; endif
-      case('<psi_sat>')
-        read(spData,*,iostat=ierr) (scls2prp(iSclass)%var(ixPrpSoil%psi_sat),iSclass=1,nSclass)
-        if(ierr/=0)then; message=trim(message)//'problem with internal read of '//trim(spName); return; endif
-      case('<myu>')
-        read(spData,*,iostat=ierr) (scls2prp(iSclass)%var(ixPrpSoil%myu),iSclass=1,nSclass)
-        if(ierr/=0)then; message=trim(message)//'problem with internal read of '//trim(spName); return; endif
-      case default; message=trim(message)//'spName not recognized'; ierr=35; return
-    end select
-  end do  ! end of loop thru soil data 
-
- end subroutine read_scls
-
-! *****
 ! Subroutine: soil thickness mod
 ! *********************************************
  subroutine mod_hslyrs(sdata, &         ! input/output: data structure of soil data including soil layer thickness [m] 
@@ -249,53 +154,11 @@ contains
   !  a_h_array = parMaster(ixPar%z1gamma1)                                 ! Layer Multiplier 
   !endif
   do iSpoly =1,nSpoly
-    soil_h_mod = a_h_array*sdata(ixVarSoilData%hslyrs)%dvar2(:,iSpoly)  ! modified soil layer thickness [m] 
+    soil_h_mod = parMaster(ixPar%z1gamma1)%val*sdata(ixVarSoilData%hslyrs)%dvar2(:,iSpoly)  ! modified soil layer thickness [m] 
     sdata(ixVarSoilData%hslyrs)%dvar2(:,iSpoly) = soil_h_mod            ! reassign modified layer thickness in data structure
   end do
 
  end subroutine mod_hslyrs 
- 
-! *****
-! Subroutine: Map soil properties from soil class with lookup table 
-! *********************************************
- subroutine map_scls2prp(scls,       &  ! input:  soil class array for soil polygon and layer
-                         scls2prp,   &  ! input:  soil class-properties mapping
-                         sdata,      &
-                         sprpSxySz)     ! output: soil properties array for soil polygon and layer
-
-  implicit none 
-  ! Input
-  integer(i4b),intent(in)      :: scls(:,:)      ! soil class for polygon and layer 
-  type(var_d), intent(in)      :: scls2prp(:)    ! soil properties for polygon and layer 
-  type(namevar),intent(in)     :: sdata(:)
-  ! Output
-  type(namedvar2),intent(inout) :: sprpSxySz(:)   ! soil properties for polygon and layer 
-  ! local
-  integer(i4b)                :: iPrpSoil       ! Loop index of soil properties 
-  integer(i4b)                :: iscls          ! Loop index of soil class 
-  integer(i4b)                :: iSpoly         ! Loop index of soil polygon 
-  integer(i4b)                :: nSpoly         ! number of soil polygons
-  integer(i4b)                :: iSlyrs         ! Loop index of soil layer 
-  integer(i4b)                :: nSlyrs         ! number of soil layers
-  
-  nSpoly=size(scls,2)
-  nSlyrs=size(scls,1)
-  do iPrpSoil=1,nPrpSoil ! go through soil properties
-    do iSpoly = 1,nSpoly
-      do iSlyrs = 1,nSlyrs
-        if (iPrpSoil==ixPrpSoil%h) then
-          sprpSxySz(iPrpSoil)%varData(iSlyrs,iSpoly) = sdata(ixVarSoilData%hslyrs)%dvar2(iSlyrs,iSpoly)
-        else if (iPrpSoil==ixPrpSoil%z) then
-          sprpSxySz(iPrpSoil)%varData(iSlyrs,iSpoly) = sum(sdata(ixVarSoilData%hslyrs)%dvar2(1:iSlyrs,iSpoly))
-        else 
-          iscls = scls(isLyrs,iSpoly)
-          sprpSxySz(iPrpSoil)%varData(iSlyrs,iSpoly) = scls2prp(iscls)%var(iPrpSoil) ! assign soil properties based on soil class
-        endif
-      enddo
-    enddo
-  enddo
-
- end subroutine map_scls2prp
 
 ! *****
 ! Subroutine: Extract soil variables from soil data into soil data structure 
@@ -316,23 +179,23 @@ contains
   ! initialize error control
   ierr=0; message='get_soilinfo/'
 
-  soil(1)%varName = 'hslyrs' 
-  soil(2)%varName = 'sand_frc' 
-  soil(3)%varName = 'silt_frc' 
-  soil(4)%varName = 'clay_frc' 
-  soil(5)%varName = 'bulk_density' 
+  soil(1)%varName = 'h' 
+  soil(2)%varName = 'sand' 
+  soil(3)%varName = 'silt' 
+  soil(4)%varName = 'clay' 
+  soil(5)%varName = 'bd' 
 
   do iVarSoil = 1,nVarSoil
     select case (soil(iVarSoil)%varName)
-      case('hslyrs')
+      case('h')
         soil(ivarSoil)%varData = sdata(ixVarSoilData%hslyrs)%dvar2
-      case('sand_frc')
+      case('sand')
         soil(iVarSoil)%varData = sdata(ixVarSoilData%sand_frc)%dvar2
-      case('silt_frc')
+      case('silt')
         soil(iVarSoil)%varData = sdata(ixVarSoilData%silt_frc)%dvar2
-      case('clay_frc')
+      case('clay')
         soil(iVarSoil)%varData = sdata(ixVarSoilData%clay_frc)%dvar2
-      case('bulk_density')
+      case('bd')
         soil(iVarSoil)%varData = sdata(ixVarSoilData%bulk_density)%dvar2
       case default; message=trim(message)//'Soil variable name not recognized'; ierr=35; return
     end select

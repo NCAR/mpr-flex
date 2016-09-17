@@ -1,14 +1,15 @@
-module paramMaster
+module popMeta
 
 implicit none
 
 private
 
-public::popMeta
+public::paramMaster
+public::mprData
 
 contains
 
-  subroutine popMeta(err,message)
+  subroutine paramMaster(err,message)
   
     use nrtype
     use data_type,  only:par_meta
@@ -66,7 +67,7 @@ contains
     parMaster(ixPar%h1gamma2)        = par_meta('h1gamma2'       ,     0.3_dp,   0.12_dp,    0.5_dp,"h"            , .False.,      "na",       "na")
     ! transfer function
     parMaster(ixPar%binfilt1gamma1)  = par_meta('binfilt1gamma1' ,     0.0_dp,   -2.0_dp,    1.0_dp,"binfilt"      , .False.,      "na",       "na")
-    parMaster(ixPar%binfilt1gamma2)  = par_meta('binfilt1gamma1' ,    -0.6_dp,    0.8_dp,    1.2_dp,"binfilt"      , .False.,      "na",       "na")
+    parMaster(ixPar%binfilt1gamma2)  = par_meta('binfilt1gamma2' ,    -0.6_dp,    0.8_dp,    1.2_dp,"binfilt"      , .False.,      "na",       "na")
     parMaster(ixPar%D11gamma1)       = par_meta('D11gamma1'      ,     1.0_dp,    0.8_dp,    1.2_dp,"D1"           , .False.,      "na",       "na")
     parMaster(ixPar%D21gamma1)       = par_meta('D21gamma1'      ,     1.0_dp,    0.8_dp,    1.2_dp,"D2"           , .False.,      "na",       "na")
     parMaster(ixPar%D31gamma1)       = par_meta('D31gamma1'      ,     1.0_dp,    0.8_dp,    1.2_dp,"D3"           , .False.,      "na",       "na")
@@ -113,6 +114,58 @@ contains
     ! vege parameter
     parMaster(ixPar%lai)               = par_meta('lai'          ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta", .False.,  "wamean",       "na")
     parMaster(ixPar%rmin)              = par_meta('rmin'         ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta", .False.,  "wamean",       "na")
-  end subroutine popMeta
 
-end module paramMaster 
+  end subroutine paramMaster
+
+  subroutine mprData(err,message)
+    use nrtype
+    use data_type,  only:var_meta
+    use var_lookup, only:ixVarHru
+    use var_lookup, only:ixVarMapData
+    use var_lookup, only:ixVarSoilData
+    use var_lookup, only:ixVarVegData
+    use globalData, only:hru_meta
+    use globalData, only:map_meta
+    use globalData, only:sdata_meta
+    use globalData, only:vdata_meta
+    
+    implicit none
+  
+    !output variable
+    integer(i4b),intent(out)      :: err     ! error code
+    character(*),intent(out)      :: message ! error message
+    
+    ! initialize error control
+    err=0; message='popMprMeta/'
+
+    ! model hru variables 
+    hru_meta(ixVarHru%lat)                 = var_meta('lat'       ,"latitude of hru centroid"          , "decimal degree" ,"1D", "double" )
+    hru_meta(ixVarHru%lon)                 = var_meta('lon'       ,"longitude of hru centroid"         , "decimal degree" ,"1D", "double" )
+    hru_meta(ixVarHru%ele)                 = var_meta('ele'       ,"hru mean elevation "               , "m"              ,"1D", "double" )
+    hru_meta(ixVarHru%ann_P)               = var_meta('ann_P'     ,"mean annual total precipitation"   , "mm"             ,"1D", "double" )
+    hru_meta(ixVarHru%avg_T)               = var_meta('avg_T'     ,"mean annual air temperature"       , "Celcius degree" ,"1D", "double" )
+    hru_meta(ixVarHru%july_T)              = var_meta('july_T'    ,"mean July air temperature"         , "Celcius degree" ,"1D", "double" )
+    ! Mapping data meta
+    map_meta(ixVarMapData%hruid)           = var_meta('hruid'     ,"hru id"                            , "-"              ,"1D", "integer")
+    map_meta(ixVarMapData%weight)          = var_meta('weight'    ,"areal weight of intersect polygon" , "-"              ,"1D", "integer")
+    map_meta(ixVarMapData%polyid)          = var_meta('polyid'    ,"id of intersect polygo"            , "-"              ,"1D", "integer")
+    ! Soil data variables
+    sdata_meta(ixVarSoilData%polyid)       = var_meta('polyid'    , "soil polygon id"                  ,  "-"             ,"1D", "integer")
+    sdata_meta(ixVarSoilData%soilclass)    = var_meta('soilclass' , "USDA soil class"                  ,  "-"             ,"2D", "integer")
+    sdata_meta(ixVarSoilData%hslyrs)       = var_meta('h'         , "soil layer thickness"             ,  "m"             ,"2D", "double" )
+    sdata_meta(ixVarSoilData%sand_frc)     = var_meta('sand'      , "sand percentage"                  ,  "%"             ,"2D", "double" )
+    sdata_meta(ixVarSoilData%silt_frc)     = var_meta('silt'      , "silt percentage"                  ,  "%"             ,"2D", "double" )
+    sdata_meta(ixVarSoilData%clay_frc)     = var_meta('caly'      , "clay percentage"                  ,  "%"             ,"2D", "double" )
+    sdata_meta(ixVarSoilData%bulk_density) = var_meta('BD'        , "bulk density"                     ,  "kg/m^3"        ,"2D", "double" )
+    sdata_meta(ixVarSoilData%ele_mean)     = var_meta('ele_mean'  , "mean elevation"                   ,  "m"             ,"1D", "double" )
+    sdata_meta(ixVarSoilData%ele_std)      = var_meta('ele_std'   , "std elevation"                    ,  "m"             ,"1D", "double" )
+    sdata_meta(ixVarSoilData%slp_mean)     = var_meta('slp_mean'  , "mean slope"                       ,  "-"             ,"1D", "double" )
+    ! Vege data variables 
+    vdata_meta(ixVarVegData%polyid)        = var_meta('polyid'    , "vege polygon id"                  ,  "-"             ,"1D", "integer")
+    vdata_meta(ixVarVegData%vegclass)      = var_meta('vegclass'  , "vegetation class"                 ,  "-"             ,"1D", "double" )
+    vdata_meta(ixVarVegData%grnfrc)        = var_meta('grnfrc'    , "green fraction"                   ,  "-"             ,"1D", "double" )
+    vdata_meta(ixVarVegData%lai)           = var_meta('lai'       , "monthly lai"                      ,  "m^2/m^2"       ,"2D", "double" )
+
+  end subroutine mprData 
+
+end module popMeta 

@@ -9,8 +9,25 @@ module mo_nml
   private
 
 ! Main configuration 
-  namelist / runconfig /  mprOnly,           &
+  namelist / runconfig /  mprOnly,                 &
                           opt
+! MPR configuration
+  namelist / mprconfig /  mpr_input_dir,           &
+                          mpr_output_dir,          &
+                          fname_soil,              &
+                          fname_veg,               &
+                          fname_smapping,          &
+                          fname_vmapping,          &
+                          dname_overSpoly,         &
+                          dname_overVpoly,         &
+                          dname_hru,               &
+                          sclass_table,            &
+                          vclass_table,            &
+                          dname_spoly,             &
+                          dname_slyrs,             &              
+                          dname_vpoly,             &
+                          dname_mhru,              &              
+                          dname_mlyrs              
 ! time control namelist for running models
   namelist / calconfig /  filelist_name,           &
                           cellfrac_name,           &
@@ -67,6 +84,9 @@ subroutine read_nml(nmlfile, err, message)
   ! read "runconfig" group 
   read(unit=30, NML=runconfig, iostat=err)
   if (err/=0)then; message=trim(message)//"Error:Read runconfig"; return; endif
+  ! read "mprconfig" group 
+  read(unit=30, NML=mprconfig, iostat=err)
+  if (err/=0)then; message=trim(message)//"Error:Read mprconfig"; return; endif
   ! read "calconfig" group 
   read(unit=30, NML=calconfig, iostat=err)
   if (err/=0)then; message=trim(message)//"Error:Read calconfig"; return; endif

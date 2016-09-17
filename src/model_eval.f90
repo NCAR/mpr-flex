@@ -14,6 +14,7 @@ contains
 ! perform model evaluation 
 !************************************
 function objfn( param )
+  use mpr_routine,   only: mpr
   use globalData,    only: parSubset, gammaSubset, betaInGamma
   use model_wrapper, only: adjust_param, read_sim
 !  use mpr_routine, only:mpr
@@ -26,6 +27,8 @@ function objfn( param )
   integer(i4b)                        :: err          ! error code
   character(len=strLen)               :: message      ! error message
   integer(i4b)                        :: iPar 
+  real(dp),dimension(:)  ,allocatable :: gammaPar 
+  logical, dimension(:)  ,allocatable :: mask
   real(dp),dimension(:)  ,allocatable :: obs
   real(dp),dimension(:,:),allocatable :: sim 
   real(dp),dimension(:,:),allocatable :: simBasin 
@@ -47,8 +50,12 @@ function objfn( param )
   endif
   ! Execute MPR if gamma parameters exist in calibrating parameter set (model specific)
   if ( any(parSubset(:)%beta /= "beta") )then
-  ! call mpr(mpr_ctlfile, iModel, param, err, message) 
-    print*,"gamma parameter= ",gammaSubset
+    allocate(mask(size(param)))
+    mask=parSubset(:)%beta/="beta"
+    allocate(gammaPar(count(mask)))
+    gammaPar=pack(param,mask)
+    call mpr(idModel, gammaPar, gammaSubset, err, message) 
+    if (err/=0)then; stop message; endif
   endif
   stop
   ! Run hydrologic model   
@@ -394,7 +401,6 @@ subroutine pearsn(x,y,r)
   !output variables
   real(dp),               intent(out) :: r
   !local variables
-  real(dp)                            :: tiny = 1.0e-20
   real(dp), dimension(size(x))        :: xt,yt
   real(dp)                            :: ax,ay,sxx,sxy,syy
   integer(i4b)                        :: n
@@ -407,7 +413,7 @@ subroutine pearsn(x,y,r)
   sxx=dot_product(xt,xt)
   syy=dot_product(yt,yt)
   sxy=dot_product(xt,yt)
-  r=sxy/(sqrt(sxx*syy)+tiny)
+  r=sxy/(sqrt(sxx*syy)+verySmall)
   return
 end subroutine pearsn
 

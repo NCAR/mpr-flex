@@ -6,12 +6,14 @@ module model_wrapper
   implicit none
   public :: adjust_param 
   public :: read_sim
+  public :: read_soil_param 
+  public :: read_soil_lyr
   private
 
 contains
 
 subroutine adjust_param( idModel, param, err, message)
-  use vic_routines, only: vic_soil_param,vic_vege_param
+  use vic_routines, only: adj_soil_param_vic,adj_vege_param_vic
   implicit none
   
   ! input 
@@ -29,10 +31,10 @@ subroutine adjust_param( idModel, param, err, message)
   select case (idModel)
     case (1)
       ! Read/Adjust/Output soil model parameters 
-      call vic_soil_param( param, err, cmessage)
+      call adj_soil_param_vic( param, err, cmessage)
       if (err/=0)then; message=message//cmessage; return; endif
       ! Read/Adjust/Output vege parameters 
-      call vic_vege_param( param, err, cmessage)
+      call adj_vege_param_vic( param, err, cmessage)
       if (err/=0)then; message=message//cmessage; return; endif
     case default
       err=10; message=message//"model is not implemented"; return
@@ -40,6 +42,55 @@ subroutine adjust_param( idModel, param, err, message)
   return
 end subroutine adjust_param 
   
+subroutine read_soil_param(idModel, param, err, message)
+  use vic_routines, only: vic_soil_param
+  implicit none
+  ! input 
+  integer(i4b),         intent(in)   :: idModel 
+  ! output
+  real(dp),             intent(out)  :: param(:,:)   !  
+  integer(i4b),         intent(out)  :: err          ! error code
+  character(len=strLen),intent(out)  :: message      ! error message
+  ! LOCAL VARIABLES
+  character(len=strLen)              :: cmessage     ! error message from downward subroutine
+
+  ! Start procedure here
+  err=0; message="read_soil_param/"
+
+  select case (idModel)
+    case (1)
+      call vic_soil_param( param, err, cmessage)
+      if (err/=0)then; message=message//cmessage; return; endif
+    case default
+      err=10; message=message//"model is not implemented"; return
+  end select  
+  return
+end subroutine
+
+subroutine read_soil_lyr(idModel, hlyr, err, message)
+  use vic_routines, only: vic_soil_layer
+  implicit none
+  ! input 
+  integer(i4b),         intent(in)   :: idModel 
+  ! output
+  real(dp),             intent(out)  :: hlyr(:,:)    !  
+  integer(i4b),         intent(out)  :: err          ! error code
+  character(len=strLen),intent(out)  :: message      ! error message
+  ! LOCAL VARIABLES
+  character(len=strLen)              :: cmessage     ! error message from downward subroutine
+
+  ! Start procedure here
+  err=0; message="read_soil_lyr/"
+
+  select case (idModel)
+    case (1)
+      call vic_soil_layer( hlyr, err, cmessage)
+      if (err/=0)then; message=message//cmessage; return; endif
+    case default
+      err=10; message=message//"model is not implemented"; return
+  end select  
+  return
+end subroutine
 
 subroutine read_sim( idModel, sim, err, message)
   use vic_routines, only: read_vic_sim

@@ -3,8 +3,8 @@ program main_calibration
   use nrtype 
   use public_var
   use mo_nml,               only: read_nml 
-  use paramMaster,          only: popMeta
-  use subset_meta,          only: get_parm_meta,check_gammaPar, param_setup
+  use popMeta,              only: paramMaster
+  use subset_meta,          only: get_parm_meta,param_setup,check_gammaZ,check_gammaH
   use mo_dds,               only: dds
   use mo_opt_run,           only: opt_run
   use eval_model,           only: objfn
@@ -20,10 +20,13 @@ program main_calibration
   ! read calibration namelists and save variables 
   nmlfile='namelist.dds.local'
   call read_nml( trim(nmlfile), ierr, cmessage ); call handle_err(ierr,cmessage)
-  ! Populate master parameter meta  
-  call popMeta( ierr, cmessage ); call handle_err(ierr,cmessage)
-  ! read calibrating parameter list, get meta data from master, & subset gamma parameter - "parSubset","gammaSubset"
+  ! Populate master parameter meta - "parMaster" structure
+  call paramMaster( ierr, cmessage ); call handle_err(ierr,cmessage)
+  ! read calibrating parameter list, get meta data from master & subset gamma parameter - "parSubset","gammaSubset"
   call get_parm_meta( trim(calpar), ierr,cmessage); call handle_err(ierr,cmessage)
+  ! check if gamma parameter is in list, z and h gamma parameters are required
+  call check_gammaZ( ierr, cmessage)
+  call check_gammaH( ierr, cmessage)
   ! initialize parameter and mask arrays 
   allocate(param(nParCal,3))
   allocate(mask(nParCal))

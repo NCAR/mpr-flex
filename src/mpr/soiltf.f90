@@ -4,12 +4,8 @@ module soiltf
 
 USE nrtype                                        ! variable types, etc.
 USE data_type                                     ! Including custum data structure definition
-USE multconst                                     ! Including common constant (physical constant, other e.g., missingVal, etc.)
-USE def_soiltfParm                                ! define/read transfer function parameters
-USE var_lookup,only:ixSoilParVic,nSoilParVic      ! index of Model soil parameter variables and number of variables
-USE var_lookup,only:ixSoilParSumma,nSoilParSumma  ! index of Model soil parameter variables and number of variables
+USE public_var                                     ! Including common constant (physical constant, other e.g., missingVal, etc.)
 USE var_lookup,only:ixVarTopo,nVarTopo            ! index of soil polygon variables and number of variables
-USE var_lookup,only:ixPar,nPrpSoil                ! index of soil properties and number of properties
 
 implicit none
 
@@ -225,24 +221,25 @@ function infilt(elestd_in)
   ! Define variables
   implicit none
   ! input
-  real(dp), intent(in)  :: a_infilt
-  real(dp), intent(in)  :: b_infilt
   real(dp), intent(in)  :: elestd_in(:)
   ! output 
   ! local 
   real(dp)              :: infilt(:) 
   real(dp),parameter    :: infilt_min=0.03_dp
   real(dp),parameter    :: infilt_max=0.50_dp
-
-  where ( elestd_in /= dmiss ) 
-    infilt = (log(elestd_in+verySmall)-a_infilt)/(log(elestd_in+verySmall)+b_infilt*10) !transfer function 
-  else where
-    infilt = dmiss 
-  end where
- ! cap value with upper and lower bounds 
-  where ( infilt > infilt_max ) infilt=infilt_max 
-  where ( infilt > 0._dp .and. infilt < infilt_min ) infilt=infilt_min 
-
+  
+  associate(g1=>gammaParMasterMeta(ixPar%binfilt1gamma1)%val, &
+            g2=>gammaParMasterMeta(ixPar%binfilt1gamma2)%val)
+    where ( elestd_in /= dmiss ) 
+      infilt = (log(elestd_in+verySmall)-g1)/(log(elestd_in+verySmall)+g2*10) !transfer function 
+    else where
+      infilt = dmiss 
+    end where
+     !cap value with upper and lower bounds 
+    where ( infilt > infilt_max ) infilt=infilt_max 
+    where ( infilt > 0._dp .and. infilt < infilt_min ) infilt=infilt_min 
+  end associate
+  return
 end function infilt 
 
 ! *********************************************************************
@@ -264,7 +261,6 @@ end function residMoist
 !  Nijssen basiflow D1 parameter
 ! *********************************************************************
 function D1(slope_in, ks_in, phi_in, h_in)
-                       
 ! Define variables
  implicit none
 
@@ -520,28 +516,6 @@ end where
 end function expt 
 
 ! ************
-! omputing Ksat parameter 
-! *********************************************************************
-function Ksat(Ksat, Ks_in, a_Ks, dmiss)
-! Define variables
-implicit none
-! input
-real(dp), intent(in)   :: Ks_in(:) 
-real(dp), intent(in)   :: a_Ks
-real(dp), intent(in)   :: dmiss 
-! output 
-real(dp), intent(out)  :: Ksat(:)
-! local 
-
-where ( Ks_in /= dmiss ) 
-  ksat = a_Ks*(Ks_in*10*24)
-else where
-  ksat = dmiss 
-end where
-
-end function Ksat 
-
-! ************
 ! computing init_moist parameter  
 ! *********************************************************************
 function initMoist( phi_in, h_in)
@@ -585,7 +559,7 @@ end where
 end function bubble 
 
 ! ***********
-! bulk_density parameter -VIC 
+! bulk_density parameter 
 ! *********************************************************************
 function bd( bd_in, a_bulkDensity, dmiss)
 ! Define variables
@@ -694,12 +668,14 @@ real(dp), intent(in)  :: phi_in(:)      ! Porosity
 ! local 
 real(dp)              :: phi(:)
 
-where ( phi_in /= dmiss ) 
-  phi = a_porosity* phi_in
-else where
-  phi = dmiss 
-end where
-
+associate(g1=>gammaParMasterMeta(ixPar%phi1gamma1)%val)
+  where ( phi_in /= dmiss ) 
+    phi = g1* phi_in
+  else where
+    phi = dmiss 
+  end where
+end associate
+return
 end function phi 
 
 end module soiltf 
