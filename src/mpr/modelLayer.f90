@@ -1,14 +1,8 @@
 module modelLayer
-
 ! Compute model soil parameter transfer function 
-
 USE nrtype                                        ! variable types, etc.
 USE data_type                                     ! Including custum data structure definition
 USE public_var                                    ! Including common constant (physical constant, other e.g., missingVal, etc.)
-USE def_soiltfParm                                ! define/read transfer function parameters
-USE var_lookup,only:ixSoilParVic,nSoilParVic      ! index of Model soil parameter variables and number of variables
-USE var_lookup,only:ixSoilParSumma,nSoilParSumma  ! index of Model soil parameter variables and number of variables
-USE var_lookup,only:ixPrpSoil,nPrpSoil            ! index of soil properties and number of properties
 
 implicit none
 
@@ -95,10 +89,8 @@ end subroutine comp_model_depth
 
  ! Initialize error control
  ierr=0; message=trim(message)//'comp_model_lyr/'
-
  ! Get number of soil layer 
  nSLyr=size(hLyrSoil) 
-
  ! Make mask to exclude layers with water/bedrock/other  
  allocate(mask(nSLyr),stat=ierr)
  if(ierr/=0)then; message=trim(message)//'problem allocating space for mask(nElm)';return;endif

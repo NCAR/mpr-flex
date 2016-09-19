@@ -162,10 +162,11 @@ subroutine value_dr(str,rnum,ios)
 character(len=*)::str
 real(kr8)::rnum
 integer :: ios
+integer :: tlen 
 
-ilen=len_trim(str)
+tlen=len_trim(str)
 ipos=scan(str,'Ee')
-if(.not.is_digit(str(ilen:ilen)) .and. ipos/=0) then
+if(.not.is_digit(str(tlen:tlen)) .and. ipos/=0) then
    ios=3
    return
 end if
@@ -256,10 +257,10 @@ end subroutine shiftstr
 
 !**********************************************************************
 
-subroutine insertstr(str,strins,loc)
+subroutine insertstr(str,strins,idx)
 
-! Inserts the string 'strins' into the string 'str' at position 'loc'. 
-! Characters in 'str' starting at position 'loc' are shifted right to
+! Inserts the string 'strins' into the string 'str' at position 'idx'. 
+! Characters in 'str' starting at position 'idx' are shifted right to
 ! make room for the inserted string. Trailing spaces of 'strins' are 
 ! removed prior to insertion
 
@@ -267,10 +268,10 @@ character(len=*):: str,strins
 character(len=len(str))::tempstr
 
 lenstrins=len_trim(strins)
-tempstr=str(loc:)
+tempstr=str(idx:)
 call shiftstr(tempstr,lenstrins)
 tempstr(1:lenstrins)=strins(1:lenstrins)
-str(loc:)=tempstr
+str(idx:)=tempstr
 return
 
 end subroutine insertstr
@@ -329,11 +330,11 @@ function uppercase(str) result(ucstr)
 character (len=*):: str
 character (len=len_trim(str)):: ucstr
 
-ilen=len_trim(str)
+tlen=len_trim(str)
 ioffset=iachar('A')-iachar('a')     
 iquote=0
 ucstr=str
-do i=1,ilen
+do i=1,tlen
   iav=iachar(str(i:i))
   if(iquote==0 .and. (iav==34 .or.iav==39)) then
     iquote=1
@@ -364,11 +365,11 @@ function lowercase(str) result(lcstr)
 character (len=*):: str
 character (len=len_trim(str)):: lcstr
 
-ilen=len_trim(str)
+tlen=len_trim(str)
 ioffset=iachar('A')-iachar('a')
 iquote=0
 lcstr=str
-do i=1,ilen
+do i=1,tlen
   iav=iachar(str(i:i))
   if(iquote==0 .and. (iav==34 .or.iav==39)) then
     iquote=1
@@ -546,11 +547,11 @@ subroutine trimzero(str)
 
 character(len=*) :: str
 character :: ch
-character(len=10) :: exp
+character(len=10) :: exprs
 
 ipos=scan(str,'eE')
 if(ipos>0) then
-   exp=str(ipos:)
+   exprs=str(ipos:)
    str=str(1:ipos-1)
 endif
 lstr=len_trim(str)
@@ -559,13 +560,13 @@ do i=lstr,1,-1
    if(ch=='0') cycle          
    if(ch=='.') then
       str=str(1:i)//'0'
-      if(ipos>0) str=trim(str)//trim(exp)
+      if(ipos>0) str=trim(str)//trim(exprs)
       exit
    endif
    str=str(1:i)
    exit
 end do
-if(ipos>0) str=trim(str)//trim(exp)
+if(ipos>0) str=trim(str)//trim(exprs)
 
 end subroutine trimzero
 

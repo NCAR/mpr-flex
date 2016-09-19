@@ -14,7 +14,7 @@ private
 contains
 
 ! *****************************************************************************
-! Public subroutine: weigh of soil layers within each mode layer 
+! Public subroutine: weight of soil layers within each mode layer 
 ! ******************************************************************************
  subroutine map_slyr2mlyr(zLyrSoil, hLyrSoil, zLyrModel, lyrmap, ierr, message)
   ! Define variables

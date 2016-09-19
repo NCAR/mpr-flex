@@ -15,7 +15,7 @@ type,public  :: par_meta
   real(dp)            :: lwr  =-999.0_dp ! lower and upper bounds
   real(dp)            :: upr  =-999.0_dp ! lower and upper bounds
   character(len=64)   :: beta ='beta'    ! name of parent beta parameter - if parameter is beta parameter, use "beta"
-  logical(lgt)        :: flag =.False.   ! flag to calibrate or not 
+  logical(lgc)        :: flag =.False.   ! flag to calibrate or not 
   character(len=64)   :: hups ='wamean'  ! name of parent beta parameter - if parameter is beta parameter, use "beta"
   character(len=64)   :: vups ='wamean'  ! name of parent beta parameter - if parameter is beta parameter, use "beta"
 endtype par_meta
@@ -33,9 +33,9 @@ type,public  :: beta_meta
   character(len=128)                    :: desc=''              ! description
   character(len=64)                     :: units=''             ! units
   character(len=32)                     :: dims=''              ! data dimension (scaler, vector, 2D, 3D)
-  logical(lgt)                          :: v_agg=.FALSE.        ! flag to perform vertical scaling 
+  logical(lgc)                          :: v_agg=.FALSE.        ! flag to perform vertical scaling 
   character(len=32)                     :: vaggmethod           ! vertical upscaling operator to be used 
-  logical(lgt)                          :: h_agg=.FALSE.        ! flag to perform horizontal scaling 
+  logical(lgc)                          :: h_agg=.FALSE.        ! flag to perform horizontal scaling 
   character(len=32)                     :: haggmethod           ! horizontal upscaling operator to be used 
 endtype beta_meta
 

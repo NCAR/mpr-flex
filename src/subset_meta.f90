@@ -7,7 +7,6 @@ module subset_meta
 
   private
   public::get_parm_meta
-  public::get_betaInGamma
   public::param_setup 
   public::check_gammaZ
   public::check_gammaH
@@ -20,7 +19,7 @@ contains
 subroutine get_parm_meta(infile, err, message)
   ! used to read parameter list ascii and obtain meta data from master parameter list (paramMaster.f90) 
   use data_type,  only:cpar_meta
-  use globalData, only:parMaster, parSubset, gammaSubset  ! data type definition
+  use globalData, only:parMaster, parSubset, gammaSubset, betaInGamma  ! data type definition
   use ascii_util, only:file_open
   use get_ixname, only:get_ixPar
  
@@ -34,27 +33,26 @@ subroutine get_parm_meta(infile, err, message)
   ! local variables
   character(len=256)                   :: cmessage       ! error message for downwind routine
   type(cpar_meta),allocatable          :: tempMeta(:)
+  character(len=strLen),allocatable    :: res(:)         ! 
   integer(i4b)                         :: unt            ! DK: need to either define units globally, or use getSpareUnit
   integer(i4b)                         :: iline          ! loop through lines in the file 
   integer(i4b)                         :: ixLocal        ! index for calibrationg parameter list 
   integer(i4b)                         :: ixGamma        ! index for calibrationg gamma parameter list 
+  integer(i4b)                         :: ivar           ! index of master parameter  
   integer(i4b),parameter               :: maxLines=1000  ! maximum lines in the file 
   character(LEN=256)                   :: temp           ! single lime of information
   integer(i4b)                         :: iend           ! check for the end of the file
   character(LEN=256)                   :: ffmt           ! file format
   character(len=1)                     :: dLim(1)        ! column delimiter
-  integer(i4b)                         :: ivar           ! index of master parameter  
+  integer(i4b)                         :: i,j,k          ! loop index
  
   ! Start procedure here
   err=0; message="get_param_meta/"
-
   allocate(parSubset(nParCal))
   allocate(tempMeta(nParCal))
-
   ! open file
   call file_open(trim(infile),unt,err, cmessage)
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
- 
   ! get to the start of the variable descriptions 
   do iline=1,maxLines
     read(unt,'(a)',iostat=iend)temp; if (iend/=0)exit    ! read line of data
@@ -110,38 +108,7 @@ subroutine get_parm_meta(infile, err, message)
     allocate(gammaSubset(ixGamma-1))
     gammaSubset=tempMeta(1:ixGamma) 
   endif
-  ! check that all elements are populated
-  if(any(parSubset(:)%pname==''))then
-    do iline=1,size(parSubset)
-      print*,iline,' -> ',trim(parSubset(iline)%pname)
-    end do
-    err=40; message=trim(message)//"someVariablesNotPopulated"; return
-  endif
-  ! close file unit
-  close(unt)
-  return
-end subroutine get_parm_meta
-
-!**********************************
-! Subroutine: get beta parameter name from gamma parameter
-!**********************************
-subroutine get_betaInGamma( err, message)
-  use globalData,   only: gammaSubset
-  use globalData,   only: betaInGamma 
-  implicit none
-  !output variables
-  integer(i4b),                      intent(out)   :: err         ! error code
-  character(*),                      intent(out)   :: message     ! error message
-  !local variables
-  character(len=strLen),allocatable                :: res(:)      ! 
-  character(len=strLen)                            :: cmessage    ! error message from downward subroutine
-  logical(lgt)                                     :: isGamma
-  integer(i4b)                                     :: unt         ! DK: need to either define units globally, or use getSpareUnit
-  integer(i4b)                                     :: iPar        ! loop index 
-  integer(i4b)                                     :: i,j,k 
-
-  ! initialize error control
-  err=0; message='get_betaInGamma/'
+  ! get beta parameter associated with gamma parameter
   if ( allocated(gammaSubset) ) then
     allocate(res(size(gammaSubset)))
     k = 1
@@ -158,10 +125,19 @@ subroutine get_betaInGamma( err, message)
     allocate(betaInGamma(k))
     betaInGamma=res(1:k) 
   else
-    print*, 'NO gamma parameters'
+    print*, 'NO gamma parameters to be calibrated'
   endif
+  ! check that all elements are populated
+  if(any(parSubset(:)%pname==''))then
+    do iline=1,size(parSubset)
+      print*,iline,' -> ',trim(parSubset(iline)%pname)
+    end do
+    err=40; message=trim(message)//"someVariablesNotPopulated"; return
+  endif
+  ! close file unit
+  close(unt)
   return
-end subroutine get_betaInGamma
+end subroutine get_parm_meta
 
 !**********************************
 ! Subroutine: check if z parameters exist in gamma parameter
@@ -173,7 +149,7 @@ subroutine check_gammaZ( err, message)
   integer(i4b),                      intent(out)   :: err         ! error code
   character(*),                      intent(out)   :: message     ! error message
   !local variables
-  logical(lgt)                                     :: checkZ 
+  logical(lgc)                                     :: checkZ 
   character(len=strLen)                            :: cmessage    ! error message from downward subroutine
   integer(i4b)                                     :: unt         ! DK: need to either define units globally, or use getSpareUnit
   integer(i4b)                                     :: i           ! loop index
@@ -204,8 +180,8 @@ subroutine check_gammaH( err, message)
   character(*),         intent(out) :: message     ! error message
   !local variables
   integer(i4b)                      :: id(20) 
-  logical(lgt)                      :: mask(20) 
-  logical(lgt),allocatable          :: checkH(:) 
+  logical(lgc)                      :: mask(20) 
+  logical(lgc),allocatable          :: checkH(:) 
   character(len=strLen)             :: cmessage    ! error message from downward subroutine
   integer(i4b)                      :: unt         ! DK: need to either define units globally, or use getSpareUnit
   integer(i4b)                      :: i,j 

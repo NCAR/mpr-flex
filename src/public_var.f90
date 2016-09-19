@@ -66,7 +66,7 @@ module public_var
   real(dp),public                 :: r              ! search  
   integer(i8b),public             :: seed           ! starting seed for random number generator
   integer(i8b),public             :: maxiter        ! maximum number of trials before optimization is terminated
-  logical(lgt),public             :: maxit          ! maximization or minimization
+  logical(lgc),public             :: maxit          ! maximization or minimization
   character(len=strLen),public    :: state_file     ! state file
   character(len=strLen),public    :: restrt_file    ! restart file
   logical,public                  :: isRestart      ! ues restart option? 

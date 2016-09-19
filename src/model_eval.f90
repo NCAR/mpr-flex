@@ -3,6 +3,7 @@ module eval_model
   use nrtype 
   use public_var
   use data_type 
+  use var_lookup
 
   implicit none
   public :: objfn 
@@ -15,7 +16,7 @@ contains
 !************************************
 function objfn( param )
   use mpr_routine,   only: mpr
-  use globalData,    only: parSubset, gammaSubset, betaInGamma
+  use globalData,    only: parMaster, parSubset, gammaSubset
   use model_wrapper, only: adjust_param, read_sim
 !  use mpr_routine, only:mpr
   implicit none
@@ -27,8 +28,8 @@ function objfn( param )
   integer(i4b)                        :: err          ! error code
   character(len=strLen)               :: message      ! error message
   integer(i4b)                        :: iPar 
-  real(dp),dimension(:)  ,allocatable :: gammaPar 
   logical, dimension(:)  ,allocatable :: mask
+  real(dp),dimension(:)  ,allocatable :: paramGamma 
   real(dp),dimension(:)  ,allocatable :: obs
   real(dp),dimension(:,:),allocatable :: sim 
   real(dp),dimension(:,:),allocatable :: simBasin 
@@ -52,12 +53,11 @@ function objfn( param )
   if ( any(parSubset(:)%beta /= "beta") )then
     allocate(mask(size(param)))
     mask=parSubset(:)%beta/="beta"
-    allocate(gammaPar(count(mask)))
-    gammaPar=pack(param,mask)
-    call mpr(idModel, gammaPar, gammaSubset, err, message) 
+    allocate(paramGamma(count(mask)))
+    paramGamma=pack(param,mask)
+    call mpr(idModel, paramGamma, gammaSubset, err, message) 
     if (err/=0)then; stop message; endif
   endif
-  stop
   ! Run hydrologic model   
   call system(executable)
   !read observation 
@@ -66,18 +66,18 @@ function objfn( param )
   !read model output place into array of ncells 
   call read_sim(idModel, sim, err, message)
   if (err/=0)then; stop message; endif
-  ! post-process of model output
-  ! aggregate UH routed grid cell runoff to basin total runoff
+  ! Post-process of model output 1 - aggregate grid cell runoff to basin total runoff
   call agg_hru_to_basin(sim, simBasin, err, message)
   if (err/=0)then; stop message; endif
-  ! call function to route flow for each basin
+  ! Post-process of model output 2 - call function to route flow for each basin
+  ushape=parMaster(ixPar%uhshape)%val
+  uscale=parMaster(ixPar%uhscale)%val
   do iPar=1,nParCal
     select case( parSubset(iPar)%pname )
-      case('uhshape');  ushape  = param( iPar )
-      case('uhscale');  uscale  = param( iPar )
+      case('uhshape');  ushape = param( iPar )
+      case('uhscale');  uscale = param( iPar )
      end select
   end do
-  !call function to perform UH on every grid cell
   call route_q(simBasin, simBasinRouted, ushape, uscale, err, message)
   if (err/=0)then; stop message; endif
   !call object function calculation or just output sim and obs 
@@ -87,11 +87,6 @@ function objfn( param )
   else
     call out_opt_sim(simBasinRouted, obs)
   endif
-  ! allocate array
-  deallocate(obs)
-  deallocate(sim)
-  deallocate(simBasin)
-  deallocate(simBasinRouted)
   return
 end function objfn
 

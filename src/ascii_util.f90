@@ -31,7 +31,7 @@ contains
  character(*),intent(out)::message
  ! locals
  integer(i4b)::i
- logical(lgt)::opened,xist
+ logical(lgc)::opened,xist
  integer(i4b),parameter::minUnits=7,maxUnits=2147483639
  ! Start procedure here
  do i=minUnits,maxUnits
@@ -59,8 +59,8 @@ contains
  integer(i4b),intent(out)             :: err         ! error code
  character(*),intent(out)             :: message     ! error message
  ! declare local variables
- logical(lgt)                         :: xist        ! .TRUE. if the file exists
- logical(lgt)                         :: xopn        ! .TRUE. if the file is already open
+ logical(lgc)                         :: xist        ! .TRUE. if the file exists
+ logical(lgc)                         :: xopn        ! .TRUE. if the file is already open
  character(len=256)                   :: cmessage    ! error message of downwind routine
  ! initialize errors
  err=0; message="f-file_open/"

@@ -63,8 +63,8 @@ contains
     ! total depth multiplier
     parMaster(ixPar%z1gamma1)        = par_meta('z1gamma1'       ,     1.0_dp,    0.1_dp,    0.4_dp,"z"            , .False.,      "na",       "na")
     ! layer fractions
-    parMaster(ixPar%h1gamma1)        = par_meta('h1gamma1'       ,    0.05_dp,   0.01_dp,    0.1_dp,"h"            , .False.,      "na",       "na")
-    parMaster(ixPar%h1gamma2)        = par_meta('h1gamma2'       ,     0.3_dp,   0.12_dp,    0.5_dp,"h"            , .False.,      "na",       "na")
+    parMaster(ixPar%h1gamma1)        = par_meta('h1gamma1'       ,    0.05_dp,   0.01_dp,    0.1_dp,"h1"           , .False.,      "na",       "na")
+    parMaster(ixPar%h1gamma2)        = par_meta('h1gamma2'       ,     0.3_dp,   0.12_dp,    0.5_dp,"h2"           , .False.,      "na",       "na")
     ! transfer function
     parMaster(ixPar%binfilt1gamma1)  = par_meta('binfilt1gamma1' ,     0.0_dp,   -2.0_dp,    1.0_dp,"binfilt"      , .False.,      "na",       "na")
     parMaster(ixPar%binfilt1gamma2)  = par_meta('binfilt1gamma2' ,    -0.6_dp,    0.8_dp,    1.2_dp,"binfilt"      , .False.,      "na",       "na")

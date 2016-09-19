@@ -26,7 +26,7 @@ module nrtype
     !integer, parameter :: DPC = KIND((1.0D0,1.0D0))
     integer, parameter :: DPC = c_double_complex 
     !> logical
-    integer, parameter :: LGT = KIND(.true.)
+    integer, parameter :: LGC = KIND(.true.)
     ! Real kinds
     integer, parameter :: kr4 = selected_real_kind(6,37)       ! single precision real
     integer, parameter :: kr8 = selected_real_kind(15,307)     ! double precision real
