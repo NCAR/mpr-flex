@@ -17,8 +17,9 @@ subroutine mpr(idModel,           &     ! model ID
                err, message)
   use model_wrapper,        only:read_soil_param
   use popMeta,              only:mprData
-  use globalData,           only:parMaster, parSubset, gammaSubset, betaInGamma
+  use globalData,           only:parMaster, betaInGamma
   use globalData,           only:sdata_meta
+  use globalData,           only:map_meta
   ! MPR core
 !   USE soiltf                  only:comp_soil_model_param         ! Including Soil model parameter transfer function
 !   USE vegtf,                  only:comp_veg_model_param          ! Including Veg model parameter transfer function
@@ -26,18 +27,17 @@ subroutine mpr(idModel,           &     ! model ID
 !   USE layerWeight,            only:map_slyr2mlyr                 ! Including model layr computation routine 
 !   USE upscaling,              only:aggreg                        ! Including Upscaling operator 
  ! I/O
-!   USE read_mapdata                                               ! routine to read mapping data into data structures
-!   USE read_vegdata                                               ! routine to read veg data into data structures
-  use read_soildata,          only:getData                       ! routine to read soil data into data structures
-  use read_soildata,          only:mod_hslyrs                    ! routine to modify soil layer thickness and updata soil data structure
-!   USE read_soildata,          only:get_topoinfo                  ! routine to extract topographic variables from soil data structure
+  use read_mapdata,         only:getMapData                  ! routine to read mapping data into data structures
+!   USE read_vegdata                                         ! routine to read veg data into data structures
+  use read_soildata,        only:getData                     ! routine to read soil data into data structures
+  use read_soildata,        only:mod_hslyrs                  ! routine to modify soil layer thickness and updata soil data structure
 !   USE read_ncdata,            only:get_vec_dvar                  !
   ! Named variable index 
-  use var_lookup,             only: nPar
-  USE var_lookup,             only:ixVarMapData,nVarMapData     ! index of map data variables and number of variables
-  USE var_lookup,             only:ixVarVegData,nVarVegData     ! index of vege data variables and number of variables
-  USE var_lookup,             only:ixVarSoilData,nVarSoilData   ! index of soil data variables and number of variables 
-  USE var_lookup,             only:ixVarHru,nVarHru             ! index of model HRU variables and number of variables
+  use var_lookup,           only:ixPar,nPar                  ! 
+  USE var_lookup,           only:ixVarSoilData,nVarSoilData  ! index of soil data variables and number of variables 
+  USE var_lookup,           only:ixVarVegData,nVarVegData    ! index of vege data variables and number of variables
+  USE var_lookup,           only:ixVarMapData,nVarMapData    ! index of map data variables and number of variables
+  USE var_lookup,           only:ixVarHru,nVarHru            ! index of model HRU variables and number of variables
 !  USE var_lookup,             only:ixPrpSoil,nPrpSoil           ! index of soil properties and number of properties
 !  USE var_lookup,             only:ixPrpVeg,nPrpVeg             ! index of veg properties and number of properties
 
@@ -68,6 +68,8 @@ subroutine mpr(idModel,           &     ! model ID
   type(par_meta),allocatable         :: gammaParMasterMeta(:)
   integer(i4b)                       :: nSpoly                   ! number of soil polygon in entire soil data domain 
   integer(i4b)                       :: nSlyrs                   ! number of soil layers
+  real(dp)                           :: hmult                    ! mulitplier of soil layer  
+  real(dp)                           :: hfrac(nLyr-1)            ! fraction of soil depth for each model layer 
   integer(i4b)                      :: iVarSoil                 ! Loop index of soil data 
   integer(i4b)                      :: iVarTopo                 ! Loop index of topographic properties 
   type(namevar)                     :: sdata(nVarSoilData)      ! soil data container for all the soil polygons
@@ -120,45 +122,46 @@ subroutine mpr(idModel,           &     ! model ID
   err=0; message='mpr/'
   !(0) Preparation
   ! (0.1) List all the gamma parameter from master pararameter metadata -> gammaParMasterMeta
-  allocate(mask(size(parMaster)))
-  mask=(parMaster(:)%beta/="beta")
-  allocate(gammaParMasterMeta(count(mask)))
-  gammaParMasterMeta = pack(parMaster,mask)
+  allocate(gammaParMasterMeta, source=parMaster)
   ! (0.2) separate beta parameter into veg and soil 
   ! (0.3) get number of soil and vege parameters to be computed
   nSoilParModel=size(betaInGamma)-1-(nLyr-1)
   ! (0.4) swap gammaParMasterMeta%val with gammaPar value
   do iGamma=1,size(gammaPar)
-    do iGammaMaster=1,size(gammaParMasterMeta)
-      if ( gammaParMasterMeta(iGammaMaster)%pname==gammaParMeta(iGamma)%pname )then
-        gammaParMasterMeta(iGammaMaster)%val=gammaPar(iGamma)
-      endif
-    enddo
+    gammaParMasterMeta(gammaParMeta(iGamma)%ixMaster)%val=gammaPar(iGamma)
   enddo
-  ! (0.5) read parameter file 
-  allocate(paramTemplate(nHru,TotNparVic))
+  ! (0.5) populate mpr related  data meta - sdata_meta, vdata_meta, map_meta 
+  call mprData( err, cmessage)
+  ! (0.5) obtain soil z and h parameter
+  print*,gammaParMeta(:)%pname
+  print*,"beta linked to gamma = "
+  print*,betaInGamma
+  hmult=gammaParMasterMeta(ixPar%z1gamma1)%val
+  call pop_hfrac(hfrac, err, message)
+  if(err/=0)then; message=trim(message)//cmessage; return; endif
+  print*,"---------"
+  print*, hfrac
+  ! (0.6) read parameter file 
+  allocate(paramTemplate(nHru,TotNpar))
   call read_soil_param(idModel, paramTemplate, err, cmessage) 
-  if(err/=0)then; message=message//cmessage; return; endif
+  if(err/=0)then; message=trim(message)//cmessage; return; endif
   ! (1) Get Geophysical data 
   ! *****
   ! (1.1) soil data  
   ! *********************************************
   ! (1.1.1) Read in Soil data netCDF...
-!  call getData(trim(mpr_input_dir)//trim(fname_soil),  & ! input: soil data (netCDF)
-!                    sdata_meta,                    & ! input: soil data meta
-!                    dname_spoly,                   & ! input: spatial dimension (polygon ID)
-!                    dname_slyrs,                   & ! input: spatial dimension (polygon ID)
-!                    sdata,                         & ! input-output: soil data structure
-!                    nSpoly,                        & ! output: number of dimension (i.e. number of soil polygon)
-!                    nSlyrs,                        & ! output: number of dimension (i.e. number of soil layer)
-!                    err, cmessage)
-!  if(err/=0)then; message=message//cmessage; return; endif 
-
+  call getData(trim(mpr_input_dir)//trim(fname_soil),  & ! input: soil data (netCDF)
+                    sdata_meta,                    & ! input: soil data meta
+                    dname_spoly,                   & ! input: spatial dimension (polygon ID)
+                    dname_slyrs,                   & ! input: spatial dimension (polygon ID)
+                    sdata,                         & ! input-output: soil data structure
+                    nSpoly,                        & ! output: number of dimension (i.e. number of soil polygon)
+                    nSlyrs,                        & ! output: number of dimension (i.e. number of soil layer)
+                    err, cmessage)
+  if(err/=0)then; message=trim(message)//cmessage; return; endif 
   ! (1.1.2) modify soil layer thickness in sdata data structure
-!  call mod_hslyrs(sdata,err,cmessage)
-!  if(err/=0)then; message=message//cmessage; return; endif 
-!  print*, sdata(ixVarSoilData%hslyrs)%dvar2(:,10)
-
+  call mod_hslyrs(sdata,hmult,err,cmessage)
+  if(err/=0)then; message=trim(message)//cmessage; return; endif 
 !   allocate(topo(nVarTopo),stat=err);   if(err/=0) call handle_err(err,'error allocating for topo')
 !   do iVarTopo=1,nVarTopo
 !      allocate(topo(iVarTopo)%varData(nSpoly),stat=err); if(err/=0) call handle_err(err,'error allocating for topo%varData')
@@ -198,24 +201,26 @@ subroutine mpr(idModel,           &     ! model ID
 !   call map_vcls2prp(vdata, vcls2prp, vegClass, vprp, err, cmessage)
 !   if(err/=0)then; message=message//cmessage; return; endif
 !  
-!  ! *****
-!  ! (2.) Read in mapping netcdf 
-!  ! *********************************************
-!   ! (2.1) mapping soil polygon to model hru 
-!    call getMapData(trim(mpr_input_dir)//trim(fname_smapping), &   ! input: file name
-!                    'soil',                                &   ! input: geophysical data type 
-!                    mapdata_meta,                          &   ! input: map data meta
-!                    dname_hru,                             &   ! input: dimension name for hru 
-!                    dname_overSpoly,                       &   ! input: dimension name for overlap polygon 
-!                    mapdata,                               &   ! input-output: map data structure
-!                    nShru,                                 &   ! output: number of hru 
-!                    nOverSpoly,                            &   ! output: max number of overlap polygons
-!                    err,cmessage)                             ! output: error control
-!    if (err/=0)then; message=message//cmessage; return; endif
+  ! *****
+  ! (2.) Read in mapping netcdf 
+  ! *********************************************
+  ! (2.1) mapping soil polygon to model hru 
+  call getMapData(trim(mpr_input_dir)//trim(fname_smapping), &   ! input: file name
+                  'soil',                                    &   ! input: geophysical data type 
+                  map_meta,                                  &   ! input: map data meta
+                  dname_hru,                                 &   ! input: dimension name for hru 
+                  dname_overSpoly,                           &   ! input: dimension name for overlap polygon 
+                  mapdata,                                   &   ! input-output: map data structure
+                  nShru,                                     &   ! output: number of hru 
+                  nOverSpoly,                                &   ! output: max number of overlap polygons
+                  err,cmessage)                                  ! output: error control
+  if (err/=0)then; message=trim(message)//cmessage; return; endif
+  print*,nShru
+  stop
 !    ! (2.2) mapping vege polygon to model hru 
 !    call getMapData(trim(mpr_input_dir)//trim(fname_vmapping), &   ! input: file name
 !                    'veg',                                 &   ! input: geophysical data type 
-!                    mapdata_meta,                          &   ! input: map data meta
+!                    map_meta,                              &   ! input: map data meta
 !                    dname_hru,                             &   ! input: dimension name for hru 
 !                    dname_overVpoly,                       &   ! input: dimension name for overlap Polygon 
 !                    mapdata,                               &   ! input-output: map data structure
@@ -538,5 +543,35 @@ subroutine mpr(idModel,           &     ! model ID
     return
 end subroutine mpr
 
+  subroutine pop_hfrac(hfrac, err, message)
+    use globalData,   only: gammaSubset
+    implicit none
+    !output variables
+    real(dp),             intent(out) :: hfrac(:)
+    integer(i4b),         intent(out) :: err         ! error code
+    character(*),         intent(out) :: message     ! error message
+    !local variables
+    real(dp)                          :: dummy(20) 
+    logical(lgc)                      :: mask(20) 
+    logical(lgc),allocatable          :: checkH(:) 
+    character(len=strLen)             :: cmessage    ! error message from downward subroutine
+    integer(i4b)                      :: unt         ! DK: need to either define units globally, or use getSpareUnit
+    integer(i4b)                      :: i,j 
+  
+    ! initialize error control
+    err=0; message='pop_hfrac/'
+    dummy=-999
+    !check h parameters - now can chcek up to 5 layers
+    do i=1,size(gammaSubset)
+      if (gammaSubset(i)%pname=="h1gamma1")then;dummy(1)=gammaSubset(i)%val;cycle;endif 
+      if (gammaSubset(i)%pname=="h1gamma2")then;dummy(2)=gammaSubset(i)%val;cycle;endif
+      if (gammaSubset(i)%pname=="h1gamma3")then;dummy(3)=gammaSubset(i)%val;cycle;endif
+      if (gammaSubset(i)%pname=="h1gamma4")then;dummy(4)=gammaSubset(i)%val;cycle;endif
+    enddo
+    mask=(dummy>0)
+    if ( count(mask)/=nLyr-1 ) stop 'number of h1gamma prameters mismatch with nLyr'
+    hfrac=pack(dummy,mask)
+    return
+  end subroutine pop_hfrac
 
 end module mpr_routine

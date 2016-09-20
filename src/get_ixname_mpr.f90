@@ -14,7 +14,6 @@ public::get_ixDataVeg       ! assign variable index to variables in veg netCDF d
 public::get_ixDataSoil      ! assign variable index to variables in soil netCDF data
 public::get_ixVarHru        ! assign variable index to model hru variables
 public::get_ixVarTopo       ! assign variable index to topographic variables 
-public::get_ixPrpSoil       ! assign variable index to soil properties variables
 public::get_ixPrpVeg
 ! everything else
 private
@@ -107,54 +106,6 @@ contains
    case default;   get_ixVarHru = imiss
   endselect
  end function get_ixVarHru
-
-! *******************************************************************************************************************
-! function: get the index of the named variables for topographic variables 
-! *******************************************************************************************************************
- function get_ixVarTopo(varName)
-  USE var_lookup,only:ixVarTopo                  ! indices of the named variables
-  implicit none
-  ! define dummy variables
-  character(*), intent(in) :: varName            ! variable name
-  integer(i4b)             :: get_ixVarTopo      ! index of the named variable
-  ! get the index of the named variables
-  select case(trim(varName))
-   case('ele_mean');      get_ixVarTopo = ixVarTopo%ele_mean       ! mean elevation over polygon [m] 
-   case('ele_std');       get_ixVarTopo = ixVarTopo%ele_std        ! std of elevation over polgyon [m]
-   case('slp_mean');      get_ixVarTopo = ixVarTopo%slp_mean       ! mean slope angle over polygon [-]
-   ! get to here if cannot find the variable
-   case default;            get_ixVarTopo = imiss
-  endselect
- end function get_ixVarTopo
-
-! *******************************************************************************************************************
-! function: get the index of the named variables for soil properties 
-! *******************************************************************************************************************
- function get_ixPrpSoil(varName)
-  USE var_lookup,only:ixPrpSoil                  ! indices of the named variables
-  implicit none
-  ! define dummy variables
-  character(*), intent(in) :: varName            ! variable name
-  integer(i4b)             :: get_ixPrpSoil      ! index of the named variable
-  ! get the index of the named variables
-  select case(trim(varName))
-   case('sand_frac');       get_ixPrpSoil = ixPrpSoil%sand_frac        ! percentage of sand [%] 
-   case('clay_frac');       get_ixPrpSoil = ixPrpSoil%clay_frac        ! percentage of clay [%]
-   case('bulk_density');    get_ixPrpSoil = ixPrpSoil%bulk_density     ! bulk density [g/cm^3]
-   case('soil_density');    get_ixPrpSoil = ixPrpSoil%soil_density     ! soil density [g/cm^3]
-   case('field_capacity');  get_ixPrpSoil = ixPrpSoil%field_capacity   ! field capacity[-] 
-   case('wilting_point');   get_ixPrpSoil = ixPrpSoil%wilting_point    ! wilting point [-]
-   case('porosity');        get_ixPrpSoil = ixPrpSoil%porosity         ! porosity [-] 
-   case('ks');              get_ixPrpSoil = ixPrpSoil%ks               ! Saturated hydraulic conductivity [cm/hr]
-   case('slope_ret_curve'); get_ixPrpSoil = ixPrpSoil%slope_ret_curve  ! slope of retention curve [-]
-   case('psi_sat');         get_ixPrpSoil = ixPrpSoil%psi_sat          ! saturation matric potential [kPa] 
-   case('myu');             get_ixPrpSoil = ixPrpSoil%myu              ! specific yield [-] 
-   case('z');               get_ixPrpSoil = ixPrpSoil%z                ! depth to bottom of layer [m]
-   case('h');               get_ixPrpSoil = ixPrpSoil%h                ! thickness of layer [m]
-   ! get to here if cannot find the variable
-   case default;            get_ixPrpSoil = imiss
-  endselect
- end function get_ixPrpSoil
 
 ! *******************************************************************************************************************
 ! function: get the index of the named variables for vegetation properties 

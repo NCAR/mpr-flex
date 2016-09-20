@@ -4,13 +4,10 @@ USE nrtype
 USE netcdf
 USE data_type 
 USE public_var                                     ! Including common constant (physical constant, other e.g., missingVal, etc.)
-USE ascii_util,only:file_open                     !
-USE ascii_util,only:split_line                    !
-USE ascii_util,only:get_vlines                    !
 USE var_lookup,only:ixPar,nPar                    ! index of soil polygon variables and number of variables
 USE var_lookup,only:ixVarSoilData,nVarSoilData    ! index of soil polygon variables and number of variables
-USE var_lookup,only:ixVarTopo,nVarTopo            ! index of topographic variables and number of variables
-USE var_lookup,only:ixVarSoil,nVarSoil            ! index of topographic variables and number of variables
+USE var_lookup,only:ixVarSoil,nVarSoil            ! index of soil polygon variables and number of variables
+USE var_lookup,only:ixVarTopo,nVarTopo            ! index of soil polygon variables and number of variables
 
 implicit none
 
@@ -75,7 +72,6 @@ contains
    ! get the variable ID
    ierr = nf90_inq_varid(ncid, trim(sdata_meta(ivar)%varName), ivarID)
    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr))//'; name='//trim(sdata_meta(ivar)%varName); return; endif
-
   select case(sdata_meta(iVar)%vartype)
     case('integer')
       select case(sdata_meta(iVar)%vardims)
@@ -85,7 +81,7 @@ contains
           if(ierr/=0)then; message=trim(message)//'problem allocating 2D int space for sdata data structure'; return; endif
           ! get the data
           ierr = nf90_get_var(ncid, ivarID, sdata(ivar)%ivar2)
-        case('vector')
+        case('1D')
           ! allocate space for the 1D integer array 
           allocate(sdata(ivar)%ivar1(nSpoly),stat=ierr)
           if(ierr/=0)then; message=trim(message)//'problem allocating 1D int space for sdata data structure'; return; endif
@@ -100,7 +96,7 @@ contains
           if(ierr/=0)then; message=trim(message)//'problem allocating 2D real space for sdata data structure'; return; endif
           ! get the data
           ierr = nf90_get_var(ncid, ivarID, sdata(ivar)%dvar2)
-        case('vector')
+        case('1D')
           ! allocate space for the 1D integer array 
           allocate(sdata(ivar)%dvar1(nSpoly),stat=ierr)
           if(ierr/=0)then; message=trim(message)//'problem allocating 1D real space for sdata data structure'; return; endif
@@ -121,15 +117,16 @@ contains
 ! *****
 ! Subroutine: soil thickness mod
 ! *********************************************
- subroutine mod_hslyrs(sdata, &         ! input/output: data structure of soil data including soil layer thickness [m] 
+ subroutine mod_hslyrs(sdata,        &  ! input/output: data structure of soil data including soil layer thickness [m] 
+                       hmult,        &  ! input : scalar multiplier of soil thickness
                        ierr, message)   ! output: error control
-  use globalData, only:parMaster, parSubset
+  use globalData, only:parSubset
   implicit none 
-
+  ! input
+  real(dp),intent(in)             :: hmult
   ! Input/output
   type(namevar), intent(inout)    :: sdata(:)       ! soil data container
   ! local
-  real(dp),allocatable            :: a_h_array(:)   ! temp vector of soil layer multiplier 
   real(dp),allocatable            :: soil_h_mod(:)  ! temp holder of modified soil layer thickness 
   integer(i4b)                    :: nSpoly         ! number of soil polygon 
   integer(i4b)                    :: nSlyrs         ! number of soil layer 
@@ -143,18 +140,10 @@ contains
   
   nSpoly=size(sdata(ixVarSoilData%hslyrs)%dvar2,2)
   nSlyrs=size(sdata(ixVarSoilData%hslyrs)%dvar2,1)
-
-  allocate(a_h_array(nSlyrs),stat=ierr); 
-  if(ierr/=0)then; message=trim(message)//'problem with allocating a_h_array'; return; endif
   allocate(soil_h_mod(nSlyrs),stat=ierr); 
   if(ierr/=0)then; message=trim(message)//'problem with allocating soil_h_mod'; return; endif
-  !if
-  !  a_h_array = something 
-  !else
-  !  a_h_array = parMaster(ixPar%z1gamma1)                                 ! Layer Multiplier 
-  !endif
   do iSpoly =1,nSpoly
-    soil_h_mod = parMaster(ixPar%z1gamma1)%val*sdata(ixVarSoilData%hslyrs)%dvar2(:,iSpoly)  ! modified soil layer thickness [m] 
+    soil_h_mod = hmult*sdata(ixVarSoilData%hslyrs)%dvar2(:,iSpoly)  ! modified soil layer thickness [m] 
     sdata(ixVarSoilData%hslyrs)%dvar2(:,iSpoly) = soil_h_mod            ! reassign modified layer thickness in data structure
   end do
 

@@ -26,7 +26,7 @@ subroutine vic_soil_layer(hlyr, err, message)
   integer(i4b),intent(out)                   :: err             ! error code
   character(*),intent(out)                   :: message         ! error message
   ! local variables
-  real(dp),dimension(TotNparVic)             :: realline
+  real(dp),dimension(TotNpar)             :: realline
   integer(i4b)                               :: ipar,iHru,iLyr  ! loop index
   integer(i4b)                               :: stat
 
@@ -36,9 +36,10 @@ subroutine vic_soil_layer(hlyr, err, message)
   open (UNIT=50,file=origparam_name,form='formatted',status='old',IOSTAT=stat)
  ! Read original soil parameter file
   do iHru = 1,nHru
-    read(unit=50,*) (realline(ipar), ipar=1,TotNparVic)
+    read(unit=50,*) (realline(ipar), ipar=1,TotNpar)
     hlyr(iHru,:)=realline(4*nLyr+11:5*nLyr+10)
   end do
+  close(UNIT=50)
   return
 end subroutine vic_soil_layer
 
@@ -63,8 +64,9 @@ subroutine vic_soil_param(param, err, message)
   open (UNIT=50,file=origparam_name,form='formatted',status='old',IOSTAT=stat)
  ! Read original soil parameter file
   do iHru = 1,nHru
-    read(unit=50,*) (param(iHru,ipar), ipar=1,TotNparVic)
+    read(unit=50,*) (param(iHru,ipar), ipar=1,TotNpar)
   end do
+  close(UNIT=50)
   return
 end subroutine vic_soil_param
 
@@ -85,7 +87,7 @@ subroutine adj_soil_param_vic(param, err, message)
   ! local variables
   integer(i4b)                       :: ipar,iHru    ! loop index
   integer(i4b)                       :: stat
-  real(dp),dimension(TotNparVic)     :: realline
+  real(dp),dimension(TotNpar)     :: realline
 
   ! initialize error control
   err=0; message='adj_soil_param_vic/'
@@ -96,7 +98,7 @@ subroutine adj_soil_param_vic(param, err, message)
 
  ! Read original soil parameter file
   do iHru = 1,nHru
-    read(unit=50,*) (realline(ipar), ipar=1,TotNparVic)
+    read(unit=50,*) (realline(ipar), ipar=1,TotNpar)
     ! Modify parameter values
     do iPar=1,nParCal
       select case( parSubset(iPar)%pname )

@@ -3,6 +3,7 @@ module read_mapdata
 USE nrtype
 USE netcdf
 USE data_type 
+USE public_var 
 USE var_lookup,only:ixVarMapData,nVarMapData    ! index of variables in mapping data netCDF and number of variables
 
 implicit none
@@ -29,7 +30,7 @@ contains
  ! input variables
  character(*), intent(in)           :: fname           ! filename
  character(*), intent(in)           :: vartype         ! dimension name for hru
- type(var_info),intent(in)          :: mapdata_meta(:) ! data meta
+ type(var_meta),intent(in)          :: mapdata_meta(:) ! data meta
  character(*), intent(in)           :: dname_hru       ! dimension name for hru
  character(*), intent(in)           :: dname_overPoly  ! dimension name for overlap polygon 
  ! input-output

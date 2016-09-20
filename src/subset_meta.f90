@@ -86,18 +86,20 @@ subroutine get_parm_meta(infile, err, message)
     parSubset(ixLocal)%lwr      = parMaster(ivar)%lwr
     parSubset(ixLocal)%upr      = parMaster(ivar)%upr
     parSubset(ixLocal)%beta     = parMaster(ivar)%beta
+    parSubset(ixLocal)%ptype    = parMaster(ivar)%ptype
     parSubset(ixLocal)%hups     = parMaster(ivar)%hups
     parSubset(ixLocal)%vups     = parMaster(ivar)%vups
     ixLocal = ixLocal+1
     ! extract only gamma parameter list (consider putting this structure in private here)
-    associate( partype => parSubset(ixLocal-1)%beta )
-    if ( trim(partype)/="beta") then 
-      tempMeta(ixGamma)%pname    = parMaster(ivar)%pname
+    associate( parentp => parSubset(ixLocal-1)%beta )
+    if ( trim(parentp)/="beta") then 
       tempMeta(ixGamma)%ixMaster = ivar
+      tempMeta(ixGamma)%pname    = parMaster(ivar)%pname
       tempMeta(ixGamma)%val      = parMaster(ivar)%val
       tempMeta(ixGamma)%lwr      = parMaster(ivar)%lwr
       tempMeta(ixGamma)%upr      = parMaster(ivar)%upr
-      tempMeta(ixGamma)%beta     = trim(partype) 
+      tempMeta(ixGamma)%beta     = trim(parentp) 
+      tempMeta(ixGamma)%ptype    = parMaster(ivar)%ptype
       tempMeta(ixGamma)%hups     = parMaster(ivar)%hups
       tempMeta(ixGamma)%vups     = parMaster(ivar)%vups
       ixGamma = ixGamma+1

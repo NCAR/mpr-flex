@@ -72,8 +72,7 @@ module public_var
   logical,public                  :: isRestart      ! ues restart option? 
   !
   ! Model specific parameters
-  ! VIC parameters
-  integer,parameter,public        :: TotNparVic = 54
+  integer,parameter,public        :: TotNpar = 54
   integer,parameter,public        :: nLyr = 3 
 
 end module public_var

@@ -104,9 +104,9 @@ MODULE var_lookup
 !  Define indices for variables for mapping data
 ! ***********************************************************************************************************
  type, public  ::  iLook_VarMapData
-  integer(i4b)     :: hruid          = imiss        ! hru id 
+  integer(i4b)     :: hru_id         = imiss        ! hru id 
   integer(i4b)     :: weight         = imiss        ! Areal weight of overlapping polygon for hru 
-  integer(i4b)     :: polyid         = imiss        ! Id of overlapping polygon for hru 
+  integer(i4b)     :: overlapPolyId  = imiss        ! Id of overlapping polygon for hru 
  endtype iLook_varMapData
 
 ! ***********************************************************************************************************
@@ -216,9 +216,9 @@ MODULE var_lookup
  type(iLook_VarVegData),  public,parameter :: ixVarVegData   = iLook_VarVegData  (1,2,3,4)
  type(iLook_VarTopo),     public,parameter :: ixVarTopo      = iLook_VarTopo     (1,2,3)
  type(iLook_VarSoil),     public,parameter :: ixVarSoil      = iLook_VarSoil     (1,2,3,4,5)
-! type(iLook_PrpVeg),      public,parameter :: ixPrpVeg       = iLook_PrpVeg      (1,2,3,4,5,6,7,8,9,10,&
-!                                                                                  11,12,13,14,15,16,17,18,19,20,&
-!                                                                                  21,22)
+ type(iLook_PrpVeg),      public,parameter :: ixPrpVeg       = iLook_PrpVeg      (1,2,3,4,5,6,7,8,9,10,&
+                                                                                  11,12,13,14,15,16,17,18,19,20,&
+                                                                                  21,22)
 ! type(iLook_PrpSoil),     public,parameter :: ixPrpSoil      = iLook_PrpSoil     (1,2,3,4,5,6,7,8,9,10)
 
 ! ***********************************************************************************************************
@@ -233,8 +233,7 @@ MODULE var_lookup
  integer(i4b),parameter,public    :: nVarVegData=4
  integer(i4b),parameter,public    :: nVarTopo=3 
  integer(i4b),parameter,public    :: nVarSoil=5 
-
-! integer(i4b),parameter,public    :: nPrpVeg=22
+ integer(i4b),parameter,public    :: nPrpVeg=22
 ! integer(i4b),parameter,public    :: nPrpSoil=10 
 
 END MODULE var_lookup
