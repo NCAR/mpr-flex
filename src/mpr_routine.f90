@@ -15,7 +15,7 @@ subroutine mpr(idModel,           &     ! model ID
                gammaPar,          &     ! array of gamma parameter 
                gammaParMeta,      &     ! array of gamma parameter metadata
                err, message)
-  use model_wrapper,        only:read_soil_param
+  use model_wrapper,        only:read_soil_param, read_hru_id
   use popMeta,              only:mprData
   use globalData,           only:parMaster, betaInGamma
   use globalData,           only:sdata_meta
@@ -216,6 +216,8 @@ subroutine mpr(idModel,           &     ! model ID
                   nOverSpoly,                                &   ! output: max number of overlap polygons
                   err,cmessage)                                  ! output: error control
   if (err/=0)then; message=trim(message)//cmessage; return; endif
+  ! extract hrus of interest
+
 !    ! (2.2) mapping vege polygon to model hru 
 !    call getMapData(trim(mpr_input_dir)//trim(fname_vmapping), &   ! input: file name
 !                    'veg',                                 &   ! input: geophysical data type 
@@ -234,7 +236,7 @@ subroutine mpr(idModel,           &     ! model ID
 !    if ( minval(abs(mapdata(1)%var(ixVarMapData%hru_id)%ivar1-mapdata(2)%var(ixVarMapData%hru_id)%ivar1)) /= 0 ) then
 !      call handle_err(11,'different hru id in vege and soil mapping file')
 !    end if
-!    ! (2.4) assign pointers for saving type 
+    ! (2.4) assign pointers for saving type 
 !    associate( hruID => mapdata(1)%var(ixVarMapData%hru_id)%ivar1, 
 !               swgt  => mapdata(1)%var(ixVarMapData%weight)%dvar2,
 !               vwgt  => mapdata(2)%var(ixVarMapData%weight)%dvar2,

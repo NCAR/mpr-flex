@@ -10,10 +10,38 @@ module vic_routines
   implicit none
   public :: adj_soil_param_vic 
   public :: adj_vege_param_vic 
+  public :: vic_hru_id
   public :: vic_soil_layer
   public :: read_vic_sim
 
 contains
+
+!***************************
+! Read VIC hru IDs 
+!***************************
+subroutine vic_hru_id(hruid, err, message)
+  implicit none
+  ! input 
+  ! output
+  integer(i4b),intent(out)                   :: hruid(:)     ! list of hru where calibration is performed 
+  integer(i4b),intent(out)                   :: err          ! error code
+  character(*),intent(out)                   :: message      ! error message
+  ! local variables
+  integer(i4b)                               :: ipar,iHru    ! loop index
+  integer(i4b)                               :: stat
+
+  ! initialize error control
+  err=0; message='vic_hru_id/'
+ !Open original and modified basin parameter files
+  open (UNIT=50,file=origparam_name,form='formatted',status='old',IOSTAT=stat)
+ ! Read original soil parameter file
+  do iHru = 1,nHru
+    read(unit=50,*) hruid(iHru)
+  end do
+  close(UNIT=50)
+  return
+end subroutine
+
 !***************************
 ! Read VIC soil layer parameters 
 !***************************
@@ -41,7 +69,7 @@ subroutine vic_soil_layer(hlyr, err, message)
   end do
   close(UNIT=50)
   return
-end subroutine vic_soil_layer
+end subroutine
 
 !***************************
 ! Read VIC soil parameters 
@@ -68,7 +96,7 @@ subroutine vic_soil_param(param, err, message)
   end do
   close(UNIT=50)
   return
-end subroutine vic_soil_param
+end subroutine
 
 !***************************
 ! Adjust VIC soil parameters 

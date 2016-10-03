@@ -8,6 +8,7 @@ module model_wrapper
   public :: read_sim
   public :: read_soil_param 
   public :: read_soil_lyr
+  public :: read_hru_id
   private
 
 contains
@@ -60,6 +61,31 @@ subroutine read_soil_param(idModel, param, err, message)
   select case (idModel)
     case (1)
       call vic_soil_param( param, err, cmessage)
+      if (err/=0)then; message=message//cmessage; return; endif
+    case default
+      err=10; message=message//"model is not implemented"; return
+  end select  
+  return
+end subroutine
+
+subroutine read_hru_id(idModel, hruid, err, message)
+  use vic_routines, only: vic_hru_id
+  implicit none
+  ! input 
+  integer(i4b),         intent(in)   :: idModel 
+  ! output
+  integer(i4b),         intent(out)  :: hruid(:)     !  
+  integer(i4b),         intent(out)  :: err          ! error code
+  character(len=strLen),intent(out)  :: message      ! error message
+  ! LOCAL VARIABLES
+  character(len=strLen)              :: cmessage     ! error message from downward subroutine
+
+  ! Start procedure here
+  err=0; message="read_hru_id/"
+
+  select case (idModel)
+    case (1)
+      call vic_hru_id( hruid, err, cmessage)
       if (err/=0)then; message=message//cmessage; return; endif
     case default
       err=10; message=message//"model is not implemented"; return
