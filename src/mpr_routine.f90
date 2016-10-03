@@ -133,11 +133,12 @@ subroutine mpr(idModel,           &     ! model ID
   ! (0.5) populate mpr related  data meta - sdata_meta, vdata_meta, map_meta 
   call mprData( err, cmessage)
   ! (0.5) obtain soil z and h parameter
+  print*,"---------"
   print*,gammaParMeta(:)%pname
   print*,"beta linked to gamma = "
   print*,betaInGamma
   hmult=gammaParMasterMeta(ixPar%z1gamma1)%val
-  call pop_hfrac(hfrac, err, message)
+  call pop_hfrac(gammaPar, gammaParMeta, hfrac, err, message)
   if(err/=0)then; message=trim(message)//cmessage; return; endif
   print*,"---------"
   print*, hfrac
@@ -215,8 +216,6 @@ subroutine mpr(idModel,           &     ! model ID
                   nOverSpoly,                                &   ! output: max number of overlap polygons
                   err,cmessage)                                  ! output: error control
   if (err/=0)then; message=trim(message)//cmessage; return; endif
-  print*,nShru
-  stop
 !    ! (2.2) mapping vege polygon to model hru 
 !    call getMapData(trim(mpr_input_dir)//trim(fname_vmapping), &   ! input: file name
 !                    'veg',                                 &   ! input: geophysical data type 
@@ -543,9 +542,12 @@ subroutine mpr(idModel,           &     ! model ID
     return
 end subroutine mpr
 
-  subroutine pop_hfrac(hfrac, err, message)
+  subroutine pop_hfrac(gammaPar, gammaParMeta,hfrac, err, message)
     use globalData,   only: gammaSubset
     implicit none
+    !input variables
+    real(dp),             intent(in)  :: gammaPar(:)
+    type(cpar_meta),      intent(in)  :: gammaParMeta(:)
     !output variables
     real(dp),             intent(out) :: hfrac(:)
     integer(i4b),         intent(out) :: err         ! error code
@@ -563,10 +565,10 @@ end subroutine mpr
     dummy=-999
     !check h parameters - now can chcek up to 5 layers
     do i=1,size(gammaSubset)
-      if (gammaSubset(i)%pname=="h1gamma1")then;dummy(1)=gammaSubset(i)%val;cycle;endif 
-      if (gammaSubset(i)%pname=="h1gamma2")then;dummy(2)=gammaSubset(i)%val;cycle;endif
-      if (gammaSubset(i)%pname=="h1gamma3")then;dummy(3)=gammaSubset(i)%val;cycle;endif
-      if (gammaSubset(i)%pname=="h1gamma4")then;dummy(4)=gammaSubset(i)%val;cycle;endif
+      if (gammaParMeta(i)%pname=="h1gamma1")then;dummy(1)=gammaPar(i);cycle;endif 
+      if (gammaParMeta(i)%pname=="h1gamma2")then;dummy(2)=gammaPar(i);cycle;endif
+      if (gammaParMeta(i)%pname=="h1gamma3")then;dummy(3)=gammaPar(i);cycle;endif
+      if (gammaParMeta(i)%pname=="h1gamma4")then;dummy(4)=gammaPar(i);cycle;endif
     enddo
     mask=(dummy>0)
     if ( count(mask)/=nLyr-1 ) stop 'number of h1gamma prameters mismatch with nLyr'
