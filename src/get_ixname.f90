@@ -68,7 +68,6 @@ contains
     case('D41gamma1');        get_ixPar = ixPar%D41gamma1       ! fraction of maximum soil moisture where nonlinear baseflow begins 
     case('exp1gamma1');       get_ixPar = ixPar%exp1gamma1      ! exponent in Campbell equatin for Kh
     case('exp1gamma2');       get_ixPar = ixPar%exp1gamma2      ! exponent in Campbell equatin for Kh
-    case('Ksat1gamma1');      get_ixPar = ixPar%ksat1gamma1     ! saturated hydrologic conductivity [mm/day]
     case('bbl1gamma1');       get_ixPar = ixPar%bbl1gamma1      ! bubbling pressure of soil [cm] 
     case('bbl1gamma2');       get_ixPar = ixPar%bbl1gamma2      ! bubbling pressure of soil [cm] 
     case('SD1gamma1');        get_ixPar = ixPar%SD1gamma1       ! soil particle density [kg/m^3]
@@ -84,10 +83,14 @@ contains
     case('h4');               get_ixPar = ixPar%h4                ! 4th layer thickness [m] 
     case('h5');               get_ixPar = ixPar%h5                ! 5th layer thickness [m] 
     case('binfilt');          get_ixPar = ixPar%binfilt           ! variable infilitration curve parameter 
-    case('D1');               get_ixPar = ixPar%D1                ! fraction of Dsmax where nonlinear baseflow begins 
-    case('D2');               get_ixPar = ixPar%D2                ! fraction of maximum soil moisture where nonlinear baseflow begins 
-    case('D3');               get_ixPar = ixPar%D3                ! fraction of maximum soil moisture where nonlinear baseflow begins 
-    case('D4');               get_ixPar = ixPar%D4                ! fraction of maximum soil moisture where nonlinear baseflow begins 
+    case('D1');               get_ixPar = ixPar%D1                ! 
+    case('D2');               get_ixPar = ixPar%D2                ! 
+    case('D3');               get_ixPar = ixPar%D3                ! 
+    case('D4');               get_ixPar = ixPar%D4                ! 
+    case('Ds');               get_ixPar = ixPar%Ds                ! 
+    case('Dsmax');            get_ixPar = ixPar%Dsmax             !  
+    case('Ws');               get_ixPar = ixPar%Ws                ! 
+    case('c');                get_ixPar = ixPar%c                 ! 
     case('expt');             get_ixPar = ixPar%expt              ! exponent in Campbell equatin for Kh
     case('ks');               get_ixPar = ixPar%ks                ! saturated hydrologic conductivity [mm/day]
     case('bbl');              get_ixPar = ixPar%bbl               ! bubbling pressure of soil [cm] 
@@ -166,7 +169,7 @@ contains
    case('clay_frc');     get_ixDataSoil = ixVarSoilData%clay_frc      ! clay fraction in soil polygon and layer [-]
    case('bulk_density'); get_ixDataSoil = ixVarSoilData%bulk_density  ! bulk density in soil polygon and layer [-]
    case('ele_mean');     get_ixDataSoil = ixVarSoilData%ele_mean      ! average elev over soil polygon [m]
-   case('ele_std');      get_ixDataSoil = ixVarSoilData%ele_STD       ! std elev over soil polygon [m]
+   case('ele_std');      get_ixDataSoil = ixVarSoilData%ele_std       ! std elev over soil polygon [m]
    case('slp_mean');     get_ixDataSoil = ixVarSoilData%slp_mean      ! average slope over soil polygon [-]
    ! get to here if cannot find the variable
    case default;     get_ixdataSoil = imiss

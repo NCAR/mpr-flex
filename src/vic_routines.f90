@@ -27,6 +27,7 @@ subroutine vic_hru_id(hruid, err, message)
   integer(i4b),intent(out)                   :: err          ! error code
   character(*),intent(out)                   :: message      ! error message
   ! local variables
+  real(dp),dimension(TotNpar)                :: realline
   integer(i4b)                               :: ipar,iHru    ! loop index
   integer(i4b)                               :: stat
 
@@ -36,7 +37,8 @@ subroutine vic_hru_id(hruid, err, message)
   open (UNIT=50,file=origparam_name,form='formatted',status='old',IOSTAT=stat)
  ! Read original soil parameter file
   do iHru = 1,nHru
-    read(unit=50,*) hruid(iHru)
+    read(unit=50,*) (realline(ipar), ipar=1,TotNpar)
+    hruid(iHru)=realline(2)
   end do
   close(UNIT=50)
   return

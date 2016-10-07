@@ -186,7 +186,7 @@ endtype poly
  endtype nameivar2
 
 ! data type containing a name and vector and 2D array variable for both integer and double precision
- type namevar
+ type,public :: namevar
    character(len=256)          :: varName
    real(dp),    allocatable    :: dvar1(:)
    integer(i4b),allocatable    :: ivar1(:)

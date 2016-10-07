@@ -34,6 +34,8 @@ subroutine get_parm_meta(infile, err, message)
   character(len=256)                   :: cmessage       ! error message for downwind routine
   type(cpar_meta),allocatable          :: tempMeta(:)
   character(len=strLen),allocatable    :: res(:)         ! 
+  character(len=strLen),allocatable    :: allbeta(:)     ! 
+  logical(lgc),allocatable             :: mask(:)
   integer(i4b)                         :: unt            ! DK: need to either define units globally, or use getSpareUnit
   integer(i4b)                         :: iline          ! loop through lines in the file 
   integer(i4b)                         :: ixLocal        ! index for calibrationg parameter list 
@@ -63,7 +65,7 @@ subroutine get_parm_meta(infile, err, message)
   ! loop through the lines in the file
   ixLocal=1
   ixGamma=1
-  do iline=1,maxLines
+  line:do iline=1,maxLines
     ! read a line of data and exit iif an error code (character read, so only possible error is end of file)
     read(unt,'(a)',iostat=iend)temp; if (iend/=0)exit
     ! check that the line is not a comment
@@ -105,29 +107,37 @@ subroutine get_parm_meta(infile, err, message)
       ixGamma = ixGamma+1
     endif
     end associate
-  enddo  ! looping through lines in the file
+  enddo line
   if (ixGamma > 1) then
     allocate(gammaSubset(ixGamma-1))
     gammaSubset=tempMeta(1:ixGamma) 
   endif
-  ! get beta parameter associated with gamma parameter
+  ! get beta parameter associated with gamma parameter (excluding soil depth, layer thickness)
   if ( allocated(gammaSubset) ) then
     allocate(res(size(gammaSubset)))
     k = 1
     res(1) = gammaSubset(1)%beta
-    outer: do i=2,size(gammaSubset)
-      do j=1,k
+    outer:do i=2,size(gammaSubset)
+      inner:do j=1,k
         ! if find a match so start looking again
         if (res(j)==gammaSubset(i)%beta)then; cycle outer; endif
-      end do
+      end do inner
       ! No match found so add it to the output
       k = k + 1
       res(k) = gammaSubset(i)%beta
     end do outer
-    allocate(betaInGamma(k))
-    betaInGamma=res(1:k) 
+    allocate(allbeta(k))
+    allbeta=res(1:k) 
+    ! exclude h and z parameters from allbeta to get betaInGamma
+    allocate(mask(k))
+    mask=.true.
+    do i=1,k
+      if ( get_ixPar(trim(allbeta(i))) == imiss ) mask(i)=.false. 
+    end do
+    allocate(betaInGamma(count(mask)))
+    betaInGamma=pack(allbeta,mask)
   else
-    print*, 'NO gamma parameters to be calibrated'
+    print*, 'NO gamma parameters included in the list'
   endif
   ! check that all elements are populated
   if(any(parSubset(:)%pname==''))then

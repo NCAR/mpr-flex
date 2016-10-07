@@ -51,7 +51,6 @@ MODULE var_lookup
    integer(i4b)     :: D41gamma1       = imiss  ! 
    integer(i4b)     :: exp1gamma1      = imiss  ! 
    integer(i4b)     :: exp1gamma2      = imiss  ! 
-   integer(i4b)     :: ksat1gamma1     = imiss  ! 
    integer(i4b)     :: bbl1gamma1      = imiss  ! 
    integer(i4b)     :: bbl1gamma2      = imiss  ! 
    integer(i4b)     :: BD1gamma1       = imiss  ! 
@@ -63,18 +62,22 @@ MODULE var_lookup
    integer(i4b)     :: uhscale         = imiss  ! uh gamma pdf scale parameter
    integer(i4b)     :: ks              = imiss  ! Saturated conductivity 
    integer(i4b)     :: bd              = imiss  ! bulk density
-   integer(i4b)     :: sd              = imiss  ! soil density 
+   integer(i4b)     :: sd              = imiss ! soil density
    integer(i4b)     :: psis            = imiss  ! saturation matric potential 
    integer(i4b)     :: b               = imiss  ! retension courve slope in log space
-   integer(i4b)     :: myu             = imiss  ! 
    integer(i4b)     :: phi             = imiss  ! porosity 
    integer(i4b)     :: fc              = imiss  ! field capacity
    integer(i4b)     :: wp              = imiss  ! wilting point 
+   integer(i4b)     :: myu             = imiss  ! 
    integer(i4b)     :: binfilt         = imiss  ! 
    integer(i4b)     :: D1              = imiss  ! 
    integer(i4b)     :: D4              = imiss  ! 
    integer(i4b)     :: D2              = imiss  ! 
    integer(i4b)     :: D3              = imiss  ! 
+   integer(i4b)     :: c               = imiss  ! 
+   integer(i4b)     :: Dsmax           = imiss  ! 
+   integer(i4b)     :: Ds              = imiss  ! 
+   integer(i4b)     :: Ws              = imiss  ! 
    integer(i4b)     :: expt            = imiss  ! 
    integer(i4b)     :: bbl             = imiss  ! 
    integer(i4b)     :: h1              = imiss  ! 
@@ -208,7 +211,8 @@ MODULE var_lookup
                                                                                  31,32,33,34,35,36,37,38,39,40,&
                                                                                  41,42,43,44,45,46,47,48,49,50,&
                                                                                  51,52,53,54,55,56,57,58,59,60,&
-                                                                                 61,62,63,64,65,66,67,68,69,70)
+                                                                                 61,62,63,64,65,66,67,68,69,70,&
+                                                                                 71,72,73)
 
  type(iLook_VarHru),      public,parameter :: ixVarHru       = iLook_VarHru      (1,2,3,4,5,6)
  type(iLook_VarMapData),  public,parameter :: ixVarMapData   = iLook_VarMapData  (1,2,3)
@@ -225,7 +229,7 @@ MODULE var_lookup
 ! define size of data vectors
 ! ***********************************************************************************************************
 ! Number of vairables defined
- integer(i4b),parameter,public    :: nPar = 70 
+ integer(i4b),parameter,public    :: nPar = 73 
 
  integer(i4b),parameter,public    :: nVarHru=6
  integer(i4b),parameter,public    :: nVarMapData=3
