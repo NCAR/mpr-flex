@@ -38,7 +38,6 @@ function objfn( param )
 
   ! initialize error control
   err=0; message='eval_objfn/'
-
   ! allocate array
   allocate(obs(nbasin*sim_len))
   allocate(sim(nHru,sim_len))
@@ -58,6 +57,7 @@ function objfn( param )
     call mpr(idModel, paramGamma, gammaSubset, err, message) 
     if (err/=0)then; stop message; endif
   endif
+  stop
   ! Run hydrologic model   
   call system(executable)
   !read observation 
