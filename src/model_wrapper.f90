@@ -44,7 +44,7 @@ subroutine adjust_param( idModel, param, err, message)
 end subroutine adjust_param 
   
 subroutine read_soil_param(idModel, param, err, message)
-  use vic_routines, only: vic_soil_param
+  use vic_routines, only: read_soil_param_vic
   implicit none
   ! input 
   integer(i4b),         intent(in)   :: idModel 
@@ -60,7 +60,7 @@ subroutine read_soil_param(idModel, param, err, message)
 
   select case (idModel)
     case (1)
-      call vic_soil_param( param, err, cmessage)
+      call read_soil_param_vic( param, err, cmessage)
       if (err/=0)then; message=message//cmessage; return; endif
     case default
       err=10; message=message//"model is not implemented"; return

@@ -57,7 +57,6 @@ function objfn( param )
     call mpr(idModel, paramGamma, gammaSubset, err, message) 
     if (err/=0)then; stop message; endif
   endif
-  stop
   ! Run hydrologic model   
   call system(executable)
   !read observation 
@@ -489,7 +488,7 @@ subroutine agg_hru_to_basin(simHru,simBasin,err,message)
   integer(i4b),           intent(out)   :: err                     ! error code
   character(*),           intent(out)   :: message                 ! error message
   !local variables
-  character(len=256)                    :: cmessage                ! error message from downward routine
+  character(len=strLen)                 :: cmessage                ! error message from downward routine
   integer(i4b)                          :: unt                     ! DK: need to either define units globally, or use getSpareUnit
   real(dp)                              :: basin_area
   real(dp)                              :: auxflux(5)              ! This is only in case of water balance mode

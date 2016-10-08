@@ -139,7 +139,7 @@ MODULE var_lookup
  endtype iLook_VarSoilData
 
 ! ***********************************************************************************************************
-!  Define indices for soil properties
+!  Define indices for soil properties (may be removed)
 ! ***********************************************************************************************************
  type, public  ::  iLook_PrpSoil
   integer(i4b)     :: bd    = imiss      ! bulk density [g/cm3]
