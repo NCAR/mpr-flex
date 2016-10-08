@@ -8,11 +8,11 @@ module vic_routines
   implicit none
   public :: adj_soil_param_vic 
   public :: adj_vege_param_vic 
+  public :: replace_soil_param_vic 
   public :: vic_hru_id
   public :: vic_soil_layer
   public :: read_vic_sim
   public :: read_soil_param_vic
-  public :: write_soil_param_vic
   private
 
 contains
@@ -143,35 +143,36 @@ end subroutine
 !***************************
 ! replace VIC soil parameters 
 !***************************
-subroutine replace_soil_param_vic(fname, hModel, parMxyMz, ierr, message)
-  use globalData, only: betaInGamma 
-  use get_ixname, only:get_ixPar
+subroutine replace_soil_param_vic(hModel, parMxyMz, ierr, message)
+  use globalData, only: parMaster, betaInGamma 
+  use get_ixname, only: get_ixPar
   implicit none
   !input variables
-  character(*),intent(in)            :: fname        ! file name to be written 
-  real(dp),    intent(in)            :: hModel(:,:)  ! Model layer thickness for one hru
-  type(dat_d2d)                      :: parMxyMz(:)  ! 
+  real(dp),         intent(in)   :: hModel(:,:)  ! Model layer thickness for one hru
+  type(dat_d2d),    intent(in)   :: parMxyMz(:)  ! 
   ! output
-  integer(i4b),intent(out)           :: ierr         ! error code
-  character(*),intent(out)           :: message      ! error message
+  integer(i4b),     intent(out)  :: ierr         ! error code
+  character(*),     intent(out)  :: message      ! error message
   ! local variables
-  integer(i4b)                       :: ipar,iHru     ! loop index
-  integer(i4b)                       :: nHru          ! number of hrus 
-  integer(i4b)                       :: nSoilParModel ! number of parameters 
-  integer(i4b)                       :: stat
-  real(dp),dimension(TotNpar)        :: realline
+  integer(i4b)                   :: ipar,iHru     ! loop index
+  integer(i4b)                   :: ix
+  integer(i4b)                   :: nHru          ! number of hrus 
+  integer(i4b)                   :: nSoilParModel ! number of parameters 
+  integer(i4b)                   :: stat
+  real(dp),dimension(TotNpar)    :: realline
 
   ! initialize error control
   ierr=0; message='replace_soil_param_vic/'
   open (UNIT=50,file=origparam_name,form='formatted',status='old',IOSTAT=stat)
-  open(UNIT=51,file=trim(fname),action='write',status='unknown' )
+  open (UNIT=51,file=calibparam_name,action='write',status='unknown' )
   nSoilParModel=size(parMxyMz)
  ! Read original soil parameter file
   do iHru = 1,nHru
     read(unit=50,*) (realline(ipar), ipar=1,TotNpar)
     ! replace parameter values
     do iPar=1,nSoilParModel
-      associate( ix=>get_ixPar(trim(betaInGamma(iPar))) )
+      ix=get_ixPar(trim(betaInGamma(iPar)))
+     ! associate( ix=>get_ixPar(trim(betaInGamma(iPar))) )
       select case( parMaster(ix)%pname )
         case('binfilt');  realline(5)     = parMxyMz(iPar)%dat(1, iHru) 
         case('D1');       realline(6)     = parMxyMz(iPar)%dat(nLyr,iHru)
@@ -189,7 +190,7 @@ subroutine replace_soil_param_vic(fname, hModel, parMxyMz, ierr, message)
         case('WcrFrac');  realline(41:43) = parMxyMz(iPar)%dat(:,iHru)
         case('WpwpFrac'); realline(44:46) = parMxyMz(iPar)%dat(:,iHru)
       end select
-      end associate
+     ! end associate
     end do
     ! Write the modified parameter file for the entire basin/region for traditional upscaling
     write(51,'(I,2X)',advance='no') 1
@@ -206,6 +207,7 @@ subroutine replace_soil_param_vic(fname, hModel, parMxyMz, ierr, message)
     write(51,'(f9.4)') realline(54)
   enddo  !end cell loop
   ! Close original and modified basin parameter files
+  close(UNIT=50)
   close(UNIT=51)
   return
 end subroutine

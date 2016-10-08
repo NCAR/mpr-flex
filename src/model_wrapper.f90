@@ -1,15 +1,18 @@
 module model_wrapper 
-
   use nrtype
+  use data_type                                        ! Including custum data structure definition
   use public_var
 
   implicit none
+  
+  private
+
   public :: adjust_param 
+  public :: replace_param
   public :: read_sim
   public :: read_soil_param 
   public :: read_soil_lyr
   public :: read_hru_id
-  private
 
 contains
 
@@ -41,7 +44,34 @@ subroutine adjust_param( idModel, param, err, message)
       err=10; message=message//"model is not implemented"; return
   end select  
   return
-end subroutine adjust_param 
+end subroutine
+
+subroutine replace_param( idModel, hModel, parMxyMz, err, message)
+  use vic_routines, only: replace_soil_param_vic
+  implicit none
+  
+  ! input 
+  integer(i4b),         intent(in)   :: idModel      ! model id
+  real(dp),             intent(in)   :: hModel(:,:)  ! Model layer thickness for model hru
+  type(dat_d2d),        intent(in)   :: parMxyMz(:)  ! model soil parameter 
+  ! output
+  integer(i4b),         intent(out)  :: err          ! error code
+  character(len=strLen),intent(out)  :: message      ! error message
+  ! LOCAL VARIABLES
+  character(len=strLen)              :: cmessage     ! error message from downward subroutine
+
+  ! Start procedure here
+  err=0; message="replace_param/"
+  select case (idModel)
+    case (1)
+      ! replace soil model parameters 
+      call replace_soil_param_vic( hModel, parMxyMz, err, cmessage)
+      if (err/=0)then; message=message//cmessage; return; endif
+    case default
+      err=10; message=message//"model is not implemented"; return
+  end select  
+  return
+end subroutine
   
 subroutine read_soil_param(idModel, param, err, message)
   use vic_routines, only: read_soil_param_vic

@@ -3,6 +3,7 @@ module data_type
 ! Here define custum data type    
 
   use nrtype
+  use public_var 
 
   implicit none
 
@@ -10,15 +11,15 @@ module data_type
 ! Define data structure of master parameter (both gamma and beta) metadata
 ! ***********************************************************************************************************
 type,public  :: par_meta
-  character(*)        :: pname=''        ! parameter name
-  real(dp)            :: val  =-999.0_dp ! default bound 
-  real(dp)            :: lwr  =-999.0_dp ! lower and upper bounds
-  real(dp)            :: upr  =-999.0_dp ! lower and upper bounds
-  character(*)        :: beta =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
-  character(*)        :: ptype=''
-  logical(lgc)        :: flag =.False.   ! flag to calibrate or not 
-  character(*)        :: hups =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
-  character(*)        :: vups =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
+  character(len=strLen)        :: pname=''        ! parameter name
+  real(dp)                     :: val  =-999.0_dp ! default bound 
+  real(dp)                     :: lwr  =-999.0_dp ! lower and upper bounds
+  real(dp)                     :: upr  =-999.0_dp ! lower and upper bounds
+  character(len=strLen)        :: beta =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
+  character(len=strLen)        :: ptype=''
+  logical(lgc)                 :: flag =.False.   ! flag to calibrate or not 
+  character(len=strLen)        :: hups =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
+  character(len=strLen)        :: vups =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
 endtype par_meta
 
 ! extended parameter meta data for selected set 
@@ -30,25 +31,25 @@ endtype cpar_meta
 ! Define data structure of beta parameter meta data 
 ! ***********************************************************************************************************
 type,public  :: beta_meta
-  character(*)                     :: pname=''             ! beta parameter name
-  character(*)                     :: desc=''              ! description
-  character(*)                     :: units=''             ! units
-  character(*)                     :: dims=''              ! data dimension (scaler, vector, 2D, 3D)
+  character(len=strLen)            :: pname=''             ! beta parameter name
+  character(len=strLen)            :: desc=''              ! description
+  character(len=strLen)            :: units=''             ! units
+  character(len=strLen)            :: dims=''              ! data dimension (scaler, vector, 2D, 3D)
   logical(lgc)                     :: v_agg=.FALSE.        ! flag to perform vertical scaling 
-  character(*)                     :: vaggmethod           ! vertical upscaling operator to be used 
+  character(len=strLen)            :: vaggmethod           ! vertical upscaling operator to be used 
   logical(lgc)                     :: h_agg=.FALSE.        ! flag to perform horizontal scaling 
-  character(*)                     :: haggmethod           ! horizontal upscaling operator to be used 
+  character(len=strLen)            :: haggmethod           ! horizontal upscaling operator to be used 
 endtype beta_meta
 
 ! ***********************************************************************************************************
 ! Define data structure of variable metadata - soil propeties, topography, vege propeties, model hru propeties 
 ! ***********************************************************************************************************
 type,public :: var_meta
-  character(*)                     :: varname=''               ! name
-  character(*)                     :: vardesc=''               ! description
-  character(*)                     :: varunit=''               ! units
-  character(*)                     :: vardims=''               ! dimension (scaler, vector, 2D, 3D)
-  character(*)                     :: vartype=''               ! type (integer, double)
+  character(len=strLen)            :: varname=''               ! name
+  character(len=strLen)            :: vardesc=''               ! description
+  character(len=strLen)            :: varunit=''               ! units
+  character(len=strLen)            :: vardims=''               ! dimension (scaler, vector, 2D, 3D)
+  character(len=strLen)            :: vartype=''               ! type (integer, double)
 endtype var_meta
 
 ! *****
@@ -163,31 +164,31 @@ endtype poly
 
 ! data type containing a name and vector variable (double precision)
  type namedvar
-  character(*)           :: varName
+  character(len=strLen)        :: varName
   real(dp),allocatable         :: varData(:)
  endtype namedvar
 
 ! data type containing a name and vector variable (integer)
  type nameivar
-   character(*)          :: varName
+   character(len=strLen)       :: varName
    integer(i4b),allocatable    :: varData(:)
  endtype nameivar
 
 ! data type containing a name and vector variable (double precision)
  type namedvar2
-  character(*)           :: varName
+  character(len=strLen)        :: varName
   real(dp),allocatable         :: varData(:,:)
  endtype namedvar2
 
 ! data type containing a name and vector variable (integer)
  type nameivar2
-   character(*)          :: varName
+   character(len=strLen)       :: varName
    integer(i4b),allocatable    :: varData(:,:)
  endtype nameivar2
 
 ! data type containing a name and vector and 2D array variable for both integer and double precision
  type,public :: namevar
-   character(*)          :: varName
+   character(len=strLen)       :: varName
    real(dp),    allocatable    :: dvar1(:)
    integer(i4b),allocatable    :: ivar1(:)
    real(dp),    allocatable    :: dvar2(:,:)

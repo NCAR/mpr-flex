@@ -15,7 +15,7 @@ subroutine mpr(idModel,           &     ! input: model ID
                gammaPar,          &     ! input: array of gamma parameter 
                gammaParMeta,      &     ! input: array of gamma parameter metadata
                err, message)
-  use model_wrapper,        only:read_hru_id
+  use model_wrapper,        only:read_hru_id,replace_param
   use popMeta,              only:popMprMeta
   use globalData,           only:parMaster, betaInGamma
   use globalData,           only:sdata_meta,vdata_meta,map_meta
@@ -58,6 +58,7 @@ subroutine mpr(idModel,           &     ! input: model ID
   integer(i4b)                       :: iVar                     ! Loop index of miscleneous variables 
   integer(i4b)                       :: iHru                     ! loop index of hrus 
   integer(i4b)                       :: iSub                     ! Loop index of multiple soi layers in model layer
+  integer(i4b)                       :: ix
   logical(lgc),allocatable           :: mask(:)                  ! mask for 1D array 
   integer(i4b)                       :: hruID(nHru)
   type(par_meta),allocatable         :: gammaParMasterMeta(:)
@@ -388,7 +389,8 @@ subroutine mpr(idModel,           &     ! input: model ID
             end associate third
           enddo
           do iParm = 1,nSoilParModel
-            forth: associate( ix=>get_ixPar(trim(betaInGamma(iParm))) )
+            ix=get_ixPar(trim(betaInGamma(iParm)))
+           ! forth: associate( ix=>get_ixPar(trim(betaInGamma(iParm))) )
             if ( trim(parMaster(ix)%vups)/='na' )then
               call aggreg(parSxyMz(iParm)%dat(iMLyr,iPoly),             &
                           soil2model_map(iPoly)%layer(iMLyr)%weight(:), &
@@ -397,7 +399,7 @@ subroutine mpr(idModel,           &     ! input: model ID
                           err, cmessage)
                if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
             endif
-            end associate forth
+           ! end associate forth
           enddo
           do iparm = 1,nSoilParModel
             deallocate(paramvec(iParm)%layer,stat=err);if(err/=0)then;message=trim(message)//'error deallocating paramvec%layer';return;endif
@@ -419,7 +421,8 @@ subroutine mpr(idModel,           &     ! input: model ID
         enddo
         call aggreg(hModel(iMLyr,iHru), swgtsub(:), hModelLocal(iMLyr,:), 'wamean', err, cmessage)
         do iParm = 1,nSoilParModel
-          fifth: associate( ix=>get_ixPar(trim(betaInGamma(iParm))) )
+        !  fifth: associate( ix=>get_ixPar(trim(betaInGamma(iParm))) )
+          ix=get_ixPar(trim(betaInGamma(iParm)))
           if ( trim(parMaster(ix)%hups)/='na' )then
             call aggreg(parMxyMz(iParm)%dat(iMLyr,iHru), &
                         swgtsub(:),                      &
@@ -432,7 +435,7 @@ subroutine mpr(idModel,           &     ! input: model ID
               write(*,"(1X,A17,'(layer ',I2,') = ',100f9.3)") parMaster(ix)%pname,iMLyr ,parMxyMz(iParm)%dat(iMLyr,iHru)
             endif
           endif
-          end associate fifth
+        !  end associate fifth
         enddo
         do iParm = 1,nSoilParModel
           deallocate(paramvec(iParm)%layer, stat=err); if(err/=0)then; message=trim(message)//'error deallocating paramvec%layer'; return; endif 
@@ -471,8 +474,8 @@ subroutine mpr(idModel,           &     ! input: model ID
       enddo
     enddo hru
     end associate
-!    call replace_param(idModel, parMxyMz, err, cmessage) 
-!    if(err/=0)then; message=trim(message)//cmessage; return; endif
+    call replace_param(idModel, hModel, parMxyMz, err, cmessage) 
+    if(err/=0)then; message=trim(message)//cmessage; return; endif
     return
 end subroutine
   
