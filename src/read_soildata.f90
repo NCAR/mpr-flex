@@ -113,7 +113,7 @@ contains
  ierr = nf90_close(ncid)
  if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
 
- end subroutine getData
+ end subroutine
 
 ! *****
 ! Subroutine: soil thickness mod

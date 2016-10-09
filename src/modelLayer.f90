@@ -128,10 +128,7 @@ end subroutine
     zSoil(iSlyr,:)=hSoil(iSlyr,:)+zSoil(iSlyr-1,:)
   enddo
   poly: do iPoly=1,nPoly
-    allocate(lyrmap(iPoly)%layer(nLyr), stat=ierr); if(ierr/=0)then; message=trim(message)//'error allocating lyrmap%layer';return;endif
     do iMLyr=1,nLyr
-      allocate(lyrmap(iPoly)%layer(iMLyr)%weight(nSub), stat=ierr); if(ierr/=0)then; message=trim(message)//'error allocating lyrmap%layer%weight';return;endif
-      allocate(lyrmap(iPoly)%layer(iMLyr)%ixSubLyr(nSub), stat=ierr); if(ierr/=0)then; message=trim(message)//'error allocating lyrmap%layer%ixSubLyr';return;endif
       lyrmap(iPoly)%layer(iMLyr)%weight = dmiss
       lyrmap(iPoly)%layer(iMLyr)%ixSubLyr = imiss
     enddo

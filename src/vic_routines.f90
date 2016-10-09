@@ -155,8 +155,6 @@ subroutine replace_soil_param_vic(hModel, parMxyMz, ierr, message)
   character(*),     intent(out)  :: message      ! error message
   ! local variables
   integer(i4b)                   :: ipar,iHru     ! loop index
-  integer(i4b)                   :: ix
-  integer(i4b)                   :: nHru          ! number of hrus 
   integer(i4b)                   :: nSoilParModel ! number of parameters 
   integer(i4b)                   :: stat
   real(dp),dimension(TotNpar)    :: realline
@@ -171,8 +169,7 @@ subroutine replace_soil_param_vic(hModel, parMxyMz, ierr, message)
     read(unit=50,*) (realline(ipar), ipar=1,TotNpar)
     ! replace parameter values
     do iPar=1,nSoilParModel
-      ix=get_ixPar(trim(betaInGamma(iPar)))
-     ! associate( ix=>get_ixPar(trim(betaInGamma(iPar))) )
+      associate( ix=>get_ixPar(trim(betaInGamma(iPar))) )
       select case( parMaster(ix)%pname )
         case('binfilt');  realline(5)     = parMxyMz(iPar)%dat(1, iHru) 
         case('D1');       realline(6)     = parMxyMz(iPar)%dat(nLyr,iHru)
@@ -190,7 +187,7 @@ subroutine replace_soil_param_vic(hModel, parMxyMz, ierr, message)
         case('WcrFrac');  realline(41:43) = parMxyMz(iPar)%dat(:,iHru)
         case('WpwpFrac'); realline(44:46) = parMxyMz(iPar)%dat(:,iHru)
       end select
-     ! end associate
+      end associate
     end do
     ! Write the modified parameter file for the entire basin/region for traditional upscaling
     write(51,'(I,2X)',advance='no') 1

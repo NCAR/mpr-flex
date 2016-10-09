@@ -411,9 +411,7 @@ subroutine wmode(wgtval, wgtvec, datvec, ierr, message )
       maskunq(iElm) = .not.(any(int(datvec_packed(1:iElm-1))==int(datvec_packed(iElm))))
     end do
     ! make index vector
-    allocate(idxdat(count(maskunq)))
-    idxdat=pack([(iElm,iElm=1,nElm)],maskunq)
-    !allocate(idxdat, source=pack([(iElm,iElm=1,nElm)],maskunq))
+    allocate(idxdat, source=pack([(iElm,iElm=1,nElm)],maskunq))
     ! copy the unique element in datvec_unq
     allocate(datvec_unq, source=datvec_packed(idxdat))
     allocate(wsum(size(datvec_unq)),stat=ierr);if(ierr/=0)then;message=trim(message)//'error allocating wsum';return;endif
