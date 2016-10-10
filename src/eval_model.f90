@@ -14,14 +14,14 @@ contains
 !************************************
 ! perform model evaluation 
 !************************************
-function objfn( param )
+function objfn( calPar )
   use mpr_routine,   only: mpr
   use globalData,    only: parMaster, parSubset, gammaSubset
   use model_wrapper, only: adjust_param, read_sim
 !  use mpr_routine, only:mpr
   implicit none
   !input variables
-  real(dp),dimension(:),intent(in)    :: param        ! parameter in namelist, not necessarily all parameters are calibrated
+  real(dp),dimension(:),intent(in)    :: calPar       ! parameter in namelist, not necessarily all parameters are calibrated
   !output variables
   real(dp)                            :: objfn        ! object function value 
   !local variables
@@ -45,15 +45,15 @@ function objfn( param )
   allocate(simBasinRouted(nbasin,sim_len))
   ! Adjust model parameters if beta parameter exist in calibrating parameter set (Model specific)
   if ( any(parSubset(:)%beta == "beta") )then
-    call adjust_param(idModel, param, err, message)
+    call adjust_param(idModel, calPar, err, message)
     if (err/=0)then; stop message; endif
   endif
   ! Execute MPR if gamma parameters exist in calibrating parameter set (model specific)
   if ( any(parSubset(:)%beta /= "beta") )then
-    allocate(mask(size(param)))
+    allocate(mask(size(calPar)))
     mask=parSubset(:)%beta/="beta"
     allocate(paramGamma(count(mask)))
-    paramGamma=pack(param,mask)
+    paramGamma=pack(calPar,mask)
     call mpr(idModel, paramGamma, gammaSubset, err, message) 
     if (err/=0)then; stop message; endif
   endif
@@ -73,8 +73,8 @@ function objfn( param )
   uscale=parMaster(ixPar%uhscale)%val
   do iPar=1,nParCal
     select case( parSubset(iPar)%pname )
-      case('uhshape');  ushape = param( iPar )
-      case('uhscale');  uscale = param( iPar )
+      case('uhshape');  ushape = calPar( iPar )
+      case('uhscale');  uscale = calPar( iPar )
      end select
   end do
   call route_q(simBasin, simBasinRouted, ushape, uscale, err, message)

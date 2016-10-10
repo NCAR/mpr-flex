@@ -5,7 +5,7 @@ module mpr_routine
 
   implicit none
 
-  PRIVATE
+  private
    
   public:: mpr
 
@@ -56,51 +56,51 @@ subroutine mpr(idModel,           &     ! input: model ID
   integer(i4b)                       :: iMLyr                    ! loop index of model soil layer (1,...,n from top to bottom) 
   integer(i4b)                       :: iParm                    ! Loop index of model parameters (e.g., VIC)
   integer(i4b)                       :: iVar                     ! Loop index of miscleneous variables 
+  integer(i4b)                       :: iPrpVeg                  ! Loop index of veg properties 
   integer(i4b)                       :: iHru                     ! loop index of hrus 
   integer(i4b)                       :: iSub                     ! Loop index of multiple soi layers in model layer
   logical(lgc),allocatable           :: mask(:)                  ! mask for 1D array 
+  logical(lgc),allocatable           :: vmask(:)                 ! mask for vpolIdSub array 
   integer(i4b)                       :: hruID(nHru)
   type(par_meta),allocatable         :: gammaParMasterMeta(:)
+  integer(i4b)                       :: nVegParModel             ! Number of model vege parameters
+  integer(i4b)                       :: nSoilParModel            ! Number of model soil parameters
   integer(i4b)                       :: nSpoly                   ! number of soil polygon in entire soil data domain 
   integer(i4b)                       :: nSlyrs                   ! number of soil layers
+  integer(i4b)                       :: nVpoly                   ! number of vege polygon (grid box) in entire vege data domain 
+  integer(i4b)                       :: nShru                    ! number of hrus in soil mapping file) 
+  integer(i4b)                       :: nVhru                    ! number of hrus in vege mapping file (should be equal to nVhru)
+  integer(i4b)                       :: nOverSpoly               ! number of overlapped soil polygon for each model HRU 
+  integer(i4b)                       :: nOverVpoly               ! number of overlapped vege polygon for each model HRU 
+  integer(i4b)                       :: nSpolyLocal              ! number of subset overlapped soil polygon for each model HRU 
+  integer(i4b)                       :: nVpolyLocal              ! number of subset overlapped vege polygon for each model HRU 
   real(dp)                           :: hmult                    ! mulitplier of soil layer  
   real(dp)                           :: hfrac(nLyr-1)            ! fraction of soil depth for each model layer 
   type(namevar)                      :: sdata(nVarSoilData)      ! soil data container for all the soil polygons
   type(namevar)                      :: sdataLocal(nVarSoilData) ! soil data container for local soil polygon 
   type(namevar)                      :: vdata(nVarVegData)       ! veg data container for all the veg polygons
-  integer(i4b)                      :: nVpoly                   ! number of vege polygon (grid box) in entire vege data domain 
-  integer(i4b),    allocatable      :: vegClass(:)              ! veg class array (e.g., IGBP)
-  integer(i4b),    allocatable      :: vclsLocal(:)             ! veg class id for each poly for subset of veg data
-  type(var_d),     allocatable      :: vcls2prp(:)              ! storage of property value for each veg class
-  type(namedvar),  allocatable      :: vprp(:)                  ! storage of veg property values for 1D(poly) 
-  type(namedvar),  allocatable      :: vprpLocal(:)             ! storage of veg property values for 1D(poly) 
-  integer(i4b)                      :: iVclass                  ! ID (= index) of vege class 
-  integer(i4b)                      :: iPrpVeg                  ! Loop index of veg properties 
-  integer(i4b)                      :: nVegParModel             ! Number of model vege parameters
-  integer(i4b)                      :: nSoilParModel            ! Number of model soil parameters
-  real(dp),        allocatable      :: hModel(:,:)              ! Model layer thickness for one hru
-  real(dp),        allocatable      :: zModel(:,:)              ! Model layer depth for one hru
-  real(dp),        allocatable      :: hModelLocal(:,:)         ! Model layer thickness for soil polygon within one hru
-  real(dp),        allocatable      :: zModelLocal(:,:)         ! Model layer depth for soil polygon within one hru
-  type(dat_d2d),   allocatable      :: parSxySz(:)              ! storage of model soil parameter for 2D field -soil layer x soil poy 
-  type(dat_d2d),   allocatable      :: parSxyMz(:)              ! storage of model soil parameter for 2D field -model layer x soil poy
-  type(dat_d2d),   allocatable      :: parMxyMz(:)              ! storage of model soil parameter for 2D field -model layer x soil poy
-  type(namedvar),  allocatable      :: vegParMxy(:)             ! storage of model soil parameter for 2D field (2nd variable)-model hru x model layer
-  type(namedvar),  allocatable      :: ParVxy(:)                ! storage of model vege parameter for 1D or 2D field - vege poly (x month)
-  integer(i4b),    allocatable      :: polySub(:)               ! list of ID (=index) of soil polygons contributing model hru
-  integer(i4b),    allocatable      :: vPolySub(:)              ! list of ID (=index) of veg polygons contributing model hru 
-  logical(lgc),    allocatable      :: vmask(:)                 ! mask for vpolIdSub array 
-  integer(i4b)                      :: nShru                    ! number of hrus in soil mapping file) 
-  integer(i4b)                      :: nVhru                    ! number of hrus in vege mapping file (should be equal to nVhru)
-  integer(i4b)                      :: nOverSpoly               ! number of overlapped soil polygon for each model HRU 
-  integer(i4b)                      :: nOverVpoly               ! number of overlapped vege polygon for each model HRU 
-  integer(i4b)                      :: nSpolyLocal              ! number of subset overlapped soil polygon for each model HRU 
-  integer(i4b)                      :: nVpolyLocal              ! number of subset overlapped vege polygon for each model HRU 
-  type(mapvar)                      :: mapdata(2)               ! map data container for all the soil polygons
-  real(dp),        allocatable      :: swgtSub(:)               ! adjusted Areal weight of soil polygon for all model hrus
-  real(dp),        allocatable      :: vwgtSub(:)               ! adjusted Areal weight of veg polygon for one model hrus
-  type(poly),      allocatable      :: soil2model_map(:)        ! data structure to hold weight and index of contributing soil layer per model layer and per soil polygon
-  type(lyr_d),     allocatable      :: paramvec(:)              !
+  integer(i4b),    allocatable       :: vegClass(:)              ! veg class array (e.g., IGBP)
+  integer(i4b),    allocatable       :: vclsLocal(:)             ! veg class id for each poly for subset of veg data
+  type(var_d),     allocatable       :: vcls2prp(:)              ! storage of property value for each veg class
+  type(namedvar),  allocatable       :: vprp(:)                  ! storage of veg property values for 1D(poly) 
+  type(namedvar),  allocatable       :: vprpLocal(:)             ! storage of veg property values for 1D(poly) 
+  integer(i4b)                       :: iVclass                  ! ID (= index) of vege class 
+  real(dp),        allocatable       :: hModel(:,:)              ! Model layer thickness for one hru
+  real(dp),        allocatable       :: zModel(:,:)              ! Model layer depth for one hru
+  real(dp),        allocatable       :: hModelLocal(:,:)         ! Model layer thickness for soil polygon within one hru
+  real(dp),        allocatable       :: zModelLocal(:,:)         ! Model layer depth for soil polygon within one hru
+  type(dat_d2d),   allocatable       :: parSxySz(:)              ! storage of model soil parameter for 2D field -soil layer x soil poy 
+  type(dat_d2d),   allocatable       :: parSxyMz(:)              ! storage of model soil parameter for 2D field -model layer x soil poy
+  type(dat_d2d),   allocatable       :: parMxyMz(:)              ! storage of model soil parameter for 2D field -model layer x soil poy
+  type(namedvar),  allocatable       :: parVxy(:)                ! storage of model vege parameter for 1D or 2D field - vege poly (x month)
+  type(namedvar),  allocatable       :: vegParMxy(:)             ! storage of model soil parameter for 2D field (2nd variable)-model hru x model layer
+  integer(i4b),    allocatable       :: polySub(:)               ! list of ID (=index) of soil polygons contributing model hru
+  integer(i4b),    allocatable       :: vPolySub(:)              ! list of ID (=index) of veg polygons contributing model hru 
+  type(mapvar)                       :: mapdata(2)               ! map data container for all the soil polygons
+  real(dp),        allocatable       :: swgtSub(:)               ! adjusted Areal weight of soil polygon for all model hrus
+  real(dp),        allocatable       :: vwgtSub(:)               ! adjusted Areal weight of veg polygon for one model hrus
+  type(poly),      allocatable       :: soil2model_map(:)        ! data structure to hold weight and index of contributing soil layer per model layer and per soil polygon
+  type(lyr_d),     allocatable       :: paramvec(:)              !
   
   ! initialize error control
   err=0; message='mpr/'
@@ -216,9 +216,6 @@ subroutine mpr(idModel,           &     ! input: model ID
     associate( hruMap      => mapdata(1)%var(ixVarMapData%hru_id)%ivar1,  &
                swgt        => mapdata(1)%var(ixVarMapData%weight)%dvar2,  &
                overSpolyID => mapdata(1)%var(ixVarMapData%overlapPolyId)%ivar2 )
-!  ! *****
-!  ! (3.) Computing model parameters from geophysical properties (soil, vege) and scale them to model HRU 
-!  ! *********************************************************************
     !!! ---------------------------------------------
     !!! Start of model hru loop (from mapping file) !!!
     !!! ---------------------------------------------
@@ -335,18 +332,18 @@ subroutine mpr(idModel,           &     ! input: model ID
 !    ! (3.5) Compute Model vege parameters using transfer function
 !    ! *********************************************************
 !      ! compute model veg parameters
-!      allocate(ParVxy(nVegParModel),stat=err); if(err/=0) call handle_err(err,'error allocating for ParVxy')
+!      allocate(parVxy(nVegParModel),stat=err); if(err/=0) call handle_err(err,'error allocating for parVxy')
 !      do iparm=1,nVegParModel
 !        select case ( vpar_meta(iparm)%dims )
 !          case( '1D' , 'ST' )
-!            allocate(ParVxy(iparm)%varData(nVpolyLocal),stat=err); if(err/=0) call handle_err(err,'error allocating for ParVxy%varData')
+!            allocate(parVxy(iparm)%varData(nVpolyLocal),stat=err); if(err/=0) call handle_err(err,'error allocating for parVxy%varData')
 !        end select
 !      enddo
-!      call comp_veg_model_param(ParVxy, vprpLocal, vpar_meta, model_name)
+!      call comp_veg_model_param(parVxy, vprpLocal, vpar_meta, model_name)
 !      if ( iHru == iHruPrint ) then
 !        print*,'(2) Print Model parameter for Vege polygon'
 !        do iparm=1,nVegParModel
-!          write(*,"(1X,A10,'= ',100f5.2)") vpar_meta(iparm)%parname, (ParVxy(iparm)%varData(iPoly), iPoly=1,nVpolyLocal)
+!          write(*,"(1X,A10,'= ',100f5.2)") vpar_meta(iparm)%parname, (parVxy(iparm)%varData(iPoly), iPoly=1,nVpolyLocal)
 !        enddo
 !      endif
   ! ***********
@@ -450,7 +447,7 @@ subroutine mpr(idModel,           &     ! input: model ID
 !        if (vpar_meta(iparm)%h_agg) then
 !          call aggreg(vegParMxy(iparm)%varData(iHru), &
 !                      vwgtSub(:),                     &
-!                      ParVxy(iparm)%varData,          &
+!                      parVxy(iparm)%varData,          &
 !                      dmiss,                          &
 !                      vpar_meta(iparm)%haggmethod)
 !          if ( iHru == iHruPrint ) then

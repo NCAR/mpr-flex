@@ -56,7 +56,6 @@ subroutine write_soil_param_vic(fname, hruid, param, ierr, message)
       write(51,'(I2,X)',advance='no') int(param(iHru,53))
       write(51,'(f9.4)') param(iHru,54)
   enddo  !end cell loop
-  ! Close original and modified basin parameter files
   close(UNIT=51)
   return
 end subroutine
