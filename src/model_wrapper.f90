@@ -53,7 +53,7 @@ subroutine replace_param( idModel, hModel, parMxyMz, err, message)
   ! input 
   integer(i4b),         intent(in)   :: idModel      ! model id
   real(dp),             intent(in)   :: hModel(:,:)  ! Model layer thickness for model hru
-  type(dat_d2d),        intent(in)   :: parMxyMz(:)  ! model soil parameter 
+  type(namedvar2),      intent(in)   :: parMxyMz(:)  ! model soil parameter 
   ! output
   integer(i4b),         intent(out)  :: err          ! error code
   character(len=strLen),intent(out)  :: message      ! error message

@@ -28,20 +28,6 @@ type,extends(par_meta), public  :: cpar_meta
 endtype cpar_meta
 
 ! ***********************************************************************************************************
-! Define data structure of beta parameter meta data 
-! ***********************************************************************************************************
-type,public  :: beta_meta
-  character(len=strLen)            :: pname=''             ! beta parameter name
-  character(len=strLen)            :: desc=''              ! description
-  character(len=strLen)            :: units=''             ! units
-  character(len=strLen)            :: dims=''              ! data dimension (scaler, vector, 2D, 3D)
-  logical(lgc)                     :: v_agg=.FALSE.        ! flag to perform vertical scaling 
-  character(len=strLen)            :: vaggmethod           ! vertical upscaling operator to be used 
-  logical(lgc)                     :: h_agg=.FALSE.        ! flag to perform horizontal scaling 
-  character(len=strLen)            :: haggmethod           ! horizontal upscaling operator to be used 
-endtype beta_meta
-
-! ***********************************************************************************************************
 ! Define data structure of variable metadata - soil propeties, topography, vege propeties, model hru propeties 
 ! ***********************************************************************************************************
 type,public :: var_meta
@@ -162,25 +148,25 @@ endtype poly
    type(lyr_i),allocatable     :: var(:)
  endtype var_ilength
 
-! data type containing a name and vector variable (double precision)
+! data type containing a name and 1D vector variable (double precision)
  type namedvar
   character(len=strLen)        :: varName
   real(dp),allocatable         :: varData(:)
  endtype namedvar
 
-! data type containing a name and vector variable (integer)
+! data type containing a name and 1D vector variable (integer)
  type nameivar
    character(len=strLen)       :: varName
    integer(i4b),allocatable    :: varData(:)
  endtype nameivar
 
-! data type containing a name and vector variable (double precision)
+! data type containing a name and 2D vector variable (double precision)
  type namedvar2
   character(len=strLen)        :: varName
   real(dp),allocatable         :: varData(:,:)
  endtype namedvar2
 
-! data type containing a name and vector variable (integer)
+! data type containing a name and 2D vector variable (integer)
  type nameivar2
    character(len=strLen)       :: varName
    integer(i4b),allocatable    :: varData(:,:)

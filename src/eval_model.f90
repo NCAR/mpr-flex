@@ -1,11 +1,9 @@
 module eval_model 
-
-  use nrtype 
   use public_var
   use data_type 
   use var_lookup
-
   implicit none
+  private
   public :: objfn 
   public :: out_opt_sim
 
@@ -16,59 +14,65 @@ contains
 !************************************
 function objfn( calPar )
   use mpr_routine,   only: mpr
-  use globalData,    only: parMaster, parSubset, gammaSubset
+  use globalData,    only: parMaster, parSubset, betaInGamma, gammaSubset
   use model_wrapper, only: adjust_param, read_sim
-!  use mpr_routine, only:mpr
   implicit none
   !input variables
-  real(dp),dimension(:),intent(in)    :: calPar       ! parameter in namelist, not necessarily all parameters are calibrated
-  !output variables
-  real(dp)                            :: objfn        ! object function value 
+  real(dp),             intent(in)  :: calPar(:)            ! parameter in namelist, not necessarily all parameters are calibrated
   !local variables
-  integer(i4b)                        :: err          ! error code
-  character(len=strLen)               :: message      ! error message
-  integer(i4b)                        :: iPar 
-  logical, dimension(:)  ,allocatable :: mask
-  real(dp),dimension(:)  ,allocatable :: paramGamma 
-  real(dp),dimension(:)  ,allocatable :: obs
-  real(dp),dimension(:,:),allocatable :: sim 
-  real(dp),dimension(:,:),allocatable :: simBasin 
-  real(dp),dimension(:,:),allocatable :: simBasinRouted 
-  real(dp)                            :: ushape,uscale
+  real(dp)                          :: objfn                ! object function value 
+  integer(i4b)                      :: err                  ! error code
+  character(len=strLen)             :: message              ! error message
+  integer(i4b)                      :: iPar                 ! loop index for parameter 
+  integer(i4b)                      :: nVegParModel         ! Number of model vege parameters associated with calibrating gamma parameter 
+  integer(i4b)                      :: nSoilParModel        ! Number of model soil parameters associated with calibrating gamma parameter 
+  logical(lgc),         allocatable :: mask(:)
+  real(dp),             allocatable :: paramGamma(:)
+  real(dp),             allocatable :: obs(:)
+  real(dp),             allocatable :: sim(:,:) 
+  real(dp),             allocatable :: simBasin(:,:) 
+  real(dp),             allocatable :: simBasinRouted(:,:)
+  real(dp),             allocatable :: hModel(:,:)          ! storage of model layer thickness at model layer x model hru 
+  type(namedvar2),      allocatable :: parMxyMz(:)          ! storage of model soil parameter at model layer x model hru 
+  type(namedvar),       allocatable :: vegParMxy(:)         ! storage of model vege parameter at model hru
+  real(dp)                          :: ushape,uscale
 
-  ! initialize error control
-  err=0; message='eval_objfn/'
-  ! allocate array
+  err=0; message='eval_objfn/' ! to initialize error control
   allocate(obs(nbasin*sim_len))
   allocate(sim(nHru,sim_len))
   allocate(simBasin(nbasin,sim_len))
   allocate(simBasinRouted(nbasin,sim_len))
-  ! Adjust model parameters if beta parameter exist in calibrating parameter set (Model specific)
-  if ( any(parSubset(:)%beta == "beta") )then
+  if ( any(parSubset(:)%beta == "beta") )then ! calpar include multipliers for original model parameter 
     call adjust_param(idModel, calPar, err, message)
     if (err/=0)then; stop message; endif
   endif
-  ! Execute MPR if gamma parameters exist in calibrating parameter set (model specific)
-  if ( any(parSubset(:)%beta /= "beta") )then
+  if ( any(parSubset(:)%beta /= "beta") )then ! calPar includes gamma parameters to be used for MPR 
+    nSoilParModel=size(betaInGamma)           ! number of soil parameters associated with gamma parameters
+    nVegParModel=1                            ! number of vege parameters associated with gamma parameters
+    allocate(hModel(nLyr,nHru),stat=err);      if(err/=0)then;message=trim(message)//'error allocating hModel';   return;endif
+    allocate(parMxyMz(nSoilParModel),stat=err);if(err/=0)then;message=trim(message)//'error allocating parMxyMz'; return;endif
+    allocate(vegParMxy(nVegParModel),stat=err);if(err/=0)then;message=trim(message)//'error allocating vegParMxy';return;endif
+    do iPar=1,nSoilParModel
+      allocate(parMxyMz(iPar)%varData(nLyr,nHru),stat=err)
+    enddo
+    do iPar=1,nVegParModel
+      allocate(vegParMxy(iPar)%varData(nHru),stat=err)
+    enddo
     allocate(mask(size(calPar)))
     mask=parSubset(:)%beta/="beta"
     allocate(paramGamma(count(mask)))
     paramGamma=pack(calPar,mask)
-    call mpr(idModel, paramGamma, gammaSubset, err, message) 
+    call mpr(idModel, paramGamma, gammaSubset, hModel, parMxyMz, vegParMxy, err, message) ! to output model layer thickness and model parameter via MPR
     if (err/=0)then; stop message; endif
   endif
-  ! Run hydrologic model   
-  call system(executable)
-  !read observation 
+  call system(executable) ! to run hydrologic model   
   call read_obs(obs, err, message)
   if (err/=0)then; stop message; endif
-  !read model output place into array of ncells 
   call read_sim(idModel, sim, err, message)
   if (err/=0)then; stop message; endif
-  ! Post-process of model output 1 - aggregate grid cell runoff to basin total runoff
-  call agg_hru_to_basin(sim, simBasin, err, message)
+  call agg_hru_to_basin(sim, simBasin, err, message) ! aggregate grid cell runoff to basin total runoff
   if (err/=0)then; stop message; endif
-  ! Post-process of model output 2 - call function to route flow for each basin
+  ! route flow for each basin
   ushape=parMaster(ixPar%uhshape)%val
   uscale=parMaster(ixPar%uhscale)%val
   do iPar=1,nParCal
@@ -79,15 +83,14 @@ function objfn( calPar )
   end do
   call route_q(simBasin, simBasinRouted, ushape, uscale, err, message)
   if (err/=0)then; stop message; endif
-  !call object function calculation or just output sim and obs 
   if (opt/=2) then
-    call calc_rmse_region(simBasinRouted, obs, objfn, err, message)
+    call calc_rmse_region(simBasinRouted, obs, objfn, err, message) ! for objective function
     if (err/=0)then; stop message; endif
   else
-    call out_opt_sim(simBasinRouted, obs)
+    call out_opt_sim(simBasinRouted, obs) ! to just output optimal run
   endif
   return
-end function objfn
+end function
 
 !************************************
 ! compute weighted RMSE 

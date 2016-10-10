@@ -148,7 +148,7 @@ subroutine replace_soil_param_vic(hModel, parMxyMz, ierr, message)
   implicit none
   !input variables
   real(dp),         intent(in)   :: hModel(:,:)  ! Model layer thickness for one hru
-  type(dat_d2d),    intent(in)   :: parMxyMz(:)  ! 
+  type(namedvar2),  intent(in)   :: parMxyMz(:)  ! 
   ! output
   integer(i4b),     intent(out)  :: ierr         ! error code
   character(*),     intent(out)  :: message      ! error message
@@ -170,21 +170,21 @@ subroutine replace_soil_param_vic(hModel, parMxyMz, ierr, message)
     do iPar=1,nSoilParModel
       associate( ix=>get_ixPar(trim(betaInGamma(iPar))) )
       select case( parMaster(ix)%pname )
-        case('binfilt');  realline(5)     = parMxyMz(iPar)%dat(1, iHru) 
-        case('D1');       realline(6)     = parMxyMz(iPar)%dat(nLyr,iHru)
-        case('D2');       realline(7)     = parMxyMz(iPar)%dat(nLyr,iHru)
-        case('D3');       realline(8)     = parMxyMz(iPar)%dat(nLyr,iHru)
-        case('D4');       realline(9)     = parMxyMz(iPar)%dat(nLyr,iHru)
-        case('expt');     realline(10:12) = parMxyMz(iPar)%dat(:,iHru)
-        case('ks');       realline(13:15) = parMxyMz(iPar)%dat(:,iHru)
+        case('binfilt');  realline(5)     = parMxyMz(iPar)%varData(1, iHru) 
+        case('D1');       realline(6)     = parMxyMz(iPar)%varData(nLyr,iHru)
+        case('D2');       realline(7)     = parMxyMz(iPar)%varData(nLyr,iHru)
+        case('D3');       realline(8)     = parMxyMz(iPar)%varData(nLyr,iHru)
+        case('D4');       realline(9)     = parMxyMz(iPar)%varData(nLyr,iHru)
+        case('expt');     realline(10:12) = parMxyMz(iPar)%varData(:,iHru)
+        case('ks');       realline(13:15) = parMxyMz(iPar)%varData(:,iHru)
         case('h1');       realline(23)    = hModel(1,iHru)
         case('h2');       realline(24)    = hModel(2,iHru)
         case('h3');       realline(25)    = hModel(3,iHru)
-        case('bbl');      realline(28:30) = parMxyMz(iPar)%dat(:,iHru)
-        case('BD');       realline(34:36) = parMxyMz(iPar)%dat(:,iHru)
-        case('SD');       realline(37:39) = parMxyMz(iPar)%dat(:,iHru)
-        case('WcrFrac');  realline(41:43) = parMxyMz(iPar)%dat(:,iHru)
-        case('WpwpFrac'); realline(44:46) = parMxyMz(iPar)%dat(:,iHru)
+        case('bbl');      realline(28:30) = parMxyMz(iPar)%varData(:,iHru)
+        case('BD');       realline(34:36) = parMxyMz(iPar)%varData(:,iHru)
+        case('SD');       realline(37:39) = parMxyMz(iPar)%varData(:,iHru)
+        case('WcrFrac');  realline(41:43) = parMxyMz(iPar)%varData(:,iHru)
+        case('WpwpFrac'); realline(44:46) = parMxyMz(iPar)%varData(:,iHru)
       end select
       end associate
     end do
