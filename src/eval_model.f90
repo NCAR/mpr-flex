@@ -15,7 +15,7 @@ contains
 function objfn( calPar )
   use mpr_routine,   only: mpr
   use globalData,    only: parMaster, parSubset, betaInGamma, gammaSubset
-  use model_wrapper, only: adjust_param, read_sim
+  use model_wrapper, only: read_hru_id, read_soil_param, adjust_param, replace_param, write_soil_param, read_sim
   implicit none
   !input variables
   real(dp),             intent(in)  :: calPar(:)            ! parameter in namelist, not necessarily all parameters are calibrated
@@ -27,6 +27,9 @@ function objfn( calPar )
   integer(i4b)                      :: nVegParModel         ! Number of model vege parameters associated with calibrating gamma parameter 
   integer(i4b)                      :: nSoilParModel        ! Number of model soil parameters associated with calibrating gamma parameter 
   logical(lgc),         allocatable :: mask(:)
+  integer(i4b)                      :: hruID(nHru)
+  real(dp)                          :: param(nHru,TotNPar)    !original soil parameter at model hru x parameter
+  real(dp)                          :: adjParam(nHru,TotNPar) !adjustet soil parameter at model hru x parameter 
   real(dp),             allocatable :: paramGamma(:)
   real(dp),             allocatable :: obs(:)
   real(dp),             allocatable :: sim(:,:) 
@@ -42,8 +45,13 @@ function objfn( calPar )
   allocate(sim(nHru,sim_len))
   allocate(simBasin(nbasin,sim_len))
   allocate(simBasinRouted(nbasin,sim_len))
+  call read_hru_id(idModel, hruID, err, message)  ! to get hruID
+  if (err/=0)then; stop message; endif
+  call read_soil_param(idModel, param, err, message)! to get soil param (=param) 
+  if (err/=0)then; stop message; endif
+  adjParam=param
   if ( any(parSubset(:)%beta == "beta") )then ! calpar include multipliers for original model parameter 
-    call adjust_param(idModel, calPar, err, message)
+    call adjust_param(idModel, param, calPar, adjParam, err, message)
     if (err/=0)then; stop message; endif
   endif
   if ( any(parSubset(:)%beta /= "beta") )then ! calPar includes gamma parameters to be used for MPR 
@@ -64,7 +72,11 @@ function objfn( calPar )
     paramGamma=pack(calPar,mask)
     call mpr(idModel, paramGamma, gammaSubset, hModel, parMxyMz, vegParMxy, err, message) ! to output model layer thickness and model parameter via MPR
     if (err/=0)then; stop message; endif
+    call replace_param(idModel, adjparam, hModel, parMxyMz, adjParam, err, message)
+    if (err/=0)then; stop message; endif
   endif
+  call write_soil_param(idModel, hruID, adjParam, err, message)
+  if (err/=0)then; stop message; endif
   call system(executable) ! to run hydrologic model   
   call read_obs(obs, err, message)
   if (err/=0)then; stop message; endif
