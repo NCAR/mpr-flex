@@ -1,46 +1,61 @@
 !---------------------------------------
-! Run configuration 
+! Run configuration
 !---------------------------------------
 &runconfig
-!> Option to run only MPR to compute parameter values 
-!> 0 = run model calibration or model run with given parameter 
+!> Option to run only MPR to compute parameter values
+!> 0 = run model calibration or model run with given parameter
 !> 1 = run only MPR and skip model calibration or run
-mprOnly                  = 0          
+mprOnly                = 0
 !> Option to run only MPR to compute parameter values 
-!> 1 = calibrate with DDS 
-!> 2 = run only parameter
-opt                      = 1                  
+!> 1 = calibrate with DDS
+!> 2 = only run model with parameter
+opt                    = 1
+/
 
 !---------------------------------------
-! calibration 
+! MPR 
 !---------------------------------------
+&mprconfig
+mpr_input_dir          = "/home/mizukami/MPR/input/hcdn/"
+mpr_output_dir         = "/d3/mizukami/hydro_params/vic_regionalization/upscale_hcdn/test/01022500/params/" 
+fname_soil             = "statsgo_v4.nc"
+fname_veg              = "modis.vege.noahmp.nc"
+fname_smapping         = "statsgo_HCDN.sub.nc"
+fname_vmapping         = "modis5.6km_HCDN.sub.nc"
+dname_overSpoly        = "overlapPoly"
+dname_overVpoly        = "overlapPoly"
+dname_hru              = "hru_id"
+sclass_table           = "USDA_soil_class.txt"
+vclass_table           = "NOAHMP_veg_type.txt"
+dname_spoly            = "polyid"
+dname_slyrs            = "layer"
+dname_vpoly            = "polyid"
+dname_mhru             = "hru"
+dname_mlyrs            = "lyr"
+/
+
 &calconfig
 filelist_name            = "FILELIST"         ! name of ascii listing model output name
 cellfrac_name            = "CELLFRAC"         ! name of ascii listing fraction of all the hru contributing to basin 
-origparam_name           = "ORIGPARAM"        ! name of original parameter file
-calibparam_name          = "CALIPARAM"        ! name of adjusted parameter file (updated with each model run iteration)
+origparam_name           = "ORIGSOIL"         ! name of original parameter file
+calibparam_name          = "CALISOIL"         ! name of adjusted parameter file (updated with each model run iteration)
 origvege_name            = "ORIGVEG"          ! name of original vege parameter file 
 calivege_name            = "CALIVEG"          ! name of adjusted vege parameter file
 region_info              = "INFO"             ! name of ascii listing basin_id, number of hru
 sim_dir                  = "OUTDIR"           ! name of directory where model outputs
 obs_name                 = "CALIBFLOW"        ! name of ascii observed flow data
 executable               = "EXE"              ! name of model executable
+basin_objfun_weight_file = "OBJWEIGHT"        ! name of ascii listing weight of each basin that is appplied to basin objective function   
+objfntype                = IDOBJFNC
 calpar                   = "calBeta.txt"      ! name of ascii meta listing calibration parameter
 idModel                  = IDMODEL            ! id of model
 eval_length              = "daily"
-basin_objfun_weight_file = "OBJWEIGHT"        ! name of ascii listing weight of each basin that is appplied to basin objective function   
-objfntype                = IDOBJFNC
-!---------------------------------------
-! calibration period
-!---------------------------------------
 dt                       = 86400              ! simulation time step [sec]
 sim_len                  = 6940               ! number of simulation time step 
 start_cal                = 3652               ! time step when calibration starts
 end_cal                  = 6940               ! time step when calibration end
-
 nbasin                   = 1                  ! number of calibrating basins
 nHru                     = 1                  ! sum of hrus consisting of each basin
-
 Npro                     = 1                  ! number of processors to use
 initcell                 = 1                  ! index of the first cell assigned to each processor
 endcell                  = 1                  ! index of the last cell assigned to each processor
