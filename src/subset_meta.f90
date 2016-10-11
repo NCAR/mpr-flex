@@ -6,6 +6,7 @@ module subset_meta
   implicit none
 
   private
+
   public::get_parm_meta
   public::param_setup 
   public::check_gammaZ
@@ -22,16 +23,14 @@ subroutine get_parm_meta(infile, err, message)
   use globalData, only:parMaster, parSubset, gammaSubset, betaInGamma  ! data type definition
   use ascii_util, only:file_open
   use get_ixname, only:get_ixPar
- 
   implicit none
- 
   ! input
   character(*),intent(in)              :: infile         ! input filename
   ! output
   integer(i4b),intent(out)             :: err            ! error code
   character(*),intent(out)             :: message        ! error message
   ! local variables
-  character(len=256)                   :: cmessage       ! error message for downwind routine
+  character(len=strLen)                :: cmessage       ! error message subroutine
   type(cpar_meta),allocatable          :: tempMeta(:)
   character(len=strLen),allocatable    :: res(:)         ! 
   character(len=strLen),allocatable    :: allbeta(:)     ! 
@@ -42,9 +41,9 @@ subroutine get_parm_meta(infile, err, message)
   integer(i4b)                         :: ixGamma        ! index for calibrationg gamma parameter list 
   integer(i4b)                         :: ivar           ! index of master parameter  
   integer(i4b),parameter               :: maxLines=1000  ! maximum lines in the file 
-  character(LEN=256)                   :: temp           ! single lime of information
+  character(LEN=strLen)                :: temp           ! single lime of information
   integer(i4b)                         :: iend           ! check for the end of the file
-  character(LEN=256)                   :: ffmt           ! file format
+  character(LEN=strLen)                :: ffmt           ! file format
   character(len=1)                     :: dLim(1)        ! column delimiter
   integer(i4b)                         :: i,j,k          ! loop index
  
@@ -52,7 +51,6 @@ subroutine get_parm_meta(infile, err, message)
   err=0; message="get_param_meta/"
   allocate(parSubset(nParCal))
   allocate(tempMeta(nParCal))
-  ! open file
   call file_open(trim(infile),unt,err, cmessage)
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
   ! get to the start of the variable descriptions 
@@ -60,9 +58,7 @@ subroutine get_parm_meta(infile, err, message)
     read(unt,'(a)',iostat=iend)temp; if (iend/=0)exit    ! read line of data
     if (temp(1:1)/='!') exit                             ! assume first line not comment is format code
   end do ! looping through file to find the format code
-  ! read in format string
-  read(temp,*)ffmt
-  ! loop through the lines in the file
+  read(temp,*)ffmt ! to get format 
   ixLocal=1
   ixGamma=1
   line:do iline=1,maxLines
@@ -149,10 +145,10 @@ subroutine get_parm_meta(infile, err, message)
   ! close file unit
   close(unt)
   return
-end subroutine get_parm_meta
+end subroutine
 
 !**********************************
-! Subroutine: check if z parameters exist in gamma parameter
+! public subroutine: check if z parameters exist in gamma parameter
 !**********************************
 subroutine check_gammaZ( err, message)
   use globalData,   only: gammaSubset
@@ -179,10 +175,10 @@ subroutine check_gammaZ( err, message)
     print*, 'NO gamma parameters'
   endif
   return
-end subroutine check_gammaZ
+end subroutine
 
 !**********************************
-! Subroutine: check if h parameters exist in gamma parameter
+! public subroutine: check if h parameters exist in gamma parameter
 !**********************************
 subroutine check_gammaH( err, message)
   use globalData,   only: gammaSubset
@@ -217,10 +213,10 @@ subroutine check_gammaH( err, message)
     print*, 'NO gamma parameters'
   endif
   return
-end subroutine check_gammaH
+end subroutine
 
 ! ************************************************************************************************
-! Subroutine: convert parameter data structure to simple arrays 
+! public subroutine: convert parameter data structure to simple arrays 
 ! ************************************************************************************************
 subroutine param_setup( param, mask)
   use globalData,  only:parSubset
@@ -237,7 +233,7 @@ subroutine param_setup( param, mask)
     param(iPar,3) = parSubset(iPar)%upr
     mask(iPar)    = parSubset(iPar)%flag
   enddo  
-
-end subroutine param_setup
+  return
+end subroutine
 
 end module subset_meta 

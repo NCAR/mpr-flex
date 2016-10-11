@@ -1,9 +1,13 @@
 module eval_model 
+
   use public_var
   use data_type 
   use var_lookup
+
   implicit none
+
   private
+
   public :: objfn 
   public :: out_opt_sim
 
@@ -18,48 +22,48 @@ function objfn( calPar )
   use model_wrapper, only: read_hru_id, read_soil_param, adjust_param, replace_param, write_soil_param, read_sim
   implicit none
   !input variables
-  real(dp),             intent(in)  :: calPar(:)            ! parameter in namelist, not necessarily all parameters are calibrated
+  real(dp),             intent(in)  :: calPar(:)              ! parameter in namelist, not necessarily all parameters are calibrated
   !local variables
-  real(dp)                          :: objfn                ! object function value 
-  integer(i4b)                      :: err                  ! error code
-  character(len=strLen)             :: message              ! error message
-  integer(i4b)                      :: iPar                 ! loop index for parameter 
-  integer(i4b)                      :: nVegParModel         ! Number of model vege parameters associated with calibrating gamma parameter 
-  integer(i4b)                      :: nSoilParModel        ! Number of model soil parameters associated with calibrating gamma parameter 
-  logical(lgc),         allocatable :: mask(:)
-  integer(i4b)                      :: hruID(nHru)
-  real(dp)                          :: param(nHru,TotNPar)    !original soil parameter at model hru x parameter
-  real(dp)                          :: adjParam(nHru,TotNPar) !adjustet soil parameter at model hru x parameter 
-  real(dp),             allocatable :: paramGamma(:)
-  real(dp),             allocatable :: obs(:)
-  real(dp),             allocatable :: sim(:,:) 
-  real(dp),             allocatable :: simBasin(:,:) 
-  real(dp),             allocatable :: simBasinRouted(:,:)
-  real(dp),             allocatable :: hModel(:,:)          ! storage of model layer thickness at model layer x model hru 
-  type(namedvar2),      allocatable :: parMxyMz(:)          ! storage of model soil parameter at model layer x model hru 
-  type(namedvar),       allocatable :: vegParMxy(:)         ! storage of model vege parameter at model hru
-  real(dp)                          :: ushape,uscale
+  real(dp)                          :: objfn                  ! object function value 
+  integer(i4b)                      :: err                    ! error code
+  character(len=strLen)             :: message                ! error message
+  integer(i4b)                      :: iPar                   ! loop index for parameter 
+  integer(i4b)                      :: nVegParModel           ! Number of model vege parameters associated with calibrating gamma parameter 
+  integer(i4b)                      :: nSoilParModel          ! Number of model soil parameters associated with calibrating gamma parameter 
+  logical(lgc),         allocatable :: mask(:)                ! 1D mask
+  integer(i4b)                      :: hruID(nHru)            ! Hru ID
+  real(dp)                          :: param(nHru,TotNPar)    ! original soil parameter (model hru x parameter)
+  real(dp)                          :: adjParam(nHru,TotNPar) ! adjustet soil parameter (model hru x parameter) 
+  real(dp),             allocatable :: paramGamma(:)          ! calibratin gamma parameter
+  real(dp),             allocatable :: obs(:)                 ! observation (number of basin*number of time step)
+  real(dp),             allocatable :: sim(:,:)               ! instantaneous sim value (hru x number of time step)
+  real(dp),             allocatable :: simBasin(:,:)          ! instantaneous basin aggregated sim value (basin x number of time step)
+  real(dp),             allocatable :: simBasinRouted(:,:)    ! routed sim value (basin x number of time step)
+  real(dp),             allocatable :: hModel(:,:)            ! storage of model layer thickness at model layer x model hru 
+  type(namedvar2),      allocatable :: parMxyMz(:)            ! storage of model soil parameter at model layer x model hru 
+  type(namedvar),       allocatable :: vegParMxy(:)           ! storage of model vege parameter at model hru
+  real(dp)                          :: ushape,uscale          ! two routing parameter
 
   err=0; message='eval_objfn/' ! to initialize error control
   allocate(obs(nbasin*sim_len))
   allocate(sim(nHru,sim_len))
   allocate(simBasin(nbasin,sim_len))
   allocate(simBasinRouted(nbasin,sim_len))
-  call read_hru_id(idModel, hruID, err, message)  ! to get hruID
+  call read_hru_id(idModel, hruID, err, message)    ! to get hruID
   if (err/=0)then; stop message; endif
   call read_soil_param(idModel, param, err, message)! to get soil param (=param) 
   if (err/=0)then; stop message; endif
   adjParam=param
   if ( any(parSubset(:)%beta == "beta") )then ! calpar include multipliers for original model parameter 
-    call adjust_param(idModel, param, calPar, adjParam, err, message)
+    call adjust_param(idModel, param, calPar, adjParam, err, message) ! to output model parameter via multiplier method
     if (err/=0)then; stop message; endif
   endif
   if ( any(parSubset(:)%beta /= "beta") )then ! calPar includes gamma parameters to be used for MPR 
     nSoilParModel=size(betaInGamma)           ! number of soil parameters associated with gamma parameters
     nVegParModel=1                            ! number of vege parameters associated with gamma parameters
-    allocate(hModel(nLyr,nHru),stat=err);      if(err/=0)then;message=trim(message)//'error allocating hModel';   return;endif
-    allocate(parMxyMz(nSoilParModel),stat=err);if(err/=0)then;message=trim(message)//'error allocating parMxyMz'; return;endif
-    allocate(vegParMxy(nVegParModel),stat=err);if(err/=0)then;message=trim(message)//'error allocating vegParMxy';return;endif
+    allocate(hModel(nLyr,nHru),stat=err);      if(err/=0)then;stop trim(message)//'error allocating hModel';   endif
+    allocate(parMxyMz(nSoilParModel),stat=err);if(err/=0)then;stop trim(message)//'error allocating parMxyMz'; endif
+    allocate(vegParMxy(nVegParModel),stat=err);if(err/=0)then;stop trim(message)//'error allocating vegParMxy';endif
     do iPar=1,nSoilParModel
       allocate(parMxyMz(iPar)%varData(nLyr,nHru),stat=err)
     enddo
@@ -82,9 +86,9 @@ function objfn( calPar )
   if (err/=0)then; stop message; endif
   call read_sim(idModel, sim, err, message)
   if (err/=0)then; stop message; endif
-  call agg_hru_to_basin(sim, simBasin, err, message) ! aggregate grid cell runoff to basin total runoff
+  call agg_hru_to_basin(sim, simBasin, err, message) ! aggregate hru sim to basin total sim 
   if (err/=0)then; stop message; endif
-  ! route flow for each basin
+  ! route sim for each basin
   ushape=parMaster(ixPar%uhshape)%val
   uscale=parMaster(ixPar%uhscale)%val
   do iPar=1,nParCal
@@ -395,7 +399,7 @@ subroutine calc_kge_region(model,streamflow,kge)
   kge =( sqrt((cc-1.0)**2 + (alpha-1.0)**2 + (betha-1.0)**2) )
   
   return
-end subroutine calc_kge_region
+end subroutine
 
 !******************************
 ! compute pearson correlation coefficient 
@@ -432,7 +436,6 @@ end subroutine pearsn
 subroutine out_opt_sim(sim, obs)
   use strings
   implicit none
-
   !input variables 
   real(dp), dimension(:,:), intent(in)  :: sim 
   real(dp), dimension(:), intent(in)    :: obs 
@@ -467,7 +470,6 @@ end subroutine
 subroutine read_obs(obs, err, message)
   use ascii_util, only:file_open
   implicit none
-
   !output variables
   real(dp), dimension(:),  intent(out)   :: obs
   integer(i4b),            intent(out)   :: err      ! error code
@@ -495,7 +497,6 @@ end subroutine read_obs
 subroutine agg_hru_to_basin(simHru,simBasin,err,message)
   use ascii_util, only:file_open
   implicit none
-
   !input variables
   real(dp),dimension(:,:),intent(in)    :: simHru
   !output variables
@@ -536,7 +537,6 @@ end subroutine agg_hru_to_basin
 !******************************
 subroutine route_q(qin,qroute,ushape,uscale, err, message)
   implicit none
-
   !input variables
   real(dp),dimension(:,:), intent(in)    :: qin
   real(dp),intent(in)                    :: ushape,uscale
@@ -569,7 +569,6 @@ end subroutine route_q
 !************************************
   subroutine duamel(Q,un1,ut,dt,nq,QB,ntau,inUH)
     implicit none
-
     ! input 
     real(dp),   dimension(:),          intent(in)  :: Q      ! instantaneous flow
     real(dp),                          intent(in)  :: un1    ! scale parameter
@@ -627,7 +626,6 @@ end subroutine route_q
         end do
       endif
     endif
-      
     ! do unit hydrograph convolution
     IOC=nq+ntau
     if (nq.LE.m) then
@@ -655,22 +653,21 @@ end subroutine route_q
         end do
       end do 
     end if
-  
-  end subroutine duamel
+    return 
+  end subroutine
   
   !=================================================================
   function gf(Y)
-  
     implicit none
-  
+    !input 
     real(dp),intent(in)  :: y
+    !local
     real(dp)             :: gf 
     real(dp)             :: x
     real(dp)             :: h
   
     H=1_dp
     x=y
-
     do 
       if(x.le.0_dp) exit
       if(x.lt.2_dp .and. x.gt.2_dp) then

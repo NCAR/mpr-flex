@@ -1,5 +1,4 @@
 module upscaling
-
 ! This module contain (up)scale operators from native geophysical data (geo-poly) resolution to model resolution (model-poly)
 ! For each model-poly, scaling operator takes areal weights (weight vector) and data values (data vector) of each geo-poly 
 ! and compute a single value 
@@ -12,15 +11,14 @@ module upscaling
 ! Also subroutine that allows to switch scaling method by specifying the method in input 
 
 use nrtype                            ! variable types, etc.
-use data_type                                        ! Including custum data structure definition
-use public_var                                       ! Including common constant (physical constant, other e.g., dmiss, etc.)
+use data_type                         ! Including custum data structure definition
+use public_var                        ! Including common constant (physical constant, other e.g., dmiss, etc.)
 
 implicit none
 
-!Following accessible outside this module
-public::aggreg
-!anything else
 private
+
+public::aggreg
 
 contains
 
@@ -28,7 +26,6 @@ contains
 ! subroutine: Spatical aggregation with selected method 
 ! *********************************************************************
 subroutine aggreg(wgtval, wgtvec, datvec, method, ierr, message )
-  ! Define variables
   implicit none
   ! input
   real(dp),              intent(in)      :: wgtvec(:)        ! weight vector
@@ -53,13 +50,12 @@ subroutine aggreg(wgtval, wgtvec, datvec, method, ierr, message )
   end select
   if(ierr/=0)then; message=trim(message)//trim(cmessage);return;endif
   return
-end subroutine aggreg
+end subroutine
 
 ! *********************************************************************
 ! subroutine: computing unweighted sum 
 ! *********************************************************************
 subroutine asum(wgtval, wgtvec, datvec, ierr, message )
-  ! Define variables
   implicit none
   ! input
   real(dp),               intent(in)      :: wgtvec(:)        ! weight vector
@@ -99,13 +95,12 @@ subroutine asum(wgtval, wgtvec, datvec, ierr, message )
     wgtval=dmiss
   endif
   return 
-end subroutine asum
+end subroutine
 
 ! *********************************************************************
 ! subroutine: computing weighted arithmetic mean 
 ! *********************************************************************
 subroutine wamean(wgtval, wgtvec, datvec, ierr, message )
-  ! Define variables
   implicit none
   ! input
   real(dp),intent(in)                    :: wgtvec(:)           ! weight vector
@@ -158,7 +153,7 @@ subroutine wamean(wgtval, wgtvec, datvec, ierr, message )
     wgtval = dmiss 
   endif
   return
-end subroutine wamean
+end subroutine
 
 ! *********************************************************************
 ! subroutine: computing weighted geometric mean 
@@ -214,7 +209,7 @@ subroutine wgmean(wgtval, wgtvec, datvec, ierr, message )
     wgtval = dmiss 
   endif
   return
-end subroutine wgmean
+end subroutine
 
 ! *********************************************************************
 ! subroutine: computing weighted harmonic mean 
@@ -274,7 +269,7 @@ subroutine whmean(wgtval, wgtvec, datvec, ierr, message )
     wgtval = dmiss 
   endif
   return
-end subroutine whmean
+end subroutine
 
 ! *********************************************************************
 ! subroutine: computing weighted median  
@@ -351,7 +346,7 @@ subroutine wmedi(wgtval, wgtvec, datvec, ierr, message )
     wgtval = dmiss 
   endif
   return
-end subroutine wmedi
+end subroutine
 
 ! *********************************************************************
 ! subroutine: computing weighted mode 

@@ -6,6 +6,9 @@ module vic_routines
   use data_type 
 
   implicit none
+
+  private
+
   public :: adj_soil_param_vic 
   public :: adj_vege_param_vic 
   public :: replace_soil_param_vic 
@@ -14,7 +17,6 @@ module vic_routines
   public :: read_vic_sim
   public :: read_soil_param_vic
   public :: write_soil_param_vic
-  private
 
 contains
 

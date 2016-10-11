@@ -10,7 +10,8 @@ USE ascii_util,only:get_vlines               !
 USE var_lookup,only:ixVarVegData,nVarVegData ! index of veg properties and number of properties
 USE var_lookup,only:ixPrpVeg,nPrpVeg         ! index of veg properties and number of properties
 
-!Following accessible outside this module
+private
+
 public::getVegData
 public::getvegClassLookup
 public::map_vcls2prp

@@ -9,12 +9,8 @@ module mo_opt_run
 
   PUBLIC :: opt_run    ! run model optimized parameter 
 
-  ! ------------------------------------------------------------------
-
 CONTAINS
-
   ! ------------------------------------------------------------------
-
   !     NAME
   !>        \opt_run
 
@@ -40,7 +36,6 @@ CONTAINS
 
   !     RESTRICTIONS
   !         None.
-
 
   subroutine opt_run(obj_func, restartFile)
 
@@ -73,11 +68,10 @@ CONTAINS
       read(70,*) (pval(i),i=1,NparCal)    
       close(70)
     endif
-
     ! Evaluate initial solution and return objective function value
     ! and Initialise the other variables (e.g. of_best)
     rDummy =  obj_func(pval)
 
-  end subroutine opt_run 
+  end subroutine
 
 end module mo_opt_run

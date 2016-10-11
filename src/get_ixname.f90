@@ -8,15 +8,14 @@ use public_var
 
 implicit none
 
-! the followings are public
+private
+
 public::get_ixPar     ! assign variable index to parameter 
 public::get_ixDataMap       ! assign variable index to variables in mapping netCDF data
 public::get_ixDataVeg       ! assign variable index to variables in veg netCDF data
 public::get_ixDataSoil      ! assign variable index to variables in soil netCDF data
 public::get_ixVarHru        ! assign variable index to model hru variables
 public::get_ixPrpVeg
-! everything else
-private
 
 contains
 

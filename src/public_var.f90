@@ -1,6 +1,7 @@
 module public_var
 
   use nrtype 
+
   implicit none
 
   save

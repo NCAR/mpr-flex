@@ -1,7 +1,5 @@
 module soiltf
-
 ! Compute model soil parameter transfer function 
-
 use nrtype                                        ! variable types, etc.
 use data_type                                     ! Including custum data structure definition
 use public_var                                     ! Including common constant (physical constant, other e.g., missingVal, etc.)
@@ -9,10 +7,9 @@ use var_lookup,   only:ixVarSoildata, ixPar, nPar
 
 implicit none
 
-!Following accessible outside this module
-public::comp_soil_model_param
-!anything else
 private
+
+public::comp_soil_model_param
 
 contains
 
@@ -27,9 +24,7 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
 
   use globalData, only:betaInGamma
   use get_ixname, only:get_ixPar
-
   implicit none
-
   ! in/out
   type(namedvar2),intent(inout)       :: parSxySz(:)            ! soil parameter values for ParSxySz(:)%dat(lyr,poly) 
   ! input
@@ -190,7 +185,6 @@ function infilt(elestd_in, gammaPar)
   ! Advances in Theoretical Hydrology: A Tribute to James Dooge. J. P. O?Kane, Ed., 
   ! European Geophysical Society Series on Hydrological Sciences, Vol. 1, Elsevier, 129-157. 
 
-  ! Define variables
   implicit none
   ! input
   real(dp), intent(in)  :: elestd_in(:)
@@ -226,7 +220,6 @@ end function
 ! residual_moist parameter 
 ! *********************************************************************
 function residMoist()
- ! Define variables
  implicit none
  ! input
  ! output 
@@ -234,7 +227,7 @@ function residMoist()
  real(dp) :: residMoist(:,:)
  
  residMoist = 0._dp
-  
+ return
 end function
          
 ! ***********
@@ -277,15 +270,14 @@ function D1(slope_in, ks_in, phi_in, h_in, gammaPar)
   where ( D1 > D1_max ) D1=D1_max 
   where ( D1 > 0._dp .and. D1 < D1_min ) D1=D1_min 
   end associate 
+  return
 end function
 
 ! ***********
 !  Arno basiflow Ds parameter
 ! *********************************************************************
 function Ds( D1, D3, Dsmax)
-! Define variables
  implicit none
-
 ! input
  real(dp), intent(in)  :: D1(:,:)       ! nijssen baseflow D1 parameter [day-1]
  real(dp), intent(in)  :: D3(:,:)       ! nijssen baseflow D3 parameter [mm]
@@ -304,14 +296,13 @@ function Ds( D1, D3, Dsmax)
  ! cap value with upper and lower bounds 
  where ( Ds > Ds_max ) Ds=Ds_max 
  where ( Ds > 0._dp .and. Ds < Ds_min ) Ds=Ds_min 
-
+ return
 end function
 
 ! ***********
 ! Nijssen baseflow D2 parameter
 ! *********************************************************************
 function D2(slope_in, ks_in, D4_in, gammaPar) 
-  ! Define variables
   implicit none
   ! input
   real(dp), intent(in)  :: slope_in(:)   ! slope percent
@@ -347,6 +338,7 @@ function D2(slope_in, ks_in, D4_in, gammaPar)
   where ( D2 > D2_max ) D2=D2_max
   where ( D2 > 0._dp .and. D2 < D2_min ) D2=D2_min
   end associate
+  return
 end function
 
 ! ***********
@@ -358,7 +350,6 @@ function Dsmax( D1,           & ! input:  Nijssen baseflow D1 parameter [day^-1]
                 c,            & ! input:  c parameter [mm]
                 phi_in,       & ! input:  porosity [cm^3/cm^-3]
                 h_in)          ! input:  Soil layer thickness [m]
-  ! Define variables
   implicit none
   ! input
   real(dp), intent(in)  :: D1(:,:)        ! Nijssen baseflow D1 parameter [day^-1]
@@ -381,7 +372,7 @@ function Dsmax( D1,           & ! input:  Nijssen baseflow D1 parameter [day^-1]
  ! cap value with upper and lower bounds 
   where ( Dsmax > Dsmax_max ) Dsmax=Dsmax_max
   where ( Dsmax > 0._dp .and. Dsmax < Dsmax_min ) Dsmax=Dsmax_min
-
+  return
 end function
 
 ! ***********
@@ -409,6 +400,7 @@ function D3( fc_in, h_in, gammaPar )
   where ( D3 > D3_max ) D3=D3_max
   where ( D3 > 0._dp .and. D3 < D3_min ) D3=D3_min 
   end associate
+  return
 end function
 
 ! ***********
@@ -417,7 +409,6 @@ end function
 function Ws( D3,         & ! input:  D3 parameter [mm]
              phi_in,     & ! input:  porosity [cm^3/cm^-3]
              h_in)          ! input:  Soil layer thickness [m]
-  ! Define variables
   implicit none
   ! input
   real(dp), intent(in)  :: D3(:,:)
@@ -437,14 +428,13 @@ function Ws( D3,         & ! input:  D3 parameter [mm]
  ! cap value with upper and lower bounds 
   where ( Ws > Ws_max ) Ws=Ws_max
   where ( Ws > 0._dp .and. Ws < Ws_min ) Ws=Ws_min 
-
+  return
 end function
 
 ! ***********
 !  Nijssen baseflow D4 parameter
 ! *********************************************************************
 function D4( gammaPar )
-  ! Define variables
   implicit none
   ! input
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
@@ -455,14 +445,13 @@ function D4( gammaPar )
   associate(g1=>gammaPar(ixPar%D41gamma1))
   D4 = g1 
   end associate
-
+  return
 end function D4 
 
 ! ***********
 !  c parameter
 ! *********************************************************************
 function cexpt( D4 )
-  ! Define variables
   implicit none
   ! input
   real(dp), intent(in)  :: D4(:,:)
@@ -471,7 +460,7 @@ function cexpt( D4 )
   real(dp)              :: cexpt(:,:)
   
   cexpt = D4 
-
+  return
 end function cexpt 
 
 ! ***********
@@ -494,35 +483,34 @@ function expt( b_in, gammaPar )
     expt = dmiss 
   end where
   end associate
+  return
 end function expt 
 
 ! ************
 ! computing init_moist parameter  
 ! *********************************************************************
 function initMoist( phi_in, h_in)
-implicit none
-! input
-real(dp), intent(in)  :: phi_in(:,:)       ! porosity [-]
-real(dp), intent(in)  :: h_in(:,:)         ! thickness [m]
-! output 
-! local  
-real(dp)              :: initMoist(:,:)
-
-where ( phi_in /= dmiss ) 
-  initMoist = phi_in*(h_in*1000.0_dp)
-else where
-  initMoist = dmiss 
-end where
-
+  implicit none
+  ! input
+  real(dp), intent(in)  :: phi_in(:,:)       ! porosity [-]
+  real(dp), intent(in)  :: h_in(:,:)         ! thickness [m]
+  ! output 
+  ! local  
+  real(dp)              :: initMoist(:,:)
+  
+  where ( phi_in /= dmiss ) 
+    initMoist = phi_in*(h_in*1000.0_dp)
+  else where
+    initMoist = dmiss 
+  end where
+  return
 end function
 
 ! ***********
 ! bubble parameter 
 ! *********************************************************************
 function bubble( expt_in, gammaPar )
-implicit none
-  ! Requre expt computation first
-  ! Define variables
+  implicit none
   ! input
   real(dp), intent(in)  :: expt_in(:,:) 
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
@@ -538,6 +526,7 @@ implicit none
     bubble = dmiss 
   end where
   end associate
+  return
 end function
 
 ! ***********
@@ -559,6 +548,7 @@ function soilDensity( srho_in, gammaPar )
     soilDensity = dmiss 
   end where
   end associate
+  return
 end function
 
 ! ***********
@@ -581,6 +571,7 @@ function WcrFrac(fc_in, phi_in, gammaPar)
     wcrFrac = dmiss
   end where
   end associate
+  return
 end function
 
 ! ************
@@ -602,6 +593,7 @@ function WpwpFrac( wp_in, phi_in, gammaPar)
     wpwpFrac = dmiss
   end where
   end associate
+  return
 end function
 
 ! *********************************************************************
@@ -644,6 +636,7 @@ function ks( sand_in, clay_in, gammaPar, opt)
     case default; stop trim(message)//'opt not recognized'
   end select
   end associate
+  return
 end function
 
 ! *********************************************************************
@@ -684,6 +677,7 @@ function bd( bd_in, gammaPar )
     bd = dmiss 
   end where
   end associate
+  return
 end function
 
 ! *********************************************************************
@@ -734,7 +728,8 @@ function phi(sand_in, clay_in, db_in, gammaPar, opt)
       case default; stop trim(message)//'opt not recognized'
     end select
   end associate
-  end function
+  return
+end function
 
 ! *********************************************************************
 ! pedo-transfer function for field capacity 
@@ -775,6 +770,7 @@ function fc(sand_in, phi_in, psis_in, b_in, gammaPar, opt)
     case default; stop trim(message)//'opt not recognized' 
   end select
   end associate
+  return
 end function
 
 ! *********************************************************************
@@ -813,6 +809,7 @@ function wp( phi_in, psis_in, b_in, gammaPar, opt)
     case default; stop trim(message)//'opt not recognized'
   end select
   end associate
+  return
 end function
 
 ! *********************************************************************
@@ -844,6 +841,7 @@ function ret_curve(sand_in, clay_in, gammaPar, opt)
       case default; stop trim(message)//'opt not recognized'
     end select
   end associate
+  return
 end function
 
 ! *********************************************************************
@@ -876,6 +874,7 @@ function psis( sand_in, silt_in, gammaPar, opt)
       case default; stop trim(message)//'opt not recognized'
     end select
   end associate
+  return
 end function
 
 ! *********************************************************************
@@ -906,6 +905,7 @@ function myu(phi_in, fc_in, gammaPar, opt)
     case default; stop trim(message)//'opt not recognized'
   end select
   end associate
+  return
 end function
 
 end module soiltf 

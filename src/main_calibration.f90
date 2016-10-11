@@ -11,18 +11,18 @@ program main_calibration
 
   implicit none
  
-  character(len=strLen)            :: nmlfile         ! namelist containing configuration
-  real(dp),allocatable             :: param(:,:)      ! initial value for parameter to be calibrated 
-  logical,allocatable              :: mask(:)         ! mask of parameter to be calibrated
-  integer(i4b)                     :: ierr            ! error code 
-  character(len=strLen)            :: cmessage        ! error message of downwind routine
+  character(len=strLen)             :: nmlfile         ! namelist containing configuration
+  real(dp),             allocatable :: param(:,:)      ! initial value for parameter to be calibrated 
+  logical(lgc),         allocatable :: mask(:)         ! mask of parameter to be calibrated
+  integer(i4b)                      :: ierr            ! error code 
+  character(len=strLen)             :: cmessage        ! error message from suroutine
 
   ! read calibration namelists and save variables 
   nmlfile='namelist.dds.local'
   call read_nml( trim(nmlfile), ierr, cmessage ); call handle_err(ierr,cmessage)
   ! Populate master parameter meta - "parMaster" structure
   call paramMaster( ierr, cmessage ); call handle_err(ierr,cmessage)
-  ! read calibrating parameter list, get meta data from master & subset gamma parameter - "parSubset","gammaSubset"
+  ! read calibrating parameter list (multiplier or gamma parameter), subset parameter meta from master- "parSubset","gammaSubset"
   call get_parm_meta( trim(calpar), ierr,cmessage); call handle_err(ierr,cmessage)
   ! check if gamma parameter is in list, z and h gamma parameters are required
   call check_gammaZ( ierr, cmessage)
@@ -31,7 +31,7 @@ program main_calibration
   allocate(param(nParCal,3))
   allocate(mask(nParCal))
   call param_setup(param, mask)
-  ! optimization start
+  ! optimization starts
   select case (opt)
     case (1)     ! DDS
       call dds(objfn,                   & ! function to get object function
@@ -64,6 +64,6 @@ contains
      print*,'FATAL ERROR: '//trim(message)
      stop
     endif
-  end subroutine handle_err
+  end subroutine
 
 end program main_calibration

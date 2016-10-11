@@ -6,11 +6,10 @@ USE public_var                                    ! Including common constant (p
 
 implicit none
 
-!Following accessible outside this module
+private
+
 public::comp_model_depth
 public::map_slyr2mlyr
-!anything else
-private
 
 contains
 ! ***********

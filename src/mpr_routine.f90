@@ -1,4 +1,5 @@
 module mpr_routine 
+
   use nrtype                                           ! Including numerical type definition 
   use data_type                                        ! Including custum data structure definition
   use public_var                                       ! Including common constant (physical constant, other e.g., missingVal, etc.)
@@ -6,8 +7,9 @@ module mpr_routine
   implicit none
 
   private
-   
+
   public:: mpr
+
 
 contains
 
@@ -17,7 +19,7 @@ subroutine mpr(idModel,           &     ! input: model ID
                hModel,            &     ! output: Model layer thickness
                parMxyMz,          &     ! output: MPR derived soil parameter
                vegParMxy,         &     ! output: MPR derived veg parameter
-               err, message)
+               err, message)            ! output: error id and message
   use model_wrapper,        only:read_hru_id
   use popMeta,              only:popMprMeta
   use globalData,           only:parMaster, betaInGamma
@@ -37,9 +39,7 @@ subroutine mpr(idModel,           &     ! input: model ID
   USE var_lookup,           only:ixVarVegData,nVarVegData      ! index of vege data variables and number of variables
   USE var_lookup,           only:ixVarMapData,nVarMapData      ! index of map data variables and number of variables
 !  USE var_lookup,             only:ixPrpVeg,nPrpVeg             ! index of veg properties and number of properties
-
    implicit none
-
   ! input
   integer(i4b),         intent(in)   :: idModel 
   real(dp),             intent(in)   :: gammaPar(:)              ! array of parameter value adjusted with calibration
@@ -50,7 +50,7 @@ subroutine mpr(idModel,           &     ! input: model ID
   type(namedvar),       intent(inout):: vegParMxy(:)             ! storage of model vege parameter at model hru
   integer(i4b),         intent(out)  :: err                      ! error code
   character(len=strLen),intent(out)  :: message                  ! error message 
-  !! local
+  ! local
   character(len=strLen)              :: cmessage                 ! error message from downward subroutine
   integer,     parameter             :: iHruPrint = 1            ! model hru id for which everything is printed for checking
   integer(i4b),parameter             :: nSub=11                  ! max. number of Soil layer within Model layer
@@ -242,7 +242,7 @@ subroutine mpr(idModel,           &     ! input: model ID
     ! *****
     ! (3.1) Extract soil poly ID, weight polygon , and soil properties for current model hru 
     ! *********************************************************************
-      call subSoilData(sdata, polySub, sdataLocal, err, message)
+      call subSoilData(sdata, polySub, sdataLocal, err, cmessage)
       if ( iHru == iHruPrint ) then
         print*,' '
         print*,'****************************************************'
@@ -469,113 +469,115 @@ subroutine mpr(idModel,           &     ! input: model ID
     end associate
     return
 end subroutine
-  
-  subroutine subSoilData(soilData, subPolyID, soilDataLocal, err, message)
-    use var_lookup,           only:ixVarSoilData,nVarSoilData  ! index of soil data variables and number of variables 
-    use globalData,           only:sdata_meta
-    implicit none
-    !input variables
-    type(namevar),        intent(in)    :: soilData(:)      ! soil data container for all the soil polygons
-    integer(i4b),         intent(in)    :: subPolyID(:)  ! subset of soil polygon id  
-    !output variables
-    type(namevar),        intent(inout) :: soilDataLocal(:) ! soil data container for local soil polygon 
-    integer(i4b),         intent(out)   :: err           ! error code
-    character(*),         intent(out)   :: message       ! error message
-    !local variables
-    integer(i4b),allocatable            :: polyID(:)
-    integer(i4b)                        :: iPoly         ! index of soil polygon loop 
-    integer(i4b)                        :: iVar          ! index of named variable loop
-    integer(i4b)                        :: iLocal        ! index of hru array in mapping file that match hru id of interest 
-    integer(i4b)                        :: nPoly         ! number of polygons in subset 
-    integer(i4b)                        :: nSlyrs        ! number of soil layers 
-    integer(i4b)                        :: iDummy(1)     ! 1D integer array for temporal storage 
+ 
+! private subroutine:
+subroutine subSoilData(soilData, subPolyID, soilDataLocal, err, message)
+  use var_lookup,           only:ixVarSoilData,nVarSoilData  ! index of soil data variables and number of variables 
+  use globalData,           only:sdata_meta
+  implicit none
+  !input variables
+  type(namevar),        intent(in)    :: soilData(:)      ! soil data container for all the soil polygons
+  integer(i4b),         intent(in)    :: subPolyID(:)  ! subset of soil polygon id  
+  !output variables
+  type(namevar),        intent(inout) :: soilDataLocal(:) ! soil data container for local soil polygon 
+  integer(i4b),         intent(out)   :: err           ! error code
+  character(*),         intent(out)   :: message       ! error message
+  !local variables
+  integer(i4b),allocatable            :: polyID(:)
+  integer(i4b)                        :: iPoly         ! index of soil polygon loop 
+  integer(i4b)                        :: iVar          ! index of named variable loop
+  integer(i4b)                        :: iLocal        ! index of hru array in mapping file that match hru id of interest 
+  integer(i4b)                        :: nPoly         ! number of polygons in subset 
+  integer(i4b)                        :: nSlyrs        ! number of soil layers 
+  integer(i4b)                        :: iDummy(1)     ! 1D integer array for temporal storage 
 
-    err=0; message='subSoilData/'
-    !associate( polyID => soilData(ixVarSoilData%polyid)%ivar1 )
-    allocate(polyID(size(soilData(ixVarSoilData%polyid)%ivar1)))
-    polyID = soilData(ixVarSoilData%polyid)%ivar1 
-    nPoly=size(subPolyID)
-    do iVar=1,nVarSoilData
-      soilDataLocal(ivar)%varName=trim(soilData(ivar)%varName)
+  err=0; message='subSoilData/'
+  !associate( polyID => soilData(ixVarSoilData%polyid)%ivar1 )
+  allocate(polyID(size(soilData(ixVarSoilData%polyid)%ivar1)))
+  polyID = soilData(ixVarSoilData%polyid)%ivar1 
+  nPoly=size(subPolyID)
+  do iVar=1,nVarSoilData
+    soilDataLocal(ivar)%varName=trim(soilData(ivar)%varName)
+    select case(trim(sdata_meta(iVar)%vartype))
+      case('integer')
+        select case(trim(sdata_meta(iVar)%vardims))
+          case('2D')
+            nSlyrs=size(soilData(ivar)%ivar2,1) 
+            allocate(soilDataLocal(ivar)%ivar2(nSlyrs,nPoly),stat=err)
+            if(err/=0)then; message=trim(message)//'problem allocating 2D int space for soilDataLocal data structure'; return; endif
+          case('1D')
+             print*,soilData(ixVarSoilData%polyid)%ivar1
+             print*, '-----------'
+            allocate(soilDataLocal(ivar)%ivar1(nPoly),stat=err)
+            if(err/=0)then; message=trim(message)//'problem allocating 1D int space for soilDataLocal data structure'; return; endif
+             print*,soilData(ixVarSoilData%polyid)%ivar1
+          end select
+      case('double')
+        select case(trim(sdata_meta(iVar)%vardims))
+          case('2D')
+            nSlyrs=size(soilData(ivar)%dvar2,1) 
+            allocate(soilDataLocal(ivar)%dvar2(nSlyrs,nPoly),stat=err)
+            if(err/=0)then; message=trim(message)//'problem allocating 2D real space for soilDataLocal data structure'; return; endif
+          case('1D')
+            allocate(soilDataLocal(ivar)%dvar1(nPoly),stat=err)
+            if(err/=0)then; message=trim(message)//'problem allocating 1D real space for soilDataLocal data structure'; return; endif
+        end select
+    end select 
+    do iPoly=1,nPoly
+      if (minval( abs(polyID-subPolyID(iPoly)) ) /= 0 )then; err=10; message=trim(message)//'hru id does not exist in mapping file';return; endif
+      iDummy = minloc( abs(polyID-subPolyID(iPoly)) )
+      iLocal=iDummy(1)
       select case(trim(sdata_meta(iVar)%vartype))
         case('integer')
           select case(trim(sdata_meta(iVar)%vardims))
-            case('2D')
-              nSlyrs=size(soilData(ivar)%ivar2,1) 
-              allocate(soilDataLocal(ivar)%ivar2(nSlyrs,nPoly),stat=err)
-              if(err/=0)then; message=trim(message)//'problem allocating 2D int space for soilDataLocal data structure'; return; endif
-            case('1D')
-!              print*,soilData(ixVarSoilData%polyid)%ivar1
-!              print*, '-----------'
-              allocate(soilDataLocal(ivar)%ivar1(nPoly),stat=err)
-              if(err/=0)then; message=trim(message)//'problem allocating 1D int space for soilDataLocal data structure'; return; endif
-!              print*,soilData(ixVarSoilData%polyid)%ivar1
+            case('2D'); soilDataLocal(ivar)%ivar2(:,iPoly) = soilData(ivar)%ivar2(:,iLocal)
+            case('1D'); soilDataLocal(ivar)%ivar1(iPoly)   = soilData(ivar)%ivar1(iLocal)
             end select
         case('double')
           select case(trim(sdata_meta(iVar)%vardims))
-            case('2D')
-              nSlyrs=size(soilData(ivar)%dvar2,1) 
-              allocate(soilDataLocal(ivar)%dvar2(nSlyrs,nPoly),stat=err)
-              if(err/=0)then; message=trim(message)//'problem allocating 2D real space for soilDataLocal data structure'; return; endif
-            case('1D')
-              allocate(soilDataLocal(ivar)%dvar1(nPoly),stat=err)
-              if(err/=0)then; message=trim(message)//'problem allocating 1D real space for soilDataLocal data structure'; return; endif
+            case('2D'); soilDataLocal(ivar)%dvar2(:,iPoly) = soilData(ivar)%dvar2(:,iLocal)
+            case('1D'); soilDataLocal(ivar)%dvar1(iPoly)   = soilData(ivar)%dvar1(iLocal)
           end select
       end select 
-      do iPoly=1,nPoly
-        if (minval( abs(polyID-subPolyID(iPoly)) ) /= 0 )then; err=10; message=trim(message)//'hru id does not exist in mapping file';return; endif
-        iDummy = minloc( abs(polyID-subPolyID(iPoly)) )
-        iLocal=iDummy(1)
-        select case(trim(sdata_meta(iVar)%vartype))
-          case('integer')
-            select case(trim(sdata_meta(iVar)%vardims))
-              case('2D'); soilDataLocal(ivar)%ivar2(:,iPoly) = soilData(ivar)%ivar2(:,iLocal)
-              case('1D'); soilDataLocal(ivar)%ivar1(iPoly)   = soilData(ivar)%ivar1(iLocal)
-              end select
-          case('double')
-            select case(trim(sdata_meta(iVar)%vardims))
-              case('2D'); soilDataLocal(ivar)%dvar2(:,iPoly) = soilData(ivar)%dvar2(:,iLocal)
-              case('1D'); soilDataLocal(ivar)%dvar1(iPoly)   = soilData(ivar)%dvar1(iLocal)
-            end select
-        end select 
-      end do
-    end do 
-!    end associate
-    return 
-  end subroutine 
+    end do
+  end do 
+  !end associate
+  return 
+end subroutine 
 
-  subroutine pop_hfrac(gammaPar, gammaParMeta,hfrac, err, message)
-    use globalData,   only: gammaSubset
-    implicit none
-    !input variables
-    real(dp),             intent(in)  :: gammaPar(:)
-    type(cpar_meta),      intent(in)  :: gammaParMeta(:)
-    !output variables
-    real(dp),             intent(out) :: hfrac(:)
-    integer(i4b),         intent(out) :: err         ! error code
-    character(*),         intent(out) :: message     ! error message
-    !local variables
-    real(dp)                          :: dummy(20) 
-    logical(lgc)                      :: mask(20) 
-    logical(lgc),allocatable          :: checkH(:) 
-    character(len=strLen)             :: cmessage    ! error message from downward subroutine
-    integer(i4b)                      :: unt         ! DK: need to either define units globally, or use getSpareUnit
-    integer(i4b)                      :: i,j 
-  
-    ! initialize error control
-    err=0; message='pop_hfrac/'
-    dummy=-999
-    !check h parameters - now can chcek up to 5 layers
-    do i=1,size(gammaSubset)
-      if (gammaParMeta(i)%pname=="h1gamma1")then;dummy(1)=gammaPar(i);cycle;endif 
-      if (gammaParMeta(i)%pname=="h1gamma2")then;dummy(2)=gammaPar(i);cycle;endif
-      if (gammaParMeta(i)%pname=="h1gamma3")then;dummy(3)=gammaPar(i);cycle;endif
-      if (gammaParMeta(i)%pname=="h1gamma4")then;dummy(4)=gammaPar(i);cycle;endif
-    enddo
-    mask=(dummy>0)
-    if ( count(mask)/=nLyr-1 ) stop 'number of h1gamma prameters mismatch with nLyr'
-    hfrac=pack(dummy,mask)
-    return
-  end subroutine 
+! private subroutine:
+subroutine pop_hfrac(gammaPar, gammaParMeta,hfrac, err, message)
+  use globalData,   only: gammaSubset
+  implicit none
+  !input variables
+  real(dp),             intent(in)  :: gammaPar(:)
+  type(cpar_meta),      intent(in)  :: gammaParMeta(:)
+  !output variables
+  real(dp),             intent(out) :: hfrac(:)
+  integer(i4b),         intent(out) :: err         ! error code
+  character(*),         intent(out) :: message     ! error message
+  !local variables
+  real(dp)                          :: dummy(20) 
+  logical(lgc)                      :: mask(20) 
+  logical(lgc),allocatable          :: checkH(:) 
+  character(len=strLen)             :: cmessage    ! error message from downward subroutine
+  integer(i4b)                      :: unt         ! DK: need to either define units globally, or use getSpareUnit
+  integer(i4b)                      :: i,j 
+
+  ! initialize error control
+  err=0; message='pop_hfrac/'
+  dummy=-999
+  !check h parameters - now can chcek up to 5 layers
+  do i=1,size(gammaSubset)
+    if (gammaParMeta(i)%pname=="h1gamma1")then;dummy(1)=gammaPar(i);cycle;endif 
+    if (gammaParMeta(i)%pname=="h1gamma2")then;dummy(2)=gammaPar(i);cycle;endif
+    if (gammaParMeta(i)%pname=="h1gamma3")then;dummy(3)=gammaPar(i);cycle;endif
+    if (gammaParMeta(i)%pname=="h1gamma4")then;dummy(4)=gammaPar(i);cycle;endif
+  enddo
+  mask=(dummy>0)
+  if ( count(mask)/=nLyr-1 ) stop 'number of h1gamma prameters mismatch with nLyr'
+  hfrac=pack(dummy,mask)
+  return
+end subroutine 
 
 end module mpr_routine
