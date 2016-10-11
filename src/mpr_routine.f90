@@ -506,11 +506,8 @@ subroutine subSoilData(soilData, subPolyID, soilDataLocal, err, message)
             allocate(soilDataLocal(ivar)%ivar2(nSlyrs,nPoly),stat=err)
             if(err/=0)then; message=trim(message)//'problem allocating 2D int space for soilDataLocal data structure'; return; endif
           case('1D')
-             print*,soilData(ixVarSoilData%polyid)%ivar1
-             print*, '-----------'
             allocate(soilDataLocal(ivar)%ivar1(nPoly),stat=err)
             if(err/=0)then; message=trim(message)//'problem allocating 1D int space for soilDataLocal data structure'; return; endif
-             print*,soilData(ixVarSoilData%polyid)%ivar1
           end select
       case('double')
         select case(trim(sdata_meta(iVar)%vardims))

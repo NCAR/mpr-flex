@@ -113,8 +113,8 @@ contains
     parMaster(ixPar%h5)                = par_meta('h5'           ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",   "wamean")
     parMaster(ixPar%WcrFrac)           = par_meta('WcrFrac'      ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",   "wamean")
     parMaster(ixPar%WpwpFrac)          = par_meta('WpwpFrac'     ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",   "wamean")
-    parMaster(ixPar%rmin)              = par_meta('rmin'         ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",       "na")
-    parMaster(ixPar%lai)               = par_meta('lai'          ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",       "na")
+    parMaster(ixPar%rmin)              = par_meta('rmin'         ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "vege", .False.,  "wamean",       "na")
+    parMaster(ixPar%lai)               = par_meta('lai'          ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "vege", .False.,  "wamean",       "na")
 
   end subroutine 
 
