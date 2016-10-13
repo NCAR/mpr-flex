@@ -155,7 +155,7 @@ CONTAINS
     END INTERFACE
     real(dp),    dimension(:),             intent(in)  :: pini        ! inital value of decision (parameter) variables
     real(dp),    dimension(:,:),           intent(in)  :: prange      ! Min/max values of decision variables
-    logical,                               intent(in)  :: restart     ! .true.  read state file and initialize, .false. -> start from begining
+    logical(lgc),                          intent(in)  :: restart     ! .true.  read state file and initialize, .false. -> start from begining
     character(len=strLen),                 intent(in)  :: restartFile ! name of restart file including iteration, the most recent parameter values 
     real(dp),                    optional, intent(in)  :: r           ! DDS perturbation parameter (-> 0.2 by default)
     integer(i8b),                optional, intent(in)  :: seed        ! User seed to initialise the random number generator
@@ -197,7 +197,6 @@ CONTAINS
     pnum = size(pini)
     if (size(prange,1) /= pnum) stop 'Error DDS: size(prange,1) /= size(pini)'
     if (size(prange,2) /= 2)    stop 'Error DDS: size(prange,2) /= 2'
-
     ! restart option?
     if (restart) then
       print*, 'read restart file'
@@ -210,7 +209,6 @@ CONTAINS
         print*, iStart
        endif
     endif 
-
     ! r Perturbation parameter
     ir = 0.2_dp
     if (present(r)) ir = r
