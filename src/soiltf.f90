@@ -20,28 +20,29 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
                                  sdata,             &  ! input: soil data
                                  gammaParMasterMeta,&  ! input: gamma parameter meta file - val of calibrating parammeter is adjusted via calibration 
                                  nSLyr,             &  ! input: number of soil layers
-                                 nSPoly)               ! input: number of soil polygons
+                                 nSPoly,            &  ! input: number of soil polygons
+                                 ierr,message) 
 
   use globalData, only:betaInGamma
   use get_ixname, only:get_ixPar
   implicit none
   ! in/out
-  type(namedvar2),intent(inout)       :: parSxySz(:)            ! soil parameter values for ParSxySz(:)%dat(lyr,poly) 
+  type(namedvar2),      intent(inout) :: parSxySz(:)            ! soil parameter values for ParSxySz(:)%dat(lyr,poly) 
   ! input
-  type(namevar), intent(in)           :: sdata(:)               ! storage of soil data strucuture
+  type(namevar),        intent(in)    :: sdata(:)               ! storage of soil data strucuture
   type(par_meta)                      :: gammaParMasterMeta(:)
-  integer(i4b),  intent(in)           :: nSLyr                  ! number of soil layer
-  integer(i4b),  intent(in)           :: nSPoly                 ! number of soil polygons
+  integer(i4b),         intent(in)    :: nSLyr                  ! number of soil layer
+  integer(i4b),         intent(in)    :: nSPoly                 ! number of soil polygons
+  ! output
+  integer(i4b),         intent(out)   :: ierr                   ! error code
+  character(len=strLen),intent(out)   :: message                ! error message for current routine
   ! Local 
-  integer(i4b)                        :: ierr                   ! error code
-  character(len=strLen)               :: message                ! error message for current routine
   type(namedvar2)                     :: ParTemp(nPar)          ! soil parameter values for ParSxySz(:)%dat(lyr,poly) 
   integer(i4b)                        :: idBeta                 ! id of beta parameter array 
-  integer(i4b)                        :: iSLyr                  ! Loop index of soil layer
   integer(i4b)                        :: iParm                  ! Loop index of model parameters (e.g., VIC)
   logical(lgc)                        :: checkDone(nPar)        ! used to check if the VIC parameter is processed
 
-  message="comp_soil_model_param/"
+  ierr=0; message="comp_soil_model_param/"
   associate(sclass  => sdata(ixVarSoilData%soilclass)%ivar2,   &
             hslyrs  => sdata(ixVarSoilData%hslyrs)%dvar2,      &
             sand    => sdata(ixVarSoilData%sand_frc)%dvar2,    & 
@@ -63,7 +64,7 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
          checkDone(iParm)=.true.
          xPar  = bd( bulkd, gammaPar )
        case(ixPar%phi);
-         if(.not.checkDone(ixPar%bd)) stop trim(message)//'need to process bd before phi'
+         if(.not.checkDone(ixPar%bd)) then;ierr=10;message=trim(message)//'need to process bd before phi';return;endif
          checkDone(iParm)=.true.
          xPar = phi( sand, clay, ParTemp(ixPar%bd)%varData,gammaPar, 1_i2b)
        case(ixPar%b);
@@ -73,27 +74,27 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
          checkDone(iParm)=.true.
          xPar = psis( sand, silt, gammaPar, 1_i2b)
        case(ixPar%fc);
-         if(.not.checkDone(ixPar%psis)) stop trim(message)//'need to process psis before fc'
-         if(.not.checkDone(ixPar%phi))  stop trim(message)//'need to process phi before fc'
-         if(.not.checkDone(ixPar%b))    stop trim(message)//'need to process b before fc'
+         if(.not.checkDone(ixPar%psis)) then;ierr=10;message=trim(message)//'need to process psis before fc';return;endif
+         if(.not.checkDone(ixPar%phi))  then;ierr=10;message=trim(message)//'need to process phi before fc';return;endif
+         if(.not.checkDone(ixPar%b))    then;ierr=10;message=trim(message)//'need to process b before fc';return;endif
          checkDone(iParm)=.true.
          xPar = fc(sand, ParTemp(ixPar%phi)%varData, ParTemp(ixPar%psis)%varData, ParTemp(ixPar%b)%varData,gammaPar, 1_i2b)
        case(ixPar%wp);
-         if(.not.checkDone(ixPar%psis)) stop trim(message)//'need to process psis before wp'
-         if(.not.checkDone(ixPar%phi))  stop trim(message)//'need to process phi before wp'
-         if(.not.checkDone(ixPar%b))    stop trim(message)//'need to process b before wp'
+         if(.not.checkDone(ixPar%psis)) then;ierr=10;message=trim(message)//'need to process psis before wp';return;endif
+         if(.not.checkDone(ixPar%phi))  then;ierr=10;message=trim(message)//'need to process phi before wp';return;endif
+         if(.not.checkDone(ixPar%b))    then;ierr=10;message=trim(message)//'need to process b before wp';return;endif
          checkDone(iParm)=.true.
          xPar = wp( ParTemp(ixPar%phi)%varData, ParTemp(ixPar%psis)%varData, ParTemp(ixPar%b)%varData, gammaPar, 1_i2b) 
        case(ixPar%myu);
-         if(.not.checkDone(ixPar%phi))  stop trim(message)//'need to process phi before myu'
-         if(.not.checkDone(ixPar%fc))   stop trim(message)//'need to process fc before myu'
+         if(.not.checkDone(ixPar%phi))  then;ierr=10;message=trim(message)//'need to process phi before myu';return;endif
+         if(.not.checkDone(ixPar%fc))   then;ierr=10;message=trim(message)//'need to process fc before myu';return;endif
          checkDone(iParm)=.true.
          xPar= myu( ParTemp(ixPar%phi)%varData, ParTemp(ixPar%fc)%varData, gammaPar, 1_i2b)
        case(ixPar%binfilt);
          checkDone(iParm)=.true.
          xPar=infilt( elestd, gammaPar )
        case(ixPar%D1);
-         if(.not.checkDone(ixPar%ks)) stop trim(message)//'need to process "ks" before "D1"'
+         if(.not.checkDone(ixPar%ks)) then;ierr=10;message=trim(message)//'need to process "ks" before "D1"';return;endif
          checkDone(iParm)=.true. 
          xPar=D1( slpmean,                    &
                   ParTemp(ixPar%ks)%varData,  &
@@ -101,16 +102,16 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
                   hslyrs,                     &
                   gammaPar)
        case(ixPar%Ds);
-         if(.not.checkDone(ixPar%D1))    stop trim(message)//'need to process "D1" before "Ds"'
-         if(.not.checkDone(ixPar%D3))    stop trim(message)//'need to process "D3" before "Ds"'
-         if(.not.checkDone(ixPar%Dsmax)) stop trim(message)//'need to process "Dsmax" before "Ds"'
+         if(.not.checkDone(ixPar%D1))    then;ierr=10;message=trim(message)//'need to process "D1" before "Ds"';return;endif
+         if(.not.checkDone(ixPar%D3))    then;ierr=10;message=trim(message)//'need to process "D3" before "Ds"';return;endif
+         if(.not.checkDone(ixPar%Dsmax)) then;ierr=10;message=trim(message)//'need to process "Dsmax" before "Ds"';return;endif
          checkDone(iParm)=.true. 
          xPar=Ds( ParTemp(ixPar%D1)%varData, ParTemp(ixPar%D3)%varData, ParTemp(ixPar%Dsmax)%varData )
        case(ixPar%D4);
          checkDone(iParm)=.true.
          xPar=D4(gammaPar)
        case(ixPar%c);
-         if(.not.checkDone(ixPar%D4)) stop trim(message)//'need to process "D4" before "c"'
+         if(.not.checkDone(ixPar%D4)) then;ierr=10;message=trim(message)//'need to process "D4" before "c"';return;endif
          checkDone(iParm)=.true.
          xPar=cexpt(ParTemp(ixPar%D4)%varData)
        case(ixPar%SD);
@@ -120,24 +121,24 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
          checkDone(iParm)=.true.
          xPar=expt( ParTemp(ixPar%b)%varData, gammaPar )
        case(ixPar%D2);
-         if(.not.checkDone(ixPar%ks)) stop trim(message)//'need to process "ksat" before "D2"'
-         if(.not.checkDone(ixPar%D4)) stop trim(message)//'need to process "D4" before "D2"'
+         if(.not.checkDone(ixPar%ks)) then;ierr=10;message=trim(message)//'need to process "ksat" before "D2"';return;endif
+         if(.not.checkDone(ixPar%D4)) then;ierr=10;message=trim(message)//'need to process "D4" before "D2"';return;endif
          checkDone(iParm)=.true.
          xPar=D2( slpmean, ParTemp(ixPar%ks)%varData, ParTemp(ixPar%D4)%varData, gammaPar )
        case(ixPar%Dsmax);
-         if(.not.checkDone(ixPar%D1)) stop trim(message)//'need to process "D1" before "Dsmax"'
-         if(.not.checkDone(ixPar%D2)) stop trim(message)//'need to process "D2" before "Dsmax"'
-         if(.not.checkDone(ixPar%D3)) stop trim(message)//'need to process "D3" before "Dsmax"'
-         if(.not.checkDone(ixPar%c))  stop trim(message)//'need to process "c" before "Dsmax"'
+         if(.not.checkDone(ixPar%D1)) then;ierr=10;message=trim(message)//'need to process "D1" before "Dsmax"';return;endif
+         if(.not.checkDone(ixPar%D2)) then;ierr=10;message=trim(message)//'need to process "D2" before "Dsmax"';return;endif
+         if(.not.checkDone(ixPar%D3)) then;ierr=10;message=trim(message)//'need to process "D3" before "Dsmax"';return;endif
+         if(.not.checkDone(ixPar%c))  then;ierr=10;message=trim(message)//'need to process "c" before "Dsmax"';return;endif
          checkDone(iParm)=.true. 
-         xPar=Dsmax( ParTemp(ixPar%D1)%varData,         &
-                     ParTemp(ixPar%D2)%varData,         & 
-                     ParTemp(ixPar%D3)%varData,         & 
-                     ParTemp(ixPar%c)%varData,          & 
-                     ParTemp(ixPar%phi)%varData, &
+         xPar=Dsmax( ParTemp(ixPar%D1)%varData,   &
+                     ParTemp(ixPar%D2)%varData,   & 
+                     ParTemp(ixPar%D3)%varData,   & 
+                     ParTemp(ixPar%c)%varData,    & 
+                     ParTemp(ixPar%phi)%varData,  &
                      hslyrs )
        case(ixPar%bbl);
-         if(.not.checkDone(ixPar%expt)) stop trim(message)//'need to process "expt" before "bubble"'
+         if(.not.checkDone(ixPar%expt)) then;ierr=10;message=trim(message)//'need to process "expt" before "bubble"';return;endif
          checkDone(iParm)=.true.
          xPar=bubble( ParTemp(ixPar%expt)%varData, gammaPar)
        case(ixPar%WcrFrac);
@@ -150,7 +151,7 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
          checkDone(iParm)=.true.
          xPar=D3( ParTemp(ixPar%fc)%varData, hslyrs, gammaPar )
        case(ixPar%Ws);
-         if(.not.checkDone(ixPar%D3)) stop trim(message)//'need to process "D3" before "Dsmax"'
+         if(.not.checkDone(ixPar%D3)) then;ierr=10;message=trim(message)//'need to process "D3" before "Dsmax"';return;endif 
          checkDone(iParm)=.true. 
          xPar=Ws( ParTemp(ixPar%D3)%varData, ParTemp(ixPar%phi)%varData, hslyrs )
      end select ! end of parameter case
@@ -250,7 +251,7 @@ function D1(slope_in, ks_in, phi_in, h_in, gammaPar)
   real(dp), allocatable :: S(:,:)              ! length scaling term [mm]: 1, Max. soil storage etc
   real(dp), parameter   :: D1_min=0.0001_dp
   real(dp), parameter   :: D1_max=1.0_dp
-  integer(i4b)          :: err                       ! error code
+  !integer(i4b)          :: err                       ! error code
    
   ! local variable allocation
   n1=size(D1,1)
@@ -318,7 +319,7 @@ function D2(slope_in, ks_in, D4_in, gammaPar)
   real(dp), allocatable :: S(:,:)             ! length scaling term [mm]: 1, Max. soil storage etc
   real(dp), parameter   :: D2_min=0.0001_dp
   real(dp), parameter   :: D2_max=1.0_dp
-  integer(i4b)          :: err                       ! error code
+  !integer(i4b)          :: err                       ! error code
   
  ! local variable allocation
   n1=size(D2,1)
@@ -633,7 +634,7 @@ function ks( sand_in, clay_in, gammaPar, opt)
       else where
         ks = dmiss 
       end where
-    case default; stop trim(message)//'opt not recognized'
+    case default; message=trim(message)//'opt not recognized'
   end select
   end associate
   return
@@ -657,8 +658,8 @@ function bd( bd_in, gammaPar )
   real(dp),allocatable  :: bd_temp(:,:)
   integer(i4b)          :: n1                  ! number of 1st dimension 
   integer(i4b)          :: n2                  ! number of 2nd dimension 
-  character(len=strLen) :: message                 ! error message
-  integer(i4b)          :: err                     ! error code
+  !character(len=strLen) :: message                 ! error message
+  !integer(i4b)          :: err                     ! error code
 
   n1=size(bd_in,1)
   n2=size(bd_in,2)
@@ -725,7 +726,7 @@ function phi(sand_in, clay_in, db_in, gammaPar, opt)
         else where
           phi = dmiss 
         end where
-      case default; stop trim(message)//'opt not recognized'
+      case default; message=trim(message)//'opt not recognized'
     end select
   end associate
   return
@@ -767,7 +768,7 @@ function fc(sand_in, phi_in, psis_in, b_in, gammaPar, opt)
       else where
         fc = dmiss 
       end where
-    case default; stop trim(message)//'opt not recognized' 
+    case default; message=trim(message)//'opt not recognized' 
   end select
   end associate
   return
@@ -806,7 +807,7 @@ function wp( phi_in, psis_in, b_in, gammaPar, opt)
       else where
         wp = dmiss 
       end where
-    case default; stop trim(message)//'opt not recognized'
+    case default; message=trim(message)//'opt not recognized'
   end select
   end associate
   return
@@ -838,7 +839,7 @@ function ret_curve(sand_in, clay_in, gammaPar, opt)
         else where
           ret_curve = dmiss 
         end where
-      case default; stop trim(message)//'opt not recognized'
+      case default; message=trim(message)//'opt not recognized'
     end select
   end associate
   return
@@ -871,7 +872,7 @@ function psis( sand_in, silt_in, gammaPar, opt)
         else where
           psis = dmiss 
         end where
-      case default; stop trim(message)//'opt not recognized'
+      case default; message=trim(message)//'opt not recognized'
     end select
   end associate
   return
@@ -902,7 +903,7 @@ function myu(phi_in, fc_in, gammaPar, opt)
       else where
         myu = dmiss 
       end where
-    case default; stop trim(message)//'opt not recognized'
+    case default; message=trim(message)//'opt not recognized'
   end select
   end associate
   return

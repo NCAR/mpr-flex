@@ -46,17 +46,18 @@ CONTAINS
          use nrtype, only: dp
          implicit none
          real(dp), dimension(:), intent(in) :: pp
-         real(dp) :: obj_func
+         real(dp)                           :: obj_func
        end function obj_func
     END INTERFACE
     character(len=strLen),      intent(in)  :: restartFile ! name of restart file including iteration, the most recent parameter values 
-
     ! Local variables
     real(dp),   dimension(:), allocatable   :: pval        ! inital value of decision (parameter) variables
     integer(i8b)                            :: i           ! loop index 
     integer(i8b)                            :: iDummy      ! dummy interger: fist line of restart file starting index of objective function evaluation 
     real(dp)                                :: rDummy      ! dummy real: intermediate results for objective function values logical                                 
-    logical                                 :: isExistFile ! logical to check if the file exist or not
+    logical(lgc)                            :: isExistFile ! logical to check if the file exist or not
+    integer(i4b)                            :: ierr
+    character(len=strLen)                   :: cmessage    ! error message from subroutine
     
     allocate ( pval(NparCal) )
     ! restart option
@@ -68,10 +69,8 @@ CONTAINS
       read(70,*) (pval(i),i=1,NparCal)    
       close(70)
     endif
-    ! Evaluate initial solution and return objective function value
-    ! and Initialise the other variables (e.g. of_best)
     rDummy =  obj_func(pval)
-
+    return
   end subroutine
 
 end module mo_opt_run

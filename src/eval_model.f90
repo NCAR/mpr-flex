@@ -25,8 +25,6 @@ function objfn( calPar )
   real(dp),             intent(in)  :: calPar(:)              ! parameter in namelist, not necessarily all parameters are calibrated
   !local variables
   real(dp)                          :: objfn                  ! object function value 
-  integer(i4b)                      :: err                    ! error code
-  character(len=strLen)             :: message                ! error message
   integer(i4b)                      :: iPar                   ! loop index for parameter 
   integer(i4b)                      :: nVegParModel           ! Number of model vege parameters associated with calibrating gamma parameter 
   integer(i4b)                      :: nSoilParModel          ! Number of model soil parameters associated with calibrating gamma parameter 
@@ -43,27 +41,30 @@ function objfn( calPar )
   type(namedvar2),      allocatable :: parMxyMz(:)            ! storage of model soil parameter at model layer x model hru 
   type(namedvar),       allocatable :: vegParMxy(:)           ! storage of model vege parameter at model hru
   real(dp)                          :: ushape,uscale          ! two routing parameter
+  integer(i4b)                      :: err                    ! error id 
+  character(len=strLen)             :: message                ! error message
+  character(len=strLen)             :: cmessage                ! error message from subroutine
 
   err=0; message='eval_objfn/' ! to initialize error control
   allocate(obs(nbasin*sim_len))
   allocate(sim(nHru,sim_len))
   allocate(simBasin(nbasin,sim_len))
   allocate(simBasinRouted(nbasin,sim_len))
-  call read_hru_id(idModel, hruID, err, message)    ! to get hruID
-  if (err/=0)then; stop message; endif
-  call read_soil_param(idModel, param, err, message)! to get soil param (=param) 
-  if (err/=0)then; stop message; endif
+  call read_hru_id(idModel, hruID, err, cmessage)    ! to get hruID
+  if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
+  call read_soil_param(idModel, param, err, cmessage)! to get soil param (=param) 
+  if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   adjParam=param
   if ( any(parSubset(:)%beta == "beta") )then ! calpar include multipliers for original model parameter 
-    call adjust_param(idModel, param, calPar, adjParam, err, message) ! to output model parameter via multiplier method
-    if (err/=0)then; stop message; endif
+    call adjust_param(idModel, param, calPar, adjParam, err, cmessage) ! to output model parameter via multiplier method
+    if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   endif
   if ( any(parSubset(:)%beta /= "beta") )then ! calPar includes gamma parameters to be used for MPR 
     nSoilParModel=size(betaInGamma)           ! number of soil parameters associated with gamma parameters
     nVegParModel=1                            ! number of vege parameters associated with gamma parameters
-    allocate(hModel(nLyr,nHru),stat=err);      if(err/=0)then;stop trim(message)//'error allocating hModel';   endif
-    allocate(parMxyMz(nSoilParModel),stat=err);if(err/=0)then;stop trim(message)//'error allocating parMxyMz'; endif
-    allocate(vegParMxy(nVegParModel),stat=err);if(err/=0)then;stop trim(message)//'error allocating vegParMxy';endif
+    allocate(hModel(nLyr,nHru),stat=err);      if(err/=0)then;print*,trim(message)//'error allocating hModel';stop;endif
+    allocate(parMxyMz(nSoilParModel),stat=err);if(err/=0)then;print*,trim(message)//'error allocating parMxyMz';stop;endif
+    allocate(vegParMxy(nVegParModel),stat=err);if(err/=0)then;print*,trim(message)//'error allocating vegParMxy';stop;endif
     do iPar=1,nSoilParModel
       allocate(parMxyMz(iPar)%varData(nLyr,nHru),stat=err)
     enddo
@@ -74,20 +75,20 @@ function objfn( calPar )
     mask=parSubset(:)%beta/="beta"
     allocate(paramGamma(count(mask)))
     paramGamma=pack(calPar,mask)
-    call mpr(idModel, paramGamma, gammaSubset, hModel, parMxyMz, vegParMxy, err, message) ! to output model layer thickness and model parameter via MPR
-    if (err/=0)then; stop message; endif
-    call replace_param(idModel, adjparam, hModel, parMxyMz, adjParam, err, message)
-    if (err/=0)then; stop message; endif
+    call mpr(idModel, paramGamma, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
+    if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
+    call replace_param(idModel, adjparam, hModel, parMxyMz, adjParam, err, cmessage)
+    if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   endif
-  call write_soil_param(idModel, hruID, adjParam, err, message)
-  if (err/=0)then; stop message; endif
+  call write_soil_param(idModel, hruID, adjParam, err, cmessage)
+  if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   call system(executable) ! to run hydrologic model   
-  call read_obs(obs, err, message)
-  if (err/=0)then; stop message; endif
-  call read_sim(idModel, sim, err, message)
-  if (err/=0)then; stop message; endif
-  call agg_hru_to_basin(sim, simBasin, err, message) ! aggregate hru sim to basin total sim 
-  if (err/=0)then; stop message; endif
+  call read_obs(obs, err, cmessage)
+  if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
+  call read_sim(idModel, sim, err, cmessage)
+  if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
+  call agg_hru_to_basin(sim, simBasin, err, cmessage) ! aggregate hru sim to basin total sim 
+  if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   ! route sim for each basin
   ushape=parMaster(ixPar%uhshape)%val
   uscale=parMaster(ixPar%uhscale)%val
@@ -97,11 +98,11 @@ function objfn( calPar )
       case('uhscale');  uscale = calPar( iPar )
      end select
   end do
-  call route_q(simBasin, simBasinRouted, ushape, uscale, err, message)
-  if (err/=0)then; stop message; endif
+  call route_q(simBasin, simBasinRouted, ushape, uscale, err, cmessage)
+  if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   if (opt/=2) then
-    call calc_rmse_region(simBasinRouted, obs, objfn, err, message) ! for objective function
-    if (err/=0)then; stop message; endif
+    call calc_rmse_region(simBasinRouted, obs, objfn, err, cmessage) ! for objective function
+    if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   else
     call out_opt_sim(simBasinRouted, obs) ! to just output optimal run
   endif
@@ -124,11 +125,6 @@ subroutine calc_rmse_region(sim, obs, rmse, err, message)
   !local variables
   integer                                 :: itime,ibasin,total_len,offset
   real(dp)                                :: sum_sqr
-  integer(i4b)                            :: nargs,nstream,nb,nday
-  character(len=strLen)                   :: out_name
-  character(len=strlen),dimension(10)     :: tokens
-  character(len=strlen)                   :: last_token
-  character(len=1)                        :: delims
   real(dp),allocatable,dimension(:,:)     :: log_model
   real(dp),allocatable,dimension(:)       :: log_streamflow
   integer,allocatable,dimension(:)        :: basin_id
@@ -136,8 +132,6 @@ subroutine calc_rmse_region(sim, obs, rmse, err, message)
   real(dp),allocatable,dimension(:)       :: basin_rmse
   integer(i4b)                            :: nmonths  !for monthly rmse calculation
   integer(i4b)                            :: start_ind, end_ind
-  integer(i4b)                            :: start_obs, end_obs
-  integer(i4b)                            :: rmse_period
   real(dp)                                :: month_model, month_streamflow
 
   ! initialize error control
@@ -157,7 +151,7 @@ subroutine calc_rmse_region(sim, obs, rmse, err, message)
 !weights need to sum to 1 in the file
   open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
   do ibasin = 1,nbasin
-    read (UNIT=58,*) basin_id(ibasin),obj_fun_weight(ibasin)
+    read (UNIT=58,fmt=*) basin_id(ibasin),obj_fun_weight(ibasin)
   enddo
   close(UNIT=58)
 
@@ -246,17 +240,11 @@ subroutine calc_nse_region(sim,obs,nse)
   real(dp)                              :: sumSqrDev
   real(dp)                              :: sumQ
   real(dp)                              :: meanQ
-  integer(i4b)                          :: nargs,nstream,nb,nday
-  character(len=strLen)                 :: out_name
-  character(len=strLen),dimension(10)   :: tokens
-  character(len=strLen)                 :: last_token
-  character(len=1)                      :: delims
   integer(i4b),allocatable,dimension(:) :: basin_id
   real(dp),allocatable,dimension(:)     :: obj_fun_weight
   real(dp),allocatable,dimension(:)     :: basin_nse          ! nse for individual basin
   integer(i4b)                          :: nmonths            ! for monthly rmse calculation
   integer(i4b)                          :: start_ind, end_ind
-  integer(i4b)                          :: start_obs, end_obs
   real(dp)                              :: month_sim, month_obs
 
   total_len = (end_cal-start_cal)*nbasin
@@ -270,7 +258,7 @@ subroutine calc_nse_region(sim,obs,nse)
   ! weights need to sum to 1 in the file
   open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
   do ibasin = 1,nbasin
-    read (UNIT=58,*) basin_id(ibasin),obj_fun_weight(ibasin)
+    read (UNIT=58,fmt=*) basin_id(ibasin),obj_fun_weight(ibasin)
   enddo
   close(UNIT=58)
 
@@ -355,11 +343,9 @@ subroutine calc_kge_region(model,streamflow,kge)
 !output variables
   real(dp),                 intent(out) :: kge
 !local variables
-  integer                               :: itime
+  integer(i4b)                          :: itime
   real(dp)                              :: cc,alpha,betha,mu_s,mu_o,sigma_s,sigma_o
-  integer                               :: ibasin,total_len,offset,cnt
-  double precision                      :: sum_sqr
-  integer                               :: nstream,nb,nday
+  integer(i4b)                          :: ibasin,total_len,offset,cnt
   real(dp),dimension(:),allocatable     :: model_local
   real(dp),dimension(:),allocatable     :: obs_local
 
@@ -457,7 +443,7 @@ subroutine out_opt_sim(sim, obs)
   do ibasin = 0,nbasin-1
     offset = ibasin*sim_len
     do itime = start_cal,end_cal-1
-      write(unit=88,*) sim(ibasin+1,itime),obs(itime+offset)
+      write(unit=88,fmt=*) sim(ibasin+1,itime),obs(itime+offset)
     enddo
   enddo
   close(unit=88)
@@ -485,7 +471,7 @@ subroutine read_obs(obs, err, message)
   call file_open(trim(obs_name),unt, err, cmessage)
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
   do itime = 1,sim_len*nbasin
-    read (unt,*) obs(itime)
+    read (unt,fmt=*) obs(itime)
   enddo
   close(unt)
   return
@@ -507,7 +493,7 @@ subroutine agg_hru_to_basin(simHru,simBasin,err,message)
   character(len=strLen)                 :: cmessage                ! error message from downward routine
   integer(i4b)                          :: unt                     ! DK: need to either define units globally, or use getSpareUnit
   real(dp)                              :: basin_area
-  integer(i4b)                          :: ibasin,itime,ivar,icell ! loop index
+  integer(i4b)                          :: ibasin,icell       ! loop index
   integer(i4b)                          :: ncell
   integer(i4b)                          :: dum,c_cell
 
@@ -521,7 +507,7 @@ subroutine agg_hru_to_basin(simHru,simBasin,err,message)
   call file_open(trim(region_info),unt, err, cmessage)
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
   do ibasin = 1,nbasin
-    read (unt,*) dum, dum, basin_area, ncell
+    read (unt,fmt=*) dum, dum, basin_area, ncell
     do icell = 1,ncell
       simBasin(ibasin,:) = simBasin(ibasin,:) + simHru(c_cell,:)
       c_cell = c_cell + 1
@@ -544,7 +530,6 @@ subroutine route_q(qin,qroute,ushape,uscale, err, message)
   integer(i4b),            intent(out)   :: err          ! error code
   character(*),            intent(out)   :: message      ! error message
   !local variables
-  character(len=strLen)                  :: cmessage     ! error message from downward subroutine
   integer(i4b)                           :: iEle         ! loop index of spatial elements
   integer(i4b)                           :: nEle         ! number of spatial elements (e.g., hru, basin)
 

@@ -18,7 +18,8 @@ contains
   subroutine comp_model_depth(hModel,   &          ! output: model layer thickness [mm]
                               zModel,   &          ! output: model layer bottom depth [mm]
                               hfrac,    &          ! input : fraction of total soil layer for each model layer
-                              soildata)            ! input : soil data 
+                              soildata, &          ! input : soil data 
+                              ierr, message)       ! output: error id and message 
 
   use var_lookup,  only:ixVarSoilData,nVarSoilData ! index of soil data variables and number of variables 
   implicit none
@@ -28,9 +29,9 @@ contains
   ! output 
   real(dp),     intent(out)   :: hModel(:,:)       ! model layer thickness [mm]
   real(dp),     intent(out)   :: zModel(:,:)       ! depth of model layer bottom [mm]
+  integer(i4b), intent(out)   :: ierr             ! error code
+  character(*), intent(out)   :: message          ! error message
   ! local 
-  integer(i4b)                :: ierr              ! error code
-  character(len=strLen)       :: message           ! error message
   integer(i4b)                :: iPoly             ! loop index of polygon 
   integer(i4b)                :: iLyr              ! loop index of model layer 
   integer(i4b)                :: nSLyr             ! number of Soil layer 
@@ -49,10 +50,10 @@ contains
   nSLyr=size(hslyrs,1) 
   nPoly=size(hslyrs,2) 
   ! Make mask to exclude layers with water/bedrock/other  
-  allocate(mask(nSLyr,nPoly),stat=ierr); if(ierr/=0) stop trim(message)//'problem allocating space for mask'
+  allocate(mask(nSLyr,nPoly),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating mask';return;endif
   mask = (soilData(ixVarSoilData%soilclass)%ivar2 < 13) !Exclude 14=water, 15=bedrock, 16=other(??)
   do iPoly=1,nPoly
-    allocate(lyr_packed(count(mask(:,iPoly))),stat=ierr); if(ierr/=0) stop trim(message)//'problem allocating space for lyr_packed(nElm)'
+    allocate(lyr_packed(count(mask(:,iPoly))),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating lyr_packed';return;endif
     lyr_packed = pack( hslyrs(:,iPoly), mask(:,iPoly) )
     nElm = size(lyr_packed)      ! number of valid soil layer
     if (nElm > 0) then           ! if actually soil layers exist
@@ -60,13 +61,13 @@ contains
       nFrac=size(hfrac)          ! number of layer fraction that is input
       if (nLyr == 1) then
         if (nFrac /= 1) then
-          ierr=10; stop trim(message)//'if model has single soil layer, nFrac has to be one'
+          ierr=10;message=trim(message)//'if model has single soil layer, nFrac has to be one';return
         endif
         hModel(1,iPoly)=Ztot_in
         zModel(1,iPoly)=hModel(1,iPoly)
       else  
         if (nFrac+1 /= nLyr)then
-          ierr=15; stop trim(message)//'number of nFrac does not match with number of model layer'
+          ierr=15;message=trim(message)//'number of nFrac does not match with number of model layer';return
         endif
         topZ=0.0_dp ! depth of model layer top (1st model layer = 0 m)
         do iLyr=1,nLyr-1

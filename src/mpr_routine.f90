@@ -56,7 +56,7 @@ subroutine mpr(idModel,           &     ! input: model ID
   integer(i4b),parameter             :: nSub=11                  ! max. number of Soil layer within Model layer
   integer(i4b)                       :: iLocal                   ! index of hru array in mapping file that match hru id of interest 
   integer(i4b)                       :: iDummy(1)                ! 1D integer array for temporal storage 
-  integer(i4b)                       :: iGamma, iGammaMaster     ! index loop
+  integer(i4b)                       :: iGamma                   ! index loop
   integer(i4b)                       :: iPoly                    ! Loop index of soil polygon
   integer(i4b)                       :: iSLyr                    ! Loop index of soil layer 
   integer(i4b)                       :: iMLyr                    ! loop index of model soil layer (1,...,n from top to bottom) 
@@ -310,7 +310,7 @@ subroutine mpr(idModel,           &     ! input: model ID
     ! (3.4) Compute model soil parameters using transfer function
     ! *********************************************************
       ! compute model soil parameters
-      call comp_soil_model_param(parSxySz, sdataLocal, gammaParMasterMeta, nSlyrs, nSpolyLocal)
+      call comp_soil_model_param(parSxySz, sdataLocal, gammaParMasterMeta, nSlyrs, nSpolyLocal, err, message)
       if ( iHru == iHruPrint ) then
         print*,'(2) Print Model parameter for polygon and layer'
         write(*,"(' Layer       =',20I9)") (iSLyr, iSlyr=1,nSlyrs)
@@ -345,7 +345,7 @@ subroutine mpr(idModel,           &     ! input: model ID
     ! (4.1) Aggregate model parameveter vertical direction - soil data layers to model soil layers
     ! *********************************************************************
     ! (4.1.1) Compute Model layer depth 
-      call comp_model_depth(hModelLocal, zModelLocal, hfrac, sdataLocal) 
+      call comp_model_depth(hModelLocal, zModelLocal, hfrac, sdataLocal, err, cmessage) 
       if ( iHru == iHruPrint ) then
         print*, '(3.1.1) Print model depth ---' 
         write(*,"(' Layer       =',20I9)") (iMLyr, iMlyr=1,nlyr)
