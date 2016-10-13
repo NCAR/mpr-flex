@@ -68,6 +68,8 @@ CONTAINS
       read(70,*) iDummy
       read(70,*) (pval(i),i=1,NparCal)    
       close(70)
+    else
+      stop 'No restart file, run optimization'
     endif
     rDummy =  obj_func(pval)
     return
