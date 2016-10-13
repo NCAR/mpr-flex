@@ -126,7 +126,7 @@ end subroutine
   do iSLyr=2,nSlyr
     zSoil(iSlyr,:)=hSoil(iSlyr,:)+zSoil(iSlyr-1,:)
   enddo
-  poly: do iPoly=1,nPoly
+  do iPoly=1,nPoly
     do iMLyr=1,nLyr
       lyrmap(iPoly)%layer(iMLyr)%weight = dmiss
       lyrmap(iPoly)%layer(iMLyr)%ixSubLyr = imiss
@@ -208,7 +208,7 @@ end subroutine
       deallocate(idxTop,stat=ierr); if(ierr/=0)then; message=trim(message)//'error deallocating idxTop'; return; endif
       deallocate(idxBot,stat=ierr); if(ierr/=0)then; message=trim(message)//'error deallocating idxBot'; return; endif
     endif 
-  enddo poly
+  enddo 
   return
  end subroutine
 

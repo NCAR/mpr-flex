@@ -556,10 +556,7 @@ subroutine pop_hfrac(gammaPar, gammaParMeta,hfrac, err, message)
   !local variables
   real(dp)                          :: dummy(20) 
   logical(lgc)                      :: mask(20) 
-  logical(lgc),allocatable          :: checkH(:) 
-  character(len=strLen)             :: cmessage    ! error message from downward subroutine
-  integer(i4b)                      :: unt         ! DK: need to either define units globally, or use getSpareUnit
-  integer(i4b)                      :: i,j 
+  integer(i4b)                      :: i
 
   ! initialize error control
   err=0; message='pop_hfrac/'

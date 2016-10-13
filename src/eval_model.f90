@@ -507,7 +507,6 @@ subroutine agg_hru_to_basin(simHru,simBasin,err,message)
   character(len=strLen)                 :: cmessage                ! error message from downward routine
   integer(i4b)                          :: unt                     ! DK: need to either define units globally, or use getSpareUnit
   real(dp)                              :: basin_area
-  real(dp)                              :: auxflux(5)              ! This is only in case of water balance mode
   integer(i4b)                          :: ibasin,itime,ivar,icell ! loop index
   integer(i4b)                          :: ncell
   integer(i4b)                          :: dum,c_cell

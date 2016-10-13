@@ -64,10 +64,10 @@ module public_var
   !DDS 
   !input parameters
   integer(i4b),public             :: NparCal        ! number of parameters in namelist
-  real(dp),public                 :: r              ! search  
-  integer(i8b),public             :: seed           ! starting seed for random number generator
-  integer(i8b),public             :: maxiter        ! maximum number of trials before optimization is terminated
-  logical(lgc),public             :: maxit          ! maximization or minimization
+  real(dp),public                 :: rpar           ! search  
+  integer(i8b),public             :: nseed          ! starting seed for random number generator
+  integer(i8b),public             :: maxn           ! maximum number of trials before optimization is terminated
+  logical(lgc),public             :: isMax          ! maximization or minimization
   character(len=strLen),public    :: state_file     ! state file
   character(len=strLen),public    :: restrt_file    ! restart file
   logical,public                  :: isRestart      ! ues restart option? 

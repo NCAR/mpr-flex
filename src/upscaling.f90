@@ -72,7 +72,6 @@ subroutine asum(wgtval, wgtvec, datvec, ierr, message )
   real(dp),allocatable                    :: datvec_packed(:)    ! packed data value vector 
   integer(i4b)                            :: nElm_org            ! number of vector elements -original vector
   integer(i4b)                            :: nElm                ! number of vector elements -packed vector 
-  integer(i4b)                            :: iElm                ! index of vector 
 
   ierr=0; message="asum/"
   ! check : sum of weight should be one

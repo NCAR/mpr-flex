@@ -33,7 +33,6 @@ subroutine write_soil_param_vic(hruid, param, ierr, message)
   character(*),intent(out)           :: message      ! error message
   ! local variables
   integer(i4b)                       :: iHru         ! loop index
-  integer(i4b)                       :: stat
 
   ! initialize error control
   ierr=0; message='write_soil_param_vic/'
@@ -78,7 +77,7 @@ subroutine vic_hru_id(hruid, err, message)
   open (UNIT=50,file=origparam_name,form='formatted',status='old',IOSTAT=stat)
  ! Read original soil parameter file
   do iHru = 1,nHru
-    read(unit=50,*) (realline(ipar), ipar=1,TotNpar)
+    read(unit=50,fmt=*) (realline(ipar), ipar=1,TotNpar)
     hruid(iHru)=realline(2)
   end do
   close(UNIT=50)
@@ -93,11 +92,11 @@ subroutine vic_soil_layer(hlyr, err, message)
   ! input 
   ! output
   real(dp),    intent(out)           :: hlyr(:,:) ! calibrating parameter list 
-  integer(i4b),intent(out)           :: err             ! error code
-  character(*),intent(out)           :: message         ! error message
+  integer(i4b),intent(out)           :: err       ! error code
+  character(*),intent(out)           :: message   ! error message
   ! local variables
   real(dp),dimension(TotNpar)        :: realline
-  integer(i4b)                       :: ipar,iHru,iLyr  ! loop index
+  integer(i4b)                       :: ipar,iHru  ! loop index
   integer(i4b)                       :: stat
 
   ! initialize error control
@@ -105,7 +104,7 @@ subroutine vic_soil_layer(hlyr, err, message)
   open (UNIT=50,file=origparam_name,form='formatted',status='old',IOSTAT=stat)
  ! Read original soil parameter file
   do iHru = 1,nHru
-    read(unit=50,*) (realline(ipar), ipar=1,TotNpar)
+    read(unit=50,fmt=*) (realline(ipar), ipar=1,TotNpar)
     hlyr(iHru,:)=realline(4*nLyr+11:5*nLyr+10)
   end do
   close(UNIT=50)
@@ -131,7 +130,7 @@ subroutine read_soil_param_vic(param, err, message)
   open (UNIT=50,file=origparam_name,form='formatted',status='old',IOSTAT=stat)
  ! Read original soil parameter file
   do iHru = 1,nHru
-    read(unit=50,*) (param(iHru,ipar), ipar=1,TotNpar)
+    read(unit=50,fmt=*) (param(iHru,ipar), ipar=1,TotNpar)
   end do
   close(UNIT=50)
   return
@@ -298,11 +297,11 @@ subroutine adj_vege_param_vic(multiplier, err, message)
   write(rowfmt,'(A,I2,A)') '(',nLyr,'(1X,F4.2))'
  ! Read original vege parameter file
   hru:do iHru = 1,nHru
-    read(unit=50,*) hruID,nTile
+    read(unit=50,fmt=*) hruID,nTile
     write(51,'(I10,1X,I2)') (hruID,nTile)
     tile:do iTile = 1,nTile
-      read(unit=50,*) vegClass,vegFrac,(rootDepth(iLyr), iLyr=1,nLyr),(rootFrac(iLyr), iLyr=1,nLyr)
-      read(unit=50,*) (laiMonth(iMon), iMon=1,12)
+      read(unit=50,fmt=*) vegClass,vegFrac,(rootDepth(iLyr), iLyr=1,nLyr),(rootFrac(iLyr), iLyr=1,nLyr)
+      read(unit=50,fmt=*) (laiMonth(iMon), iMon=1,12)
       ! Modify parameter values
       par:do iPar=1,nParCal
         select case( parSubset(iPar)%pname )
@@ -350,14 +349,14 @@ subroutine read_vic_sim(sim, err, message)
   open (UNIT=54,file=trim(cellfrac_name),form='formatted',status='old')
   open (UNIT=51,file=trim(region_info),form='formatted',status='old')
   do ibasin = 1,nbasin
-    read (UNIT=51,*) dum,dum,basin_area,ncell
+    read (UNIT=51,fmt=*) dum,dum,basin_area,ncell
     do icell = 1,ncell
-      read (UNIT=53,*) filename
-      read (UNIT=54,*) cellfraction
+      read (UNIT=53,fmt=*) filename
+      read (UNIT=54,fmt=*) cellfraction
       filename=trim(sim_dir)//trim(filename)
       open (UNIT=55,file= filename,form='formatted',status='old')
       do itime = 1,sim_len
-        read (UNIT=55,*) (auxflux(ivar), ivar=1,5)
+        read (UNIT=55,fmt=*) (auxflux(ivar), ivar=1,5)
         sim(c_cell,itime) = (auxflux(4) + auxflux(5))*cellfraction
       enddo
       close(UNIT=55)

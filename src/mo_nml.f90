@@ -55,11 +55,11 @@ module mo_nml
                           idModel 
 ! DDS algorithm 
   namelist / DDS / NparCal,     & 
-                   r,           &
+                   rpar,        &
                    isRestart,   &
-                   seed,        & 
-                   maxiter,     &
-                   maxit,       &
+                   nseed,       & 
+                   maxn,        &
+                   ismax,       &
                    restrt_file, &
                    state_file
 

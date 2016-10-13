@@ -158,8 +158,6 @@ subroutine check_gammaZ( err, message)
   character(*),                      intent(out)   :: message     ! error message
   !local variables
   logical(lgc)                                     :: checkZ 
-  character(len=strLen)                            :: cmessage    ! error message from downward subroutine
-  integer(i4b)                                     :: unt         ! DK: need to either define units globally, or use getSpareUnit
   integer(i4b)                                     :: i           ! loop index
 
   ! initialize error control
@@ -190,9 +188,7 @@ subroutine check_gammaH( err, message)
   integer(i4b)                      :: id(20) 
   logical(lgc)                      :: mask(20) 
   logical(lgc),allocatable          :: checkH(:) 
-  character(len=strLen)             :: cmessage    ! error message from downward subroutine
-  integer(i4b)                      :: unt         ! DK: need to either define units globally, or use getSpareUnit
-  integer(i4b)                      :: i,j 
+  integer(i4b)                      :: i 
 
   ! initialize error control
   err=0; message='check_gammaH/'

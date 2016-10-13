@@ -539,7 +539,7 @@ function soilDensity( srho_in, gammaPar )
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
-  real(dp), intent(out) :: soilDensity(:,:)
+  real(dp)              :: soilDensity(:,:)
   
   associate(g1=>gammaPar(ixPar%sd1gamma1))
   where ( srho_in /= dmiss ) 
@@ -584,7 +584,7 @@ function WpwpFrac( wp_in, phi_in, gammaPar)
   real(dp), intent(in)  :: phi_in(:,:)   ! Porosity
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! local 
-  real(dp), intent(out) :: WpwpFrac(:,:) 
+  real(dp)              :: WpwpFrac(:,:) 
   
   associate(g1=>gammaPar(ixPar%WpwpFrac1gamma1))
   where ( wp_in /= dmiss .and. phi_in /= dmiss ) 
@@ -604,7 +604,7 @@ function ks( sand_in, clay_in, gammaPar, opt)
   ! input
   real(dp), intent(in)       :: sand_in(:,:) ! input: sand [percent] 
   real(dp), intent(in)       :: clay_in(:,:) ! input: clay [percent] 
-  real(dp), intent(in)       :: gammaPar(:)   ! input: gamma parameter array 
+  real(dp), intent(in)       :: gammaPar(:)  ! input: gamma parameter array 
   integer(i2b)               :: opt          ! input: option for transfer function form
   ! local 
   real(dp)                   :: ks(:,:)      ! ks 
@@ -650,7 +650,7 @@ function bd( bd_in, gammaPar )
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
-  real(dp), intent(out) :: bd(:,:)
+  real(dp)              :: bd(:,:)
   real(dp),parameter    :: bd_min=805.0_dp
   real(dp),parameter    :: bd_max=1880.0_dp
   real(dp),allocatable  :: bdslope(:,:)
@@ -692,8 +692,8 @@ function phi(sand_in, clay_in, db_in, gammaPar, opt)
   real(dp), intent(in)       :: gammaPar(:)   ! input: gamma parameter array 
   integer(i2b)               :: opt            ! option for transfer function form
   ! local 
-  character(len=strLen)      :: message        ! error message
   real(dp)                   :: phi(:,:)  ! estimated porosity [fraction]
+  character(len=strLen)      :: message        ! error message
 
   ! opt 1: Cosby et al. WRR 1984
   ! opt 2: Zacharias & Wessolek 2007

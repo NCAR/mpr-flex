@@ -65,11 +65,11 @@ endcell                  = 1                  ! index of the last cell assigned 
 !---------------------------------------
 &DDS
 NparCal       =  6                             ! number of parameters listed in namelist
-r             =  0.2                           ! perturbation window (default 0.2)
+rpar          =  0.2                           ! perturbation window (default 0.2)
 isRestart     =  F                             ! F -> start with the begining, T -> start with restart file
-seed          =  32                            ! starting seed for random number generator
-maxiter       =  1000                          ! maximum number of objective function evaluation (i.e., iteration) 
-maxit         =  F                             ! maximization (.True.) or minimization (.False.) 
+nseed         =  32                            ! starting seed for random number generator
+maxn          =  1000                          ! maximum number of objective function evaluation (i.e., iteration) 
+isMax         =  F                             ! maximization (.True.) or minimization (.False.) 
 restrt_file   = "./restart_dds.txt"            ! name of ascii restart file 
 state_file    = "./region_xx_sceua_output.txt" ! name of ascii history file
 /

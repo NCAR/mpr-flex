@@ -15,7 +15,6 @@ private
 
 public::getData
 public::mod_hslyrs
-public::get_topoinfo
 
 contains
 
@@ -121,7 +120,6 @@ contains
  subroutine mod_hslyrs(sdata,        &  ! input/output: data structure of soil data including soil layer thickness [m] 
                        hmult,        &  ! input : scalar multiplier of soil thickness
                        ierr, message)   ! output: error control
-  use globalData, only:parSubset
   implicit none 
   ! input
   real(dp),intent(in)             :: hmult
@@ -132,7 +130,6 @@ contains
   integer(i4b)                    :: nSpoly         ! number of soil polygon 
   integer(i4b)                    :: nSlyrs         ! number of soil layer 
   integer(i4b)                    :: iSpoly         ! Loop index of soil polygon 
-  integer(i4b)                    :: iSlyrs         ! Loop index of soil layers 
   integer(i4b), intent(out)       :: ierr           ! error code
   character(*), intent(out)       :: message        ! error message
 
@@ -148,96 +145,6 @@ contains
     sdata(ixVarSoilData%hslyrs)%dvar2(:,iSpoly) = soil_h_mod            ! reassign modified layer thickness in data structure
   end do
 
- end subroutine mod_hslyrs 
-
-! *****
-! Subroutine: Extract soil variables from soil data into soil data structure 
-! *********************************************
- subroutine get_soilinfo(sdata,         &  ! input:  data structure for soil data containing all the data in soil data
-                         soil,          &  ! output: topography properties array for soil polygon 
-                         ierr, message)    ! output: error control
-  implicit none 
-  !input
-  type(namevar),  intent(in)    :: sdata(:)        ! soil data containing all the variables 
-  !output
-  type(namedvar2),intent(inout) :: soil(:)         ! storage of topo property values in subset domain-1D(poly)
-  integer(i4b), intent(out)     :: ierr            ! error code
-  character(*), intent(out)     :: message         ! error message
-  !local
-  integer(i4b)                  :: iVarSoil        ! Loop index of topo properties 
-  
-  ! initialize error control
-  ierr=0; message='get_soilinfo/'
-
-  soil(1)%varName = 'h' 
-  soil(2)%varName = 'sand' 
-  soil(3)%varName = 'silt' 
-  soil(4)%varName = 'clay' 
-  soil(5)%varName = 'bd' 
-
-  do iVarSoil = 1,nVarSoil
-    select case (soil(iVarSoil)%varName)
-      case('h')
-        soil(ivarSoil)%varData = sdata(ixVarSoilData%hslyrs)%dvar2
-      case('sand')
-        soil(iVarSoil)%varData = sdata(ixVarSoilData%sand_frc)%dvar2
-      case('silt')
-        soil(iVarSoil)%varData = sdata(ixVarSoilData%silt_frc)%dvar2
-      case('clay')
-        soil(iVarSoil)%varData = sdata(ixVarSoilData%clay_frc)%dvar2
-      case('bd')
-        soil(iVarSoil)%varData = sdata(ixVarSoilData%bulk_density)%dvar2
-      case default; message=trim(message)//'Soil variable name not recognized'; ierr=35; return
-    end select
-  end do
-
- end subroutine get_soilinfo
-
-! *****
-! Subroutine: Extract topo properties from soil data into topo data structure 
-! *********************************************
- subroutine get_topoinfo(sdata,         &  ! input:  data structure for soil data containing all the data in soil data
-                         topo,          &  ! output: topography properties array for soil polygon 
-                         ierr, message)    ! output: error control
-  implicit none 
-  !input
-  type(namevar),  intent(in)    :: sdata(:)         ! soil data containing all the variables 
-  !output
-  type(namedvar),intent(inout)  :: topo(:)          ! storage of topo property values in subset domain-1D(poly)
-  integer(i4b), intent(out)     :: ierr             ! error code
-  character(*), intent(out)     :: message          ! error message
-  !local
-  integer(i4b)                  :: iVarTopo         ! Loop index of topo properties 
-  real(dp), parameter           :: slope_min=0.01_dp ! minimum slope angle [percent]
-  real(dp),allocatable          :: slope(:)
-  
-  ! initialize error control
-  ierr=0; message='get_topoinfo/'
-
-  topo(1)%varName = 'ele_mean' 
-  topo(2)%varName = 'ele_std' 
-  topo(3)%varName = 'slp_mean' 
-  
-  ! put threshold for lower limit of slope percentage
-  allocate(slope(size(sdata(ixVarSoilData%slp_mean)%dvar1)),stat=ierr)
-  if(ierr/=0)then; message=trim(message)//'problem allocating space for slope';return;endif  
-  slope=sdata(ixVarSoilData%slp_mean)%dvar1
-  where ( slope > -0.01_dp .and. slope < slope_min )  !if computed value is less than min, set slope_min
-    slope=slope_min
-  end where
-
-  do iVarTopo = 1,nVarTopo
-    select case (topo(iVarTopo)%varName)
-      case('ele_mean')
-        topo(iVarTopo)%varData = sdata(ixVarSoilData%ele_mean)%dvar1
-      case('ele_std')
-        topo(iVarTopo)%varData = sdata(ixVarSoilData%ele_std)%dvar1
-      case('slp_mean')
-        topo(iVarTopo)%varData = slope 
-      case default; message=trim(message)//'topo variable name not recognized'; ierr=35; return
-    end select
-  end do
-
- end subroutine get_topoinfo
+ end subroutine
 
 end module read_soildata
