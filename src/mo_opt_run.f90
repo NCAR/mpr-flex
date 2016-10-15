@@ -56,8 +56,6 @@ CONTAINS
     integer(i8b)                            :: iDummy      ! dummy interger: fist line of restart file starting index of objective function evaluation 
     real(dp)                                :: rDummy      ! dummy real: intermediate results for objective function values logical                                 
     logical(lgc)                            :: isExistFile ! logical to check if the file exist or not
-    integer(i4b)                            :: ierr
-    character(len=strLen)                   :: cmessage    ! error message from subroutine
     
     allocate ( pval(NparCal) )
     ! restart option

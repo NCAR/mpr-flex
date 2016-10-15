@@ -54,7 +54,7 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
             slpmean => sdata(ixVarSoilData%slp_mean)%dvar1,    &
             gammaPar=> gammaParMasterMeta(:)%val)
   do iParm = 1,nPar
-    allocate(ParTemp(iParm)%varData(nSlyr,nSPoly))
+    allocate(ParTemp(iParm)%varData(nSLyr,nSPoly))
     associate (xPar => ParTemp(iParm)%varData )
      select case(iParm)
        case(ixPar%ks);
@@ -92,7 +92,7 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
          xPar= myu( ParTemp(ixPar%phi)%varData, ParTemp(ixPar%fc)%varData, gammaPar, 1_i2b)
        case(ixPar%binfilt);
          checkDone(iParm)=.true.
-         xPar=infilt( elestd, gammaPar )
+         xPar=spread( infilt( elestd, gammaPar ), 1, nSLyr)
        case(ixPar%D1);
          if(.not.checkDone(ixPar%ks)) then;ierr=10;message=trim(message)//'need to process "ks" before "D1"';return;endif
          checkDone(iParm)=.true. 
@@ -192,21 +192,14 @@ function infilt(elestd_in, gammaPar)
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
-  real(dp)              :: infilt(:,:) 
-  real(dp),allocatable  :: elestd2d(:,:)
-  integer(i4b)          :: n1            ! number of 1st dimension 
-  integer(i4b)          :: n2            ! number of 1st dimension 
+  real(dp)              :: infilt(size(elestd_in)) 
   real(dp),parameter    :: infilt_min=0.03_dp
   real(dp),parameter    :: infilt_max=0.50_dp
   
-  n1=size(infilt,1)
-  n2=size(infilt,2)
-  allocate(elestd2d(n1,n2)) 
-  elestd2d=spread(elestd_in,1,n1)
   associate(g1=>gammaPar(ixPar%binfilt1gamma1), &
             g2=>gammaPar(ixPar%binfilt1gamma2))
-  where ( elestd2d /= dmiss ) 
-    infilt = (log(elestd2d+verySmall)-g1)/(log(elestd2d+verySmall)+g2*10) !transfer function 
+  where ( elestd_in /= dmiss ) 
+    infilt = (log(elestd_in+verySmall)-g1)/(log(elestd_in+verySmall)+g2*10) !transfer function 
   else where
     infilt = dmiss 
   end where
@@ -225,7 +218,7 @@ function residMoist()
  ! input
  ! output 
  ! local 
- real(dp) :: residMoist(:,:)
+ real(dp) :: residMoist
  
  residMoist = 0._dp
  return
@@ -238,13 +231,13 @@ function D1(slope_in, ks_in, phi_in, h_in, gammaPar)
   implicit none
   ! input
   real(dp), intent(in)  :: slope_in(:)   ! mean slope [%]
-  real(dp), intent(in)  :: Ks_in(:,:)    ! Ksat [mm/s]
+  real(dp), intent(in)  :: ks_in(:,:)    ! Ksat [mm/s]
   real(dp), intent(in)  :: phi_in(:,:)   ! porosity [-]
   real(dp), intent(in)  :: h_in(:,:)     ! layer thickness [m]
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
 ! output 
 ! local 
-  real(dp)              :: D1(:,:)
+  real(dp)              :: D1(size(ks_in,1),size(ks_in,2))
   real(dp),allocatable  :: slope2d(:,:)
   integer(i4b)          :: n1            ! number of 1st dimension 
   integer(i4b)          :: n2            ! number of 1st dimension 
@@ -258,6 +251,7 @@ function D1(slope_in, ks_in, phi_in, h_in, gammaPar)
   n2=size(D1,2)
   allocate(S(n1,n2)) 
   allocate(slope2d(n1,n2)) 
+  S=phi_in*h_in
   S=1.0_dp
   slope2d=spread(slope_in,1,n1)
   associate(g1=>gammaPar(ixPar%D11gamma1))
@@ -285,7 +279,7 @@ function Ds( D1, D3, Dsmax)
  real(dp), intent(in)  :: Dsmax(:,:)    ! ARNO Dsmax parameter [mm/day]
 ! output 
 ! local 
- real(dp)              :: Ds(:,:)
+ real(dp)              :: Ds(size(D1,1),size(D1,2))
  real(dp), parameter   :: Ds_min=0.0001_dp
  real(dp), parameter   :: Ds_max=1.0_dp
 
@@ -312,7 +306,7 @@ function D2(slope_in, ks_in, D4_in, gammaPar)
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
-  real(dp)              :: D2(:,:)
+  real(dp)              :: D2(size(Ks_in,1),size(Ks_in,2))
   real(dp),allocatable  :: slope2d(:,:)
   integer(i4b)          :: n1           ! number of element for 1st dimension
   integer(i4b)          :: n2           ! number of element for 2nd dimension
@@ -361,7 +355,7 @@ function Dsmax( D1,           & ! input:  Nijssen baseflow D1 parameter [day^-1]
   real(dp), intent(in)  :: h_in(:,:)      ! Soil layer thickness [m]
   ! output 
   ! local 
-  real(dp)              :: Dsmax(:,:)     ! Dsmax parameter for Arno baseflow [mm day-1]
+  real(dp)              :: Dsmax(size(D1,1),size(D1,2))     ! Dsmax parameter for Arno baseflow [mm day-1]
   real(dp), parameter   :: Dsmax_min=0.1_dp
   real(dp), parameter   :: Dsmax_max=30.0_dp
 
@@ -387,7 +381,7 @@ function D3( fc_in, h_in, gammaPar )
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
-  real(dp)              :: D3(:,:)
+  real(dp)              :: D3(size(fc_in,1),size(fc_in,2))
   real(dp), parameter   :: D3_min=0.0001_dp
   real(dp), parameter   :: D3_max=1000.0_dp
 
@@ -417,7 +411,7 @@ function Ws( D3,         & ! input:  D3 parameter [mm]
   real(dp), intent(in)  :: h_in(:,:)
   ! output 
   ! local 
-  real(dp)              :: Ws(:,:)
+  real(dp)              :: Ws(size(D3,1),size(D3,2))
   real(dp), parameter   :: Ws_min=0.05_dp
   real(dp), parameter   :: Ws_max=1.0_dp
 
@@ -441,7 +435,7 @@ function D4( gammaPar )
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
-  real(dp)    :: D4(:,:)
+  real(dp)    :: D4
   
   associate(g1=>gammaPar(ixPar%D41gamma1))
   D4 = g1 
@@ -458,7 +452,7 @@ function cexpt( D4 )
   real(dp), intent(in)  :: D4(:,:)
   ! output 
   ! local 
-  real(dp)              :: cexpt(:,:)
+  real(dp)              :: cexpt(size(D4,1),size(D4,2))
   
   cexpt = D4 
   return
@@ -474,7 +468,7 @@ function expt( b_in, gammaPar )
   real(dp), intent(in)   :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
-  real(dp)               :: expt(:,:)
+  real(dp)               :: expt(size(b_in,1),size(b_in,2))
 
   associate(g1=>gammaPar(ixPar%exp1gamma1), &
             g2=>gammaPar(ixPar%exp1gamma2))
@@ -497,7 +491,7 @@ function initMoist( phi_in, h_in)
   real(dp), intent(in)  :: h_in(:,:)         ! thickness [m]
   ! output 
   ! local  
-  real(dp)              :: initMoist(:,:)
+  real(dp)              :: initMoist(size(phi_in,1),size(phi_in,2))
   
   where ( phi_in /= dmiss ) 
     initMoist = phi_in*(h_in*1000.0_dp)
@@ -517,7 +511,7 @@ function bubble( expt_in, gammaPar )
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
-  real(dp)              :: bubble(:,:)
+  real(dp)              :: bubble(size(expt_in,1),size(expt_in,2))
   
   associate(g1=>gammaPar(ixPar%bbl1gamma1), &
             g2=>gammaPar(ixPar%bbl1gamma2))
@@ -540,7 +534,7 @@ function soilDensity( srho_in, gammaPar )
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
-  real(dp)              :: soilDensity(:,:)
+  real(dp)              :: soilDensity(size(srho_in,1),size(srho_in,2))
   
   associate(g1=>gammaPar(ixPar%sd1gamma1))
   where ( srho_in /= dmiss ) 
@@ -563,7 +557,7 @@ function WcrFrac(fc_in, phi_in, gammaPar)
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
-  real(dp)              :: WcrFrac(:,:) 
+  real(dp)              :: WcrFrac(size(fc_in,1),size(fc_in,2)) 
   
   associate(g1=>gammaPar(ixPar%WcrFrac1gamma1))
   where ( fc_in /= dmiss .and. phi_in /= dmiss ) 
@@ -585,7 +579,7 @@ function WpwpFrac( wp_in, phi_in, gammaPar)
   real(dp), intent(in)  :: phi_in(:,:)   ! Porosity
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! local 
-  real(dp)              :: WpwpFrac(:,:) 
+  real(dp)              :: WpwpFrac(size(wp_in,1),size(wp_in,2)) 
   
   associate(g1=>gammaPar(ixPar%WpwpFrac1gamma1))
   where ( wp_in /= dmiss .and. phi_in /= dmiss ) 
@@ -603,13 +597,13 @@ end function
 function ks( sand_in, clay_in, gammaPar, opt)
   implicit none
   ! input
-  real(dp), intent(in)       :: sand_in(:,:) ! input: sand [percent] 
-  real(dp), intent(in)       :: clay_in(:,:) ! input: clay [percent] 
-  real(dp), intent(in)       :: gammaPar(:)  ! input: gamma parameter array 
-  integer(i2b)               :: opt          ! input: option for transfer function form
+  real(dp), intent(in)  :: sand_in(:,:)                        ! input: sand [percent] 
+  real(dp), intent(in)  :: clay_in(:,:)                        ! input: clay [percent] 
+  real(dp), intent(in)  :: gammaPar(:)                         ! input: gamma parameter array 
+  integer(i2b)          :: opt                                 ! input: option for transfer function form
   ! local 
-  real(dp)                   :: ks(:,:)      ! ks 
-  character(len=strLen)      :: message                 ! error message
+  real(dp)              :: ks(size(sand_in,1),size(sand_in,2))
+  character(len=strLen) :: message                           
 
   ! opt 1: Cosby et al. WRR 1984
   ! opt 2: campbell & shiozawa 1994 
@@ -634,7 +628,7 @@ function ks( sand_in, clay_in, gammaPar, opt)
       else where
         ks = dmiss 
       end where
-    case default; message=trim(message)//'opt not recognized'
+    case default; print*,trim(message)//'opt not recognized'; stop
   end select
   end associate
   return
@@ -651,15 +645,13 @@ function bd( bd_in, gammaPar )
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
-  real(dp)              :: bd(:,:)
+  real(dp)              :: bd(size(bd_in,1),size(bd_in,2))
   real(dp),parameter    :: bd_min=805.0_dp
   real(dp),parameter    :: bd_max=1880.0_dp
   real(dp),allocatable  :: bdslope(:,:)
   real(dp),allocatable  :: bd_temp(:,:)
   integer(i4b)          :: n1                  ! number of 1st dimension 
   integer(i4b)          :: n2                  ! number of 2nd dimension 
-  !character(len=strLen) :: message                 ! error message
-  !integer(i4b)          :: err                     ! error code
 
   n1=size(bd_in,1)
   n2=size(bd_in,2)
@@ -693,7 +685,7 @@ function phi(sand_in, clay_in, db_in, gammaPar, opt)
   real(dp), intent(in)       :: gammaPar(:)   ! input: gamma parameter array 
   integer(i2b)               :: opt            ! option for transfer function form
   ! local 
-  real(dp)                   :: phi(:,:)  ! estimated porosity [fraction]
+  real(dp)                   :: phi(size(db_in,1),size(db_in,2))  ! estimated porosity [fraction]
   character(len=strLen)      :: message        ! error message
 
   ! opt 1: Cosby et al. WRR 1984
@@ -726,7 +718,7 @@ function phi(sand_in, clay_in, db_in, gammaPar, opt)
         else where
           phi = dmiss 
         end where
-      case default; message=trim(message)//'opt not recognized'
+      case default;print*,trim(message)//'opt not recognized';stop
     end select
   end associate
   return
@@ -747,17 +739,17 @@ function fc(sand_in, phi_in, psis_in, b_in, gammaPar, opt)
   ! output 
   character(len=strLen)      :: message        ! error message
   ! local 
-  real(dp)                   :: fc(:,:)        ! estimated field capacity [fraction]
+  real(dp)                   :: fc(size(b_in,1),size(b_in,2))        ! estimated field capacity [fraction]
   real(dp),allocatable       :: psi_fc(:,:)    ! matric potential at field capacity [kPa]  
   integer(i4b)               :: nSpoly         ! number of soil polygon 
-  integer(i4b)               :: nSlyr          ! number of soil layer 
+  integer(i4b)               :: nSLyr          ! number of soil layer 
 
   ! opt 1: Campbell 1974 
   message="fc/"
 
   nSpoly=size(phi_in,1)
-  nSlyr=size(phi_in,2)
-  allocate(psi_fc(nSpoly,nSlyr))
+  nSLyr=size(phi_in,2)
+  allocate(psi_fc(nSpoly,nSLyr))
   psi_fc(:,:)=-20
   associate(g1=>gammaPar(ixPar%fc1gamma1))
   where (sand_in > 69) psi_fc=-10
@@ -786,18 +778,18 @@ function wp( phi_in, psis_in, b_in, gammaPar, opt)
   real(dp), intent(in)       :: gammaPar(:)    ! input: gamma parameter array 
   integer(i2b)               :: opt            ! input: option for transfer function form
   ! local 
-  real(dp)                   :: wp(:,:)        ! estimated field capacity [frac]
+  real(dp)                   :: wp(size(b_in,1),size(b_in,2))        ! estimated field capacity [frac]
   real(dp),allocatable       :: psi_wp(:,:)    ! matric potential at wilting point [kPa]  
   integer(i4b)               :: nSpoly         ! number of soil polygon 
-  integer(i4b)               :: nSlyr          ! number of soil layer 
+  integer(i4b)               :: nSLyr          ! number of soil layer 
   character(len=strLen)      :: message        ! error message
 
   ! opt 1: Campbell 1974 
   message="wp/"
 
   nSpoly=size(phi_in,1)
-  nSlyr=size(phi_in,2)
-  allocate(psi_wp(nSpoly,nSlyr))
+  nSLyr=size(phi_in,2)
+  allocate(psi_wp(nSpoly,nSLyr))
   psi_wp(:,:)=-1500
   associate(g1=>gammaPar(ixPar%wp1gamma1))
   select case(opt)
@@ -807,7 +799,7 @@ function wp( phi_in, psis_in, b_in, gammaPar, opt)
       else where
         wp = dmiss 
       end where
-    case default; message=trim(message)//'opt not recognized'
+    case default; print*,trim(message)//'opt not recognized';stop
   end select
   end associate
   return
@@ -824,8 +816,8 @@ function ret_curve(sand_in, clay_in, gammaPar, opt)
   real(dp),    intent(in)   :: gammaPar(:)    ! input: gamma parameter array 
   integer(i2b)              :: opt            ! input: option for transfer function form
   ! local 
+  real(dp)                  :: ret_curve(size(sand_in,1),size(sand_in,2)) ! computed [-] 
   character(len=strLen)     :: message        ! error message
-  real(dp)                  :: ret_curve(:,:) ! computed [-] 
 
   ! opt 1: Cosby et al. WRR 1984
   message="ret_curve/"
@@ -839,7 +831,7 @@ function ret_curve(sand_in, clay_in, gammaPar, opt)
         else where
           ret_curve = dmiss 
         end where
-      case default; message=trim(message)//'opt not recognized'
+      case default; print*,trim(message)//'opt not recognized';stop
     end select
   end associate
   return
@@ -856,8 +848,8 @@ function psis( sand_in, silt_in, gammaPar, opt)
   real(dp),     intent(in)   :: gammaPar(:)    ! input: gamma parameter array 
   integer(i2b), intent(in)   :: opt            ! input: option for transfer function form
   ! local 
+  real(dp)                   :: psis(size(sand_in,1),size(sand_in,2))      ! output: saturation matric potential [kPa]  
   character(len=strLen)      :: message        ! error message
-  real(dp)                   :: psis(:,:)      ! output: saturation matric potential [kPa]  
 
   ! opt 1: Cosby et al. WRR 1984
   message="psis/"
@@ -872,7 +864,7 @@ function psis( sand_in, silt_in, gammaPar, opt)
         else where
           psis = dmiss 
         end where
-      case default; message=trim(message)//'opt not recognized'
+      case default; print*,trim(message)//'opt not recognized';stop
     end select
   end associate
   return
@@ -889,8 +881,8 @@ function myu(phi_in, fc_in, gammaPar, opt)
   real(dp),    intent(in)    :: gammaPar(:)     ! input: gamma parameter array 
   integer(i2b),intent(in)    :: opt             ! input: option for transfer function form
   ! local 
+  real(dp)                   :: myu(size(fc_in,1),size(fc_in,2))        ! output: specific yield [-]  
   character(len=strLen)      :: message        ! error message
-  real(dp)                   :: myu(:,:)        ! output: specific yield [-]  
 
   ! opt 1: Koren et al. 2003
   message="myu/"
@@ -903,7 +895,7 @@ function myu(phi_in, fc_in, gammaPar, opt)
       else where
         myu = dmiss 
       end where
-    case default; message=trim(message)//'opt not recognized'
+    case default;print*,trim(message)//'opt not recognized';stop
   end select
   end associate
   return
