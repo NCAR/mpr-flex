@@ -50,7 +50,6 @@ module mo_nml
                           Npro,                    & 
                           initcell,                & 
                           endcell,                 &
-                          eval_length,             &
                           calpar,                  &
                           idModel 
 ! DDS algorithm 

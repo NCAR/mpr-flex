@@ -10,7 +10,6 @@ module mpr_routine
 
   public:: mpr
 
-
 contains
 
 subroutine mpr(idModel,           &     ! input: model ID
@@ -188,32 +187,28 @@ subroutine mpr(idModel,           &     ! input: model ID
   if (err/=0)then; message=trim(message)//cmessage; return; endif
   call read_hru_id(idModel, hruID, err, cmessage)  ! get hruID
   if (err/=0)then; message=trim(message)//cmessage; return; endif
-!    call getMapData(trim(mpr_input_dir)//trim(fname_vmapping), &   ! input: file name
-!                    'veg',                                 &   ! input: geophysical data type 
-!                    map_meta,                              &   ! input: map data meta
-!                    dname_hru,                             &   ! input: dimension name for hru 
-!                    dname_overVpoly,                       &   ! input: dimension name for overlap Polygon 
-!                    mapdata,                               &   ! input-output: map data structure
-!                    nVhru,                                 &   ! output: number of hru 
-!                    nOverVpoly,                            &   ! output: max number of overlap polygon
-!                    err,cmessage)                             ! output: error control
-!    if (err/=0)then; message=message//cmessage; return; endif
-!    ! (2.3) Check if "hru" variables in vege and soil mappling netcdf are identifal
-!    if ( nShru /= nVhru ) then
-!      call handle_err(10,'Different number of hru in vege and soil mapping file')  
-!    end if
-!    if ( minval(abs(mapdata(1)%var(ixVarMapData%hru_id)%ivar1-mapdata(2)%var(ixVarMapData%hru_id)%ivar1)) /= 0 ) then
-!      call handle_err(11,'different hru id in vege and soil mapping file')
-!    end if
+  call getMapData(trim(mpr_input_dir)//trim(fname_vmapping), &   ! input: file name
+                  'veg',                                     &   ! input: geophysical data type 
+                  map_meta,                                  &   ! input: map data meta
+                  dname_hru,                                 &   ! input: dimension name for hru 
+                  dname_overVpoly,                           &   ! input: dimension name for overlap Polygon 
+                  mapdata,                                   &   ! input-output: map data structure
+                  nVhru,                                     &   ! output: number of hru 
+                  nOverVpoly,                                &   ! output: max number of overlap polygon
+                  err,cmessage)                                  ! output: error control
+  if (err/=0)then; message=message//cmessage; return; endif
+  if ( nShru /= nVhru )then;err=10;message=trim(message)//'Different number of hru in vege and soil mapping file';return;endif  
     associate( hruMap      => mapdata(1)%var(ixVarMapData%hru_id)%ivar1,  &
+               hruMapVege  => mapdata(2)%var(ixVarMapData%hru_id)%ivar1,  &
                swgt        => mapdata(1)%var(ixVarMapData%weight)%dvar2,  &
                overSpolyID => mapdata(1)%var(ixVarMapData%overlapPolyId)%ivar2 )
+  if ( minval(abs(hruMap-hruMapVege)) /= 0 )then;err=11;message=trim(message)//'different hru id in vege and soil mapping file';return;endif
     !!! ---------------------------------------------
     !!! Start of model hru loop (from mapping file) !!!
     !!! ---------------------------------------------
     hru: do iHru=1,nHru
       ! Get index (iLocal) of hru id that matches with current hru from hru id array in mapping file
-      if (minval( abs(hruMap-hruID(iHru)) ) /= 0 )then; err=10; message=trim(message)//'hru id does not exist in mapping file';return; endif
+      if (minval(abs(hruMap-hruID(iHru))) /= 0 )then;err=10;message=trim(message)//'hru id does not exist in mapping file';return; endif
       idummy = minloc( abs(hruMap-hruID(iHru)) )
       iLocal=idummy(1)
       ! Select list of soil polygons contributing a current hru
@@ -226,17 +221,17 @@ subroutine mpr(idModel,           &     ! input: model ID
       swgtSub = pack(swgt(:,iLocal),mask)        ! weight of soil polygons contributing to current hru
       ! allocate memmory
       do iParm=1,nSoilParModel
-        allocate(parSxySz(iParm)%varData(nSlyrs,nSpolyLocal),stat=err); if(err/=0)then; message=message//'error allocating parSxySz%varData'; return; endif 
-        allocate(parSxyMz(iParm)%varData(nLyr,nSpolyLocal),stat=err);   if(err/=0)then; message=message//'error allocating parSxyMz%varData'; return; endif
+        allocate(parSxySz(iParm)%varData(nSlyrs,nSpolyLocal),stat=err); if(err/=0)then;message=message//'error allocating parSxySz%varData';return;endif 
+        allocate(parSxyMz(iParm)%varData(nLyr,nSpolyLocal),stat=err);   if(err/=0)then;message=message//'error allocating parSxyMz%varData';return;endif
       enddo
-      allocate(hModelLocal(nLyr,nSpolyLocal),stat=err);    if(err/=0)then;message=message//'error allocating hModelLocal'; return; endif
-      allocate(zModelLocal(nLyr,nSpolyLocal),stat=err);    if(err/=0)then;message=message//'error allocating zModelLocal'; return; endif
+      allocate(hModelLocal(nLyr,nSpolyLocal),stat=err);    if(err/=0)then;message=message//'error allocating hModelLocal'; return;endif
+      allocate(zModelLocal(nLyr,nSpolyLocal),stat=err);    if(err/=0)then;message=message//'error allocating zModelLocal'; return;endif
       allocate(soil2model_map(nSpolyLocal),stat=err);      if(err/=0)then;message=trim(message)//'error allocating soil2model_map';return;endif
       do iPoly=1,nSpolyLocal
         allocate(soil2model_map(iPoly)%layer(nLyr),stat=err); if(err/=0)then;message=trim(message)//'error allocating soil2model_map%layer';return;endif
         do iMLyr=1,nLyr
-          allocate(soil2model_map(iPoly)%layer(iMLyr)%weight(nSub),stat=err);  if(err/=0)then; message=trim(message)//'error allocating lyrmap%layer%weight';return;endif
-          allocate(soil2model_map(iPoly)%layer(iMLyr)%ixSubLyr(nSub),stat=err);if(err/=0)then; message=trim(message)//'error allocating lyrmap%layer%ixSubLyr';return;endif
+          allocate(soil2model_map(iPoly)%layer(iMLyr)%weight(nSub),stat=err);  if(err/=0)then;message=trim(message)//'error allocating lyrmap%layer%weight';return;endif
+          allocate(soil2model_map(iPoly)%layer(iMLyr)%ixSubLyr(nSub),stat=err);if(err/=0)then;message=trim(message)//'error allocating lyrmap%layer%ixSubLyr';return;endif
         enddo
       enddo
     ! *****
@@ -282,13 +277,11 @@ subroutine mpr(idModel,           &     ! input: model ID
 !      vPolySub    = pack(overVpolyID(:,iLocal),vmask)
 !      vwgtSub     = pack(overVpolyID(:,iLocal),vmask)
 !      nVpolyLocal = size(vPolySub)
-!  
 !      allocate(vprpLocal(nPrpVeg),stat=err); if(err/=0) call handle_err(err,'error allocating for vprp')
 !      do iPrpVeg=1,nPrpVeg 
 !        allocate(vprpLocal(iPrpVeg)%varData(nVpolyLocal))
 !      enddo
 !      allocate(vclsLocal(nVpolyLocal))
-!  
 !      do iPoly = 1,nVpolyLocal
 !        do iPrpVeg = 1,nPrpVeg
 !          vprpLocal(iPrpVeg)%varData(iPoly) =vprp(iPrpVeg)%varData(vPolySub(iPoly)) 
@@ -434,7 +427,6 @@ subroutine mpr(idModel,           &     ! input: model ID
           deallocate(paramvec(iParm)%layer, stat=err); if(err/=0)then; message=trim(message)//'error deallocating paramvec%layer'; return; endif 
         enddo
       enddo
-!      ! Aggregation veg parameter per model hru 
 !      do iparm = 1,nVegParModel
 !        if (vpar_meta(iparm)%h_agg) then
 !          call aggreg(vegParMxy(iparm)%varData(iHru), &

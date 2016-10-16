@@ -207,5 +207,4 @@ contains
  if(associated(list)) nullify(list)
  end subroutine get_vlines
 
-
 end module ascii_util
