@@ -76,19 +76,19 @@ function objfn( calPar )
     allocate(paramGamma(count(mask)))
     paramGamma=pack(calPar,mask)
     call mpr(idModel, paramGamma, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
-    if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
+    if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
     call replace_param(idModel, adjparam, hModel, parMxyMz, adjParam, err, cmessage)
-    if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
+    if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   endif
   call write_soil_param(idModel, hruID, adjParam, err, cmessage)
-  if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   call system(executable) ! to run hydrologic model   
   call read_obs(obs, err, cmessage)
-  if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   call read_sim(idModel, sim, err, cmessage)
-  if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   call agg_hru_to_basin(sim, simBasin, err, cmessage) ! aggregate hru sim to basin total sim 
-  if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   ! route sim for each basin
   ushape=parMaster(ixPar%uhshape)%val
   uscale=parMaster(ixPar%uhscale)%val
@@ -100,142 +100,145 @@ function objfn( calPar )
   end do
   call route_q(simBasin, simBasinRouted, ushape, uscale, err, cmessage)
   if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
-  if (opt/=2) then
-    call calc_rmse_region(simBasinRouted, obs, objfn, err, cmessage) ! for objective function
-    if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
-  else
+  if (opt == 0) then
     call out_opt_sim(simBasinRouted, obs) ! to just output optimal run
+  else
+    select case( trim(objfntype) )
+    case('rmse');
+      call calc_rmse_region(simBasinRouted, obs, objfn) 
+    case('month-rmse');
+      call calc_month_rmse_region(simBasinRouted, obs, objfn) 
+    case('nse');
+      call calc_nse_region(simBasinRouted, obs, objfn) 
+    case('month-nse');
+      call calc_month_nse_region(simBasinRouted, obs, objfn) 
+    case('kge');
+      call calc_kge_region(simBasinRouted, obs, objfn) 
+    case default; print*,trim(message)//'objective function not recognized';stop
+    end select
   endif
   return
 end function
 
 !************************************
-! compute weighted RMSE 
+! compute weighted daily RMSE 
 !************************************
-subroutine calc_rmse_region(sim, obs, rmse, err, message)
+subroutine calc_rmse_region(sim, obs, rmse)
   implicit none
   !input variables 
   real(dp), dimension(:,:), intent(in)    :: sim 
   real(dp), dimension(:),   intent(in)    :: obs 
   !output variables
   real(dp),                 intent(out)   :: rmse
-  integer(i4b),             intent(out)   :: err          ! error code
-  !input/output variables
-  character(*),             intent(inout) :: message      ! error message
   !local variables
-  integer                                 :: itime,ibasin,total_len,offset
-  real(dp)                                :: sum_sqr
-  real(dp),allocatable,dimension(:,:)     :: log_model
-  real(dp),allocatable,dimension(:)       :: log_streamflow
-  integer,allocatable,dimension(:)        :: basin_id
-  real(dp),allocatable,dimension(:)       :: obj_fun_weight
-  real(dp),allocatable,dimension(:)       :: basin_rmse
-  integer(i4b)                            :: nmonths  !for monthly rmse calculation
-  integer(i4b)                            :: start_ind, end_ind
-  real(dp)                                :: month_model, month_streamflow
+  integer(i4b)                            :: err          ! error code
+  character(len=strLen)                   :: message      ! error message
+  integer(i4b)                            :: ibasin,offset
+  real(dp),    allocatable,dimension(:,:) :: simIn
+  real(dp),    allocatable,dimension(:)   :: obsIn
+  integer(i4b),allocatable,dimension(:)   :: basin_id
+  real(dp),    allocatable,dimension(:)   :: obj_fun_weight
+  real(dp),    allocatable,dimension(:)   :: basin_rmse
+  integer(i4b)                            :: nTime        !number of time step 
 
   ! initialize error control
   err=0; message=trim(message)//'calc_rmse_region/'
-
-  total_len = (end_cal-start_cal)*nbasin
-  sum_sqr = 0.0
-
-  allocate(log_model(nbasin,sim_len))
-  allocate(log_streamflow(nbasin*sim_len))
+  allocate(simIn(nbasin,sim_len))
+  allocate(obsIn(nbasin*sim_len))
   allocate(obj_fun_weight(nbasin))
   allocate(basin_rmse(nbasin))
   allocate(basin_id(nbasin))
-
-!read in basin weight file
-!this file determines how much each basin contributes to the total rmse
-!weights need to sum to 1 in the file
+  !read in basin weight file
+  !this file determines how much each basin contributes to the total rmse
+  !weights need to sum to 1 in the file
   open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
-  do ibasin = 1,nbasin
-    read (UNIT=58,fmt=*) basin_id(ibasin),obj_fun_weight(ibasin)
-  enddo
+  read (UNIT=58,fmt=*) ( basin_id(ibasin),obj_fun_weight(ibasin), ibasin=1,nbasin)
   close(UNIT=58)
-
-  log_streamflow = obs 
-  log_model      = sim
+  obsIn = obs 
+  simIn = sim
   !need to make sure i'm using the appropriate parts of the catenated region observed streamflow timeseries
   do ibasin = 0,nbasin-1
     !offset places me at the start of each basin
     offset = ibasin*sim_len
     !then run from the starting calibration point to the ending calibration point
-    select case (trim(eval_length))
-      case ("daily","Daily","DAILY")
-        sum_sqr = 0.0
-        do itime = start_cal,end_cal-1
-          sum_sqr = sum_sqr + ((log_model(ibasin+1,itime)-log_streamflow(itime+offset))**2)
-        enddo
-        basin_rmse(ibasin+1) = sqrt(sum_sqr/real((end_cal-start_cal)+1))
-      case ("monthly","Monthly","MONTHLY")
-        sum_sqr = 0.0
-        nmonths = floor(((end_cal-start_cal)+1)/30.0)  !use 30 day months uniformly to make it easier
-        start_ind = start_cal
-        end_ind = start_cal + 29
-        do itime = 1,nmonths
-          month_model = sum(log_model(ibasin+1,start_ind:end_ind))
-          month_streamflow = sum(log_streamflow(offset+start_ind:offset+end_ind))
-          sum_sqr = sum_sqr + ((month_model-month_streamflow)**2)
-          start_ind = end_ind+1
-          end_ind = end_ind + 29
-        enddo
-        basin_rmse(ibasin+1) = sqrt(sum_sqr/real((nmonths)))
-      case ("weekly","Weekly","WEEKLY")
-        sum_sqr = 0.0
-        nmonths = floor(((end_cal-start_cal)+1)/7.0) !7 days in a week
-        start_ind = start_cal
-        end_ind = start_cal + 6
-        do itime = 1,nmonths
-          month_model = sum(log_model(ibasin+1,start_ind:end_ind))
-          month_streamflow = sum(log_streamflow(offset+start_ind:offset+end_ind))
-          sum_sqr = sum_sqr + ((month_model-month_streamflow)**2)
-          start_ind = end_ind+1
-          end_ind = end_ind + 6
-        enddo
-        basin_rmse(ibasin+1) = sqrt(sum_sqr/real((nmonths)))
-      case ("pentad","Pentad","PENTAD")
-        sum_sqr = 0.0
-        nmonths = floor(((end_cal-start_cal)+1)/5.0) !5 days in a pentad
-        start_ind = start_cal
-        end_ind = start_cal + 4
-        do itime = 1,nmonths
-          month_model = sum(log_model(ibasin+1,start_ind:end_ind))
-          month_streamflow = sum(log_streamflow(offset+start_ind:offset+end_ind))
-          sum_sqr = sum_sqr + ((month_model-month_streamflow)**2)
-          start_ind = end_ind+1
-          end_ind = end_ind + 4
-        enddo
-        basin_rmse(ibasin+1) = sqrt(sum_sqr/real((nmonths)))
-      case default 
-        sum_sqr = 0.0
-        do itime = start_cal,end_cal-1
-          sum_sqr = sum_sqr + ((log_model(ibasin+1,itime)-log_streamflow(itime+offset))**2.0)
-        enddo
-        basin_rmse(ibasin+1) = sqrt(sum_sqr/real((end_cal-start_cal)+1))
-    end select
+    nTime=end_cal-start_cal+1
+    basin_rmse(ibasin+1) = sqrt( sum((simIn(ibasin+1,start_cal:end_cal-1)-obsIn(offset+start_cal:offset+end_cal-1))**2)/real(nTime) )
   enddo
-  !calculate rmse
   rmse = sum(basin_rmse*obj_fun_weight)
-
   return
-end subroutine calc_rmse_region
+end subroutine
+
+!************************************
+! compute weighted monthly RMSE 
+!************************************
+subroutine calc_month_rmse_region(sim, obs, rmse)
+  implicit none
+  !input variables 
+  real(dp), dimension(:,:), intent(in)    :: sim 
+  real(dp), dimension(:),   intent(in)    :: obs 
+  !output variables
+  real(dp),                 intent(out)   :: rmse
+  !local variables
+  integer(i4b)                            :: err          ! error code
+  character(len=strLen)                   :: message      ! error message
+  integer(i4b)                            :: itime,ibasin,offset
+  real(dp)                                :: sum_sqr
+  real(dp),    allocatable,dimension(:,:) :: simIn
+  real(dp),    allocatable,dimension(:)   :: obsIn
+  integer(i4b),allocatable,dimension(:)   :: basin_id
+  real(dp),    allocatable,dimension(:)   :: obj_fun_weight
+  real(dp),    allocatable,dimension(:)   :: basin_rmse
+  integer(i4b)                            :: nTime        !number of time step 
+  integer(i4b)                            :: start_ind, end_ind
+  real(dp)                                :: simAgg, obsAgg
+
+  ! initialize error control
+  err=0; message=trim(message)//'calc_month_rmse_region/'
+  allocate(simIn(nbasin,sim_len))
+  allocate(obsIn(nbasin*sim_len))
+  allocate(obj_fun_weight(nbasin))
+  allocate(basin_rmse(nbasin))
+  allocate(basin_id(nbasin))
+  !read in basin weight file
+  !this file determines how much each basin contributes to the total rmse
+  !weights need to sum to 1 in the file
+  open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
+  read (UNIT=58,fmt=*) ( basin_id(ibasin),obj_fun_weight(ibasin), ibasin=1,nbasin)
+  close(UNIT=58)
+  obsIn = obs 
+  simIn = sim
+  do ibasin = 0,nbasin-1
+    !offset places me at the start of each basin
+    offset = ibasin*sim_len
+    !then run from the starting calibration point to the ending calibration point
+    sum_sqr = 0.0
+    nTime = floor(((end_cal-start_cal)+1)/30.0_dp)  !use 30 day months uniformly to make it easier
+    start_ind = start_cal
+    end_ind   = start_cal+29
+    do itime = 1,nTime
+      simAgg  = sum(simIn(ibasin+1,start_ind:end_ind))/30.0_dp
+      obsAgg  = sum(obsIn(offset+start_ind:offset+end_ind))/30.0_dp
+      sum_sqr = sum_sqr + ((simAgg-obsAgg)**2)
+      start_ind = end_ind+1
+      end_ind   = end_ind+29
+    enddo
+    basin_rmse(ibasin+1) = sqrt(sum_sqr/real(nTime))
+  enddo
+  rmse = sum(basin_rmse*obj_fun_weight)
+end subroutine
 
 !*****************************************************
 ! Compute weighted NSE
 !*****************************************************
-subroutine calc_nse_region(sim,obs,nse)
-
+subroutine calc_nse_region(sim, obs, nse)
   implicit none
-
-!input variables
+  !input variables
   real(dp), dimension(:,:), intent(in)  :: sim 
   real(dp), dimension(:),   intent(in)  :: obs
-!output variables
+  !output variables
   real(dp),                 intent(out) :: nse 
-!local variables
-  integer(i4b)                          :: itime,ibasin,total_len,offset
+  !local variables
+  integer(i4b)                          :: itime,ibasin,offset
   real(dp)                              :: sumSqrErr
   real(dp)                              :: sumSqrDev
   real(dp)                              :: sumQ
@@ -243,12 +246,7 @@ subroutine calc_nse_region(sim,obs,nse)
   integer(i4b),allocatable,dimension(:) :: basin_id
   real(dp),allocatable,dimension(:)     :: obj_fun_weight
   real(dp),allocatable,dimension(:)     :: basin_nse          ! nse for individual basin
-  integer(i4b)                          :: nmonths            ! for monthly rmse calculation
-  integer(i4b)                          :: start_ind, end_ind
-  real(dp)                              :: month_sim, month_obs
 
-  total_len = (end_cal-start_cal)*nbasin
-  
   ! variable allocation
   allocate(obj_fun_weight(nbasin))
   allocate(basin_nse(nbasin))
@@ -257,11 +255,61 @@ subroutine calc_nse_region(sim,obs,nse)
   ! this file determines how much each basin contributes to the total objective function 
   ! weights need to sum to 1 in the file
   open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
-  do ibasin = 1,nbasin
-    read (UNIT=58,fmt=*) basin_id(ibasin),obj_fun_weight(ibasin)
-  enddo
+  read (UNIT=58,fmt=*) ( basin_id(ibasin),obj_fun_weight(ibasin), ibasin=1,nbasin )
   close(UNIT=58)
+  do ibasin = 0,nbasin-1
+    !offset places me at the start of each basin
+    offset = ibasin*sim_len
+    sumSqrDev = 0.0
+    sumSqrErr = 0.0
+    ! Compute Qob mean
+    sumQ = sum(obs(start_cal+offset:end_cal+offset))
+    meanQ = sumQ/real((end_cal-start_cal+1))
+    ! Compute sum of squre of error and deviation from menan (for obs) 
+    do itime = start_cal,end_cal
+      sumSqrDev = sumSqrDev + (obs(itime+offset)-meanQ)**2
+      sumSqrErr = sumSqrErr + (sim(ibasin+1,itime)-obs(itime+offset))**2
+    enddo
+    ! Compute nse for current basin 
+    basin_nse(ibasin+1) = sumSqrErr/sumSqrDev
+  enddo
+  nse = sum(basin_nse*obj_fun_weight)
+  return
+end subroutine
 
+!*****************************************************
+! Compute monthly weighted NSE
+!*****************************************************
+subroutine calc_month_nse_region(sim, obs, nse)
+  implicit none
+  !input variables
+  real(dp), dimension(:,:), intent(in)  :: sim 
+  real(dp), dimension(:),   intent(in)  :: obs
+  !output variables
+  real(dp),                 intent(out) :: nse 
+  !local variables
+  integer(i4b)                          :: itime,ibasin,offset
+  real(dp)                              :: sumSqrErr
+  real(dp)                              :: sumSqrDev
+  real(dp)                              :: sumQ
+  real(dp)                              :: meanQ
+  integer(i4b),allocatable,dimension(:) :: basin_id
+  real(dp),allocatable,dimension(:)     :: obj_fun_weight
+  real(dp),allocatable,dimension(:)     :: basin_nse          ! nse for individual basin
+  integer(i4b)                          :: nTime            ! for monthly rmse calculation
+  integer(i4b)                          :: start_ind, end_ind
+  real(dp)                              :: month_sim, month_obs
+
+  ! variable allocation
+  allocate(obj_fun_weight(nbasin))
+  allocate(basin_nse(nbasin))
+  allocate(basin_id(nbasin))
+  ! Read basin weight file
+  ! this file determines how much each basin contributes to the total objective function 
+  ! weights need to sum to 1 in the file
+  open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
+  read (UNIT=58,fmt=*) ( basin_id(ibasin),obj_fun_weight(ibasin), ibasin=1,nbasin )
+  close(UNIT=58)
   !need to make sure i'm using the appropriate parts of the catenated region observed obs timeseries
   do ibasin = 0,nbasin-1
     !offset places me at the start of each basin
@@ -269,121 +317,83 @@ subroutine calc_nse_region(sim,obs,nse)
     sumQ = 0.0
     sumSqrDev = 0.0
     sumSqrErr = 0.0
-    !run from the starting calibration point to the ending calibration point
-    select case (eval_length)
-      case ("daily","Daily","DAILY")
-        ! Compute Qob mean
-        sumQ = sum(obs(start_cal+offset:end_cal-1+offset))
-        meanQ = sumQ/real((end_cal-start_cal))
-        ! Compute sum of squre of error and deviation from menan (for obs) 
-        do itime = start_cal,end_cal-1
-          sumSqrDev = sumSqrDev + (obs(itime+offset)-meanQ)**2
-          sumSqrErr = sumSqrErr + (sim(ibasin+1,itime)-obs(itime+offset))**2
-        enddo
-        ! Compute nse for current basin 
-        basin_nse(ibasin+1) = sumSqrErr/sumSqrDev
-      case ("monthly","Monthly","MONTHLY")
-        nmonths = floor(((end_cal-start_cal)+1)/30.0)  !use 30 day months uniformly to make it easier
-        ! Compute montly observed Q
-        ! Indices of start and end for first month
-        start_ind = start_cal
-        end_ind = start_cal + 29
-        do itime = 1,nmonths
-          month_obs = sum(obs(offset+start_ind:offset+end_ind))
-          sumQ       = sumQ+month_obs
-        enddo
-        meanQ = sumQ/real(nmonths)
-        ! Compute sum of squre of error and deviation from menan (for obs) 
-        start_ind = start_cal
-        end_ind = start_cal + 29
-        do itime = 1,nmonths
-          month_sim = sum(sim(ibasin+1,start_ind:end_ind))
-          month_obs = sum(obs(offset+start_ind:offset+end_ind))
-          sumSqrErr = sumSqrErr + ((month_sim-month_obs)**2)
-          sumSqrDev = sumSqrDev + ((month_obs-meanQ)**2)
-          !update starting and ending indice for next month step
-          start_ind = end_ind+1
-          end_ind = end_ind + 29
-        enddo
-        !grab remainder portion and weight it by number of days
-        month_sim = sum(sim(ibasin+1,end_ind+1:end_cal-1))
-        month_obs = sum(obs(offset+end_ind+1:end_cal-1))
-        sumSqrErr = sumSqrErr + ((month_sim-month_obs)**2) * real((end_cal-1-(offset+end_ind+1))/30.0)
-        sumSqrDev = sumSqrDev + ((month_obs-meanQ)**2) * real((end_cal-1-(offset+end_ind+1))/30.0)
-        ! Compute nse for current basin 
-        basin_nse(ibasin+1) = sumSqrErr/sumSqrDev
-      case default
-        ! Compute Qob mean
-        sumQ = sum(obs(start_cal+offset:end_cal-1+offset))
-        meanQ = sumQ/real((end_cal-start_cal)+1)
-        ! Compute sum of squre of error and deviation from menan (for obs) 
-        do itime = start_cal,end_cal-1
-          sumSqrDev = sumSqrDev + (obs(itime+offset)-meanQ)**2
-          sumSqrErr = sumSqrErr + (sim(ibasin+1,itime)-obs(itime+offset))**2
-        enddo
-        ! Compute nse for current basin 
-        basin_nse(ibasin+1) = sumSqrErr/sumSqrDev
-    end select
+    nTime = floor(((end_cal-start_cal)+1)/30.0)  !use 30 day months uniformly to make it easier
+    ! Compute montly observed Q
+    ! Indices of start and end for first month
+    start_ind = start_cal
+    end_ind = start_cal + 29
+    do itime = 1,nTime
+      month_obs = sum(obs(offset+start_ind:offset+end_ind))
+      sumQ       = sumQ+month_obs
+      !update starting and ending indice for next month step
+      start_ind = end_ind+1
+      end_ind = end_ind + 29
+    enddo
+    meanQ = sumQ/real(nTime)
+    ! Compute sum of squre of error and deviation from menan (for obs) 
+    start_ind = start_cal
+    end_ind = start_cal + 29
+    do itime = 1,nTime
+      month_sim = sum(sim(ibasin+1,start_ind:end_ind))
+      month_obs = sum(obs(offset+start_ind:offset+end_ind))
+      sumSqrErr = sumSqrErr + ((month_sim-month_obs)**2)
+      sumSqrDev = sumSqrDev + ((month_obs-meanQ)**2)
+      !update starting and ending indice for next month step
+      start_ind = end_ind+1
+      end_ind = end_ind + 29
+    enddo
+    !grab remainder portion and weight it by number of days
+    month_sim = sum(sim(ibasin+1,end_ind+1:end_cal-1))
+    month_obs = sum(obs(offset+end_ind+1:end_cal-1))
+    sumSqrErr = sumSqrErr + ((month_sim-month_obs)**2) * real((end_cal-1-(offset+end_ind+1))/30.0)
+    sumSqrDev = sumSqrDev + ((month_obs-meanQ)**2) * real((end_cal-1-(offset+end_ind+1))/30.0)
+    ! Compute nse for current basin 
+    basin_nse(ibasin+1) = sumSqrErr/sumSqrDev
   enddo
-  !calculate rmse
   nse = sum(basin_nse*obj_fun_weight)
-
   return
-end subroutine calc_nse_region
+end subroutine
 
 !***********************************************************************
 ! calculate weighted Kling-Gupta Efficiency
 !***********************************************************************
-subroutine calc_kge_region(model,streamflow,kge)
+subroutine calc_kge_region( sim, obs, kge)
   implicit none
-
-!input variables (model: simulations, streamflow: observations)
-  real(dp), dimension(:,:), intent(in)  :: model
-  real(dp), dimension(:),   intent(in)  :: streamflow
+!input variables 
+  real(dp), dimension(:,:), intent(in)  :: sim 
+  real(dp), dimension(:),   intent(in)  :: obs 
 !output variables
   real(dp),                 intent(out) :: kge
 !local variables
-  integer(i4b)                          :: itime
+  integer(i4b)                          :: ibasin ! loop index
+  integer(i4b),allocatable,dimension(:) :: basin_id
+  real(dp),    allocatable,dimension(:) :: obj_fun_weight
+  real(dp),    allocatable,dimension(:) :: basin_kge
   real(dp)                              :: cc,alpha,betha,mu_s,mu_o,sigma_s,sigma_o
-  integer(i4b)                          :: ibasin,total_len,offset,cnt
-  real(dp),dimension(:),allocatable     :: model_local
-  real(dp),dimension(:),allocatable     :: obs_local
+  integer(i4b)                          :: offset
 
-  total_len = (end_cal-start_cal)*nbasin
-  allocate(model_local(total_len))
-  allocate(obs_local(total_len))
-  cnt = 1
+  allocate(obj_fun_weight(nbasin))
+  allocate(basin_kge(nbasin))
+  allocate(basin_id(nbasin))
+  open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
+  read (UNIT=58,fmt=*) ( basin_id(ibasin),obj_fun_weight(ibasin), ibasin=1,nbasin)
+  close(UNIT=58)
   do ibasin = 0,nbasin-1
     !offset places me at the start of each basin
     offset = ibasin*sim_len
-    do itime = start_cal,end_cal-1
-      model_local(cnt) = model(ibasin+1,itime)
-      obs_local(cnt) = streamflow(offset+itime)
-      cnt = cnt + 1
-    enddo
+    !! mean
+    mu_s=sum(sim(ibasin+1,start_cal:end_cal))/real((end_cal-start_cal)+1)
+    mu_o=sum(obs(offset+start_cal:offset+end_cal))/real((end_cal-start_cal)+1)
+    !compute the standard deviation
+    sigma_s = sqrt (sum( (sim(ibasin+1,start_cal:end_cal)-mu_s)**2 )/real((end_cal-start_cal)+1))
+    sigma_o = sqrt (sum( (obs(offset+start_cal:offset+end_cal)-mu_o)**2 )/real((end_cal-start_cal)+1))
+    !compute correlation 
+    call pearsn(sim(ibasin+1,start_cal:end_cal), obs(offset+start_cal:offset+end_cal), cc)
+    betha = mu_s/mu_o
+    alpha = sigma_s/sigma_o
+    basin_kge(ibasin+1) =( sqrt((cc-1.0)**2 + (alpha-1.0)**2 + (betha-1.0)**2) )
   enddo
-  !!set variables to zero
-  mu_s = 0.0
-  mu_o = 0.0
-  sigma_s = 0.0
-  sigma_o = 0.0 
-  !offset places me at the start of each basin
-  offset = ibasin*sim_len
-  mu_s = sum(model_local)/real(total_len)
-  mu_o = sum(obs_local)/real(total_len)
-  betha = mu_s/mu_o
-  !Now we compute the standard deviation
-  do itime = 1,total_len
-    sigma_s = sigma_s + (model_local(itime)-mu_s)**2
-    sigma_o = sigma_o + (obs_local(itime)-mu_o)**2
-  enddo   !end itime loop
-  sigma_s = sqrt(mu_s/real(total_len))
-  sigma_o = sqrt(mu_s/real(total_len))
-  alpha = sigma_s/sigma_o
-  !Compute linear correlation coefficient
-  call pearsn(model_local,obs_local,cc)
-  kge =( sqrt((cc-1.0)**2 + (alpha-1.0)**2 + (betha-1.0)**2) )
-  
+  kge = sum(basin_kge*obj_fun_weight)
   return
 end subroutine
 
@@ -391,9 +401,7 @@ end subroutine
 ! compute pearson correlation coefficient 
 !******************************
 subroutine pearsn(x,y,r)
-
   implicit none
-
   !input variables
   real(dp), dimension(:), intent(in)  :: x
   real(dp), dimension(:), intent(in)  :: y
@@ -414,7 +422,42 @@ subroutine pearsn(x,y,r)
   sxy=dot_product(xt,yt)
   r=sxy/(sqrt(sxx*syy)+verySmall)
   return
-end subroutine pearsn
+end subroutine
+
+!******************************
+! compute pearson correlation coefficient 
+!******************************
+subroutine calc_bias_region(sim, obs, bias) 
+  implicit none
+  !input variables 
+  real(dp), dimension(:,:), intent(in)  :: sim 
+  real(dp), dimension(:),   intent(in)  :: obs 
+  !output variables
+  real(dp),                 intent(out) :: bias 
+  ! local variables
+  integer(i4b)                          :: ibasin ! loop index
+  integer(i4b),allocatable,dimension(:) :: basin_id
+  real(dp),    allocatable,dimension(:) :: obj_fun_weight
+  real(dp),    allocatable,dimension(:) :: basin_bias
+  integer(i4b)                          :: offset
+
+  allocate(obj_fun_weight(nbasin))
+  allocate(basin_bias(nbasin))
+  allocate(basin_id(nbasin))
+  open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
+  do ibasin = 1,nbasin
+    read (UNIT=58,fmt=*) basin_id(ibasin),obj_fun_weight(ibasin)
+  enddo
+  close(UNIT=58)
+  do ibasin = 0,nbasin-1
+    !offset places me at the start of each basin
+    offset = ibasin*sim_len
+    !! mean
+    basin_bias(ibasin+1)=sum( sim(ibasin+1,:)-obs(offset+start_cal:offset+end_cal) )/sum(obs(offset+start_cal:offset+end_cal))
+  enddo
+  bias = sum(basin_bias*obj_fun_weight)
+  return
+end subroutine
 
 !***********************************
 ! Output sim and obs in separate file 
@@ -439,7 +482,6 @@ subroutine out_opt_sim(sim, obs)
   last_token = tokens(nargs)
   out_name = trim(sim_dir)//last_token(1:9)//"_flow.txt"
   open(unit=88,file=out_name)
-
   do ibasin = 0,nbasin-1
     offset = ibasin*sim_len
     do itime = start_cal,end_cal-1
@@ -468,14 +510,14 @@ subroutine read_obs(obs, err, message)
   ! initialize error control
   err=0; message='read_obs/'
   !read observed streamflow
-  call file_open(trim(obs_name),unt, err, cmessage)
+  call file_open(trim(obs_name), unt, err, cmessage)
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
   do itime = 1,sim_len*nbasin
     read (unt,fmt=*) obs(itime)
   enddo
   close(unt)
   return
-end subroutine read_obs
+end subroutine
 
 !******************************
 ! Aggregate hru value to basin
@@ -515,7 +557,7 @@ subroutine agg_hru_to_basin(simHru,simBasin,err,message)
   enddo !end basin loop
   close(unt)
   return
-end subroutine agg_hru_to_basin
+end subroutine
 
 !******************************
 ! routing runoff 
@@ -676,7 +718,7 @@ end subroutine route_q
         cycle
       end if
     end do
-  
-  end function gf
+    return
+  end function
 
 end module eval_model 

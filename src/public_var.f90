@@ -48,7 +48,7 @@ module public_var
   character(len=strLen),public    :: obs_name
   character(len=strLen),public    :: executable
   character(len=strLen),public    :: basin_objfun_weight_file
-  integer(i4b),public             :: objfntype 
+  character(len=strLen),public    :: objfntype 
   integer(i4b),public             :: dt
   integer(i4b),public             :: sim_len 
   integer(i4b),public             :: start_cal
@@ -57,7 +57,6 @@ module public_var
   integer(i4b),public             :: nbasin
   integer(i4b),public             :: Npro
   real,dimension(16),public       :: initcell,endcell
-  character(len=strLen),public    :: eval_length
   character(len=strLen),public    :: calpar 
   integer(i4b),public             :: idModel 
   !
