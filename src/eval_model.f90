@@ -104,16 +104,12 @@ function objfn( calPar )
     call out_opt_sim(simBasinRouted, obs) ! to just output optimal run
   else
     select case( trim(objfntype) )
-    case('rmse');
-      call calc_rmse_region(simBasinRouted, obs, objfn) 
-    case('month-rmse');
-      call calc_month_rmse_region(simBasinRouted, obs, objfn) 
-    case('nse');
-      call calc_nse_region(simBasinRouted, obs, objfn) 
-    case('month-nse');
-      call calc_month_nse_region(simBasinRouted, obs, objfn) 
-    case('kge');
-      call calc_kge_region(simBasinRouted, obs, objfn) 
+    case('rmse');       call calc_rmse_region(simBasinRouted, obs, objfn) 
+    case('month-rmse'); call calc_month_rmse_region(simBasinRouted, obs, objfn) 
+    case('nse');        call calc_nse_region(simBasinRouted, obs, objfn) 
+    case('month-nse');  call calc_month_nse_region(simBasinRouted, obs, objfn) 
+    case('kge');        call calc_kge_region(simBasinRouted, obs, objfn) 
+    case('sigBias');    call calc_sigBias_region(simBasinRouted, obs, objfn) 
     case default; print*,trim(message)//'objective function not recognized';stop
     end select
   endif
@@ -425,37 +421,118 @@ subroutine pearsn(x,y,r)
 end subroutine
 
 !******************************
-! compute pearson correlation coefficient 
+! compute percent bias of flow 
 !******************************
-subroutine calc_bias_region(sim, obs, bias) 
+subroutine calc_pBias_region(sim, obs, pBias) 
+  ! absolute percentage bias
   implicit none
   !input variables 
   real(dp), dimension(:,:), intent(in)  :: sim 
   real(dp), dimension(:),   intent(in)  :: obs 
   !output variables
-  real(dp),                 intent(out) :: bias 
+  real(dp),                 intent(out) :: pBias 
   ! local variables
   integer(i4b)                          :: ibasin ! loop index
   integer(i4b),allocatable,dimension(:) :: basin_id
   real(dp),    allocatable,dimension(:) :: obj_fun_weight
-  real(dp),    allocatable,dimension(:) :: basin_bias
+  real(dp),    allocatable,dimension(:) :: basin_pBias
   integer(i4b)                          :: offset
 
   allocate(obj_fun_weight(nbasin))
-  allocate(basin_bias(nbasin))
+  allocate(basin_pBias(nbasin))
   allocate(basin_id(nbasin))
   open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
-  do ibasin = 1,nbasin
-    read (UNIT=58,fmt=*) basin_id(ibasin),obj_fun_weight(ibasin)
-  enddo
+  read (UNIT=58,fmt=*) ( basin_id(ibasin),obj_fun_weight(ibasin), ibasin=1,nbasin)
   close(UNIT=58)
   do ibasin = 0,nbasin-1
     !offset places me at the start of each basin
     offset = ibasin*sim_len
     !! mean
-    basin_bias(ibasin+1)=sum( sim(ibasin+1,:)-obs(offset+start_cal:offset+end_cal) )/sum(obs(offset+start_cal:offset+end_cal))
+    basin_pBias(ibasin+1)=abs(sum( sim(ibasin+1,:)-obs(offset+start_cal:offset+end_cal) ))/sum(obs(offset+start_cal:offset+end_cal))
   enddo
-  bias = sum(basin_bias*obj_fun_weight)
+  pBias = sum(basin_pBias*obj_fun_weight)
+  return
+end subroutine
+
+!******************************
+! compute percent bias of hydrologic signatures
+!******************************
+subroutine calc_sigBias_region(sim, obs, sigBias) 
+  ! aggregated absolute percentage signature bias
+  ! Refer to paper below
+  ! Yilmaz, K. K., H. V. Gupta, and T. Wagener (2008), 
+  ! A process-based diagnostic approach to model evaluation: Application to the NWS distributed hydrologic model, 
+  ! Water Resour. Res., 44, W09417, doi:10.1029/2007WR006716.
+  implicit none
+  !input variables 
+  real(dp),                intent(in)  :: sim(:,:)
+  real(dp),                intent(in)  :: obs(:) 
+  !output variables
+  real(dp),                intent(out) :: sigBias 
+  ! local variables
+  integer(i4b)                         :: ibasin,iTime ! loop index
+  integer(i4b)                         :: i30,i80
+  integer(i4b)                         :: idx(1)
+  integer(i4b)                         :: nTime            
+  integer(i4b)                         :: offset
+  real(dp)                             :: pBiasFHV
+  real(dp)                             :: pBiasFLV
+  real(dp)                             :: pBiasFMS
+  real(dp),    allocatable             :: p(:)            ! probability
+  real(dp),    allocatable             :: simBasin(:)
+  real(dp),    allocatable             :: obsBasin(:)
+  integer(i4b),allocatable             :: basin_id(:)
+  real(dp),    allocatable             :: obj_fun_weight(:)
+  real(dp),    allocatable             :: basin_sigBias(:)
+  
+  allocate(obj_fun_weight(nbasin))
+  allocate(basin_sigBias(nbasin))
+  allocate(basin_id(nbasin))
+  open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
+  read (UNIT=58,fmt=*) ( basin_id(ibasin),obj_fun_weight(ibasin), ibasin=1,nbasin)
+  close(UNIT=58)
+  nTime=end_cal-start_cal+1
+  allocate(p(nTime))
+  allocate(simBasin(nTime))
+  allocate(obsBasin(nTime))
+  p=(/ (real(itime)/(real(nTime)+1.0_dp), iTime=1,nTime) /)
+  idx=minloc(abs(p-0.3_dp))
+  i30=idx(1)
+  idx=minloc(abs(p-0.8_dp))
+  i80=idx(1)
+  do ibasin = 0,nbasin-1
+    offset = ibasin*sim_len
+    simBasin=sim(ibasin+1,:)+valMin
+    obsBasin=obs(offset+start_cal:offset+end_cal)+valMin
+    call sort(simBasin)
+    call sort(obsBasin)
+    pBiasFMS=((log(simBasin(i80))-log(simBasin(i30)) )-(log(obsBasin(i80))-log(obsBasin(i30))))/( log(obsBasin(i80))-log(obsBasin(i30)) )*100.0_dp
+    pBiasFHV=sum(simBasin(i80:nTime)-obsBasin(i80:nTime))/sum(obsBasin(i80:nTime))*100.0_dp
+    pBiasFLV=(sum(log(simBasin(1:i30))-log(simBasin(1)) )-sum(log(obsBasin(1:i30))-log(obsBasin(1))))/sum( log(obsBasin(1:i30))-log(obsBasin(1)) )*100.0_dp
+    basin_sigBias(iBasin+1) = abs(pBiasFHV)+abs(pBiasFLV)+abs(pBiasFMS)
+  enddo
+  sigBias = sum(basin_sigBias*obj_fun_weight)
+  print*,'p=',p
+  print*,'obs=',obsBasin
+  print*,'sim=',simBasin
+  stop
+  return
+end subroutine
+
+subroutine sort(vec)
+  implicit none
+  real(dp) ,intent(inout) :: vec(:)
+  real(dp)                :: buf
+  integer(i4b)            :: nsize, i
+  integer(i4b)            :: k(1)
+
+  nsize = size(vec)
+  do i = 1, nsize
+    k   = minloc(vec(i:nsize))+i-1
+    buf = vec(i)
+    vec(i) = vec(k(1))
+    vec(k(1)) = buf
+  enddo
   return
 end subroutine
 
