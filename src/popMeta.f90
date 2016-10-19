@@ -106,6 +106,16 @@ contains
     parMaster(ixPar%Ws)                = par_meta('Ws'           ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "whmean",   "whmean")
     parMaster(ixPar%expt)              = par_meta('expt'         ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",   "wamean")
     parMaster(ixPar%bbl)               = par_meta('bbl'          ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",   "wamean")
+    parMaster(ixPar%twm)               = par_meta('twm'          ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",   "wamean")
+    parMaster(ixPar%fwm)               = par_meta('fwm'          ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",   "wamean")
+    parMaster(ixPar%fsm)               = par_meta('fsm'          ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",   "wamean")
+    parMaster(ixPar%fpm)               = par_meta('fpm'          ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",   "wamean")
+    parMaster(ixPar%zk)                = par_meta('zk'           ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",   "wamean")
+    parMaster(ixPar%zsk)               = par_meta('zsk'          ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "whmean",   "whmean")
+    parMaster(ixPar%zpk)               = par_meta('zpk'          ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "whmean",   "whmean")
+    parMaster(ixPar%pfree)             = par_meta('pfree'        ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",   "wamean")
+    parMaster(ixPar%zperc)             = par_meta('zperc'        ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",   "wamean")
+    parMaster(ixPar%rexp)              = par_meta('rexp'         ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",   "wamean")
     parMaster(ixPar%h1)                = par_meta('h1'           ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",   "wamean")
     parMaster(ixPar%h2)                = par_meta('h2'           ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",   "wamean")
     parMaster(ixPar%h3)                = par_meta('h3'           ,     1.0_dp,    0.8_dp,    1.2_dp,         "beta",  "soil", .False.,  "wamean",   "wamean")
@@ -121,11 +131,9 @@ contains
   subroutine popMprmeta(err,message)
     use nrtype
     use data_type,  only:var_meta
-    use var_lookup, only:ixVarHru
     use var_lookup, only:ixVarMapData
     use var_lookup, only:ixVarSoilData
     use var_lookup, only:ixVarVegData
-    use globalData, only:hru_meta
     use globalData, only:map_meta
     use globalData, only:sdata_meta
     use globalData, only:vdata_meta
@@ -139,13 +147,6 @@ contains
     ! initialize error control
     err=0; message='popMprMeta/'
 
-    ! model hru variables 
-    hru_meta(ixVarHru%lat)                 = var_meta('lat'          ,"latitude of hru centroid"          , "decimal degree" ,"1D", "double" )
-    hru_meta(ixVarHru%lon)                 = var_meta('lon'          ,"longitude of hru centroid"         , "decimal degree" ,"1D", "double" )
-    hru_meta(ixVarHru%ele)                 = var_meta('ele'          ,"hru mean elevation "               , "m"              ,"1D", "double" )
-    hru_meta(ixVarHru%ann_P)               = var_meta('ann_P'        ,"mean annual total precipitation"   , "mm"             ,"1D", "double" )
-    hru_meta(ixVarHru%avg_T)               = var_meta('avg_T'        ,"mean annual air temperature"       , "Celcius degree" ,"1D", "double" )
-    hru_meta(ixVarHru%july_T)              = var_meta('july_T'       ,"mean July air temperature"         , "Celcius degree" ,"1D", "double" )
     ! Mapping data meta
     map_meta(ixVarMapData%hru_id)          = var_meta('hru_id'       ,"hru id"                            , "-"              ,"1D", "integer")
     map_meta(ixVarMapData%weight)          = var_meta('weight'       ,"areal weight of intersect polygon" , "-"              ,"1D", "integer")

@@ -80,6 +80,7 @@ CORE = \
     mo_xor4096.f90 \
     mo_opt_run.f90 \
     mo_dds.f90 \
+    sac_routines.f90 \
     vic_routines.f90 \
     model_wrapper.f90 \
     soiltf.f90 \

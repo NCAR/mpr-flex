@@ -41,8 +41,7 @@ subroutine adjust_param( idModel, param, multiplier, adjParam, err, message)
       ! Read/Adjust/Output vege parameters 
       call adj_vege_param_vic( multiplier, err, cmessage)
       if (err/=0)then; message=message//cmessage; return; endif
-    case default
-      err=10; message=message//"model is not implemented"; return
+    case default; err=10; message=message//"model is not implemented"; return
   end select  
   return
 end subroutine
@@ -50,7 +49,6 @@ end subroutine
 subroutine replace_param( idModel, param, hModel, parMxyMz, adjParam, err, message)
   use vic_routines, only: replace_soil_param_vic
   implicit none
-  
   ! input 
   integer(i4b),         intent(in)   :: idModel       ! model id
   real(dp),             intent(in)   :: param(:,:)    ! original soil parameters 
@@ -63,21 +61,18 @@ subroutine replace_param( idModel, param, hModel, parMxyMz, adjParam, err, messa
   ! LOCAL VARIABLES
   character(len=strLen)              :: cmessage      ! error message from downward subroutine
 
-  ! Start procedure here
   err=0; message="replace_param/"
   select case (idModel)
-    case (1)
-      ! replace soil model parameters 
-      call replace_soil_param_vic( param, hModel, parMxyMz, adjParam,  err, cmessage)
-      if (err/=0)then; message=message//cmessage; return; endif
-    case default
-      err=10; message=message//"model is not implemented"; return
+    case (1); call replace_soil_param_vic( param, hModel, parMxyMz, adjParam,  err, cmessage)
+    case default; err=10; message=message//"model is not implemented"; return
   end select  
+  if (err/=0)then; message=message//cmessage; return; endif
   return
 end subroutine
   
 subroutine read_soil_param(idModel, param, err, message)
   use vic_routines, only: read_soil_param_vic
+  use sac_routines, only: read_soil_param_sac
   implicit none
   ! input 
   integer(i4b),         intent(in)   :: idModel 
@@ -91,17 +86,17 @@ subroutine read_soil_param(idModel, param, err, message)
   ! Start procedure here
   err=0; message="read_soil_param/"
   select case (idModel)
-    case (1)
-      call read_soil_param_vic( param, err, cmessage)
-      if (err/=0)then; message=message//cmessage; return; endif
-    case default
-      err=10; message=message//"model is not implemented"; return
+    case (1); call read_soil_param_vic( param, err, cmessage)
+    case (2); call read_soil_param_sac( param, err, cmessage)
+    case default; err=10; message=message//"model is not implemented"; return
   end select  
+  if (err/=0)then; message=message//cmessage; return; endif
   return
 end subroutine
 
 subroutine write_soil_param(idModel, hruid, param, err, message)
   use vic_routines, only: write_soil_param_vic
+  use sac_routines, only: write_soil_param_sac
   implicit none
   ! input 
   integer(i4b),         intent(in)   :: idModel 
@@ -116,17 +111,17 @@ subroutine write_soil_param(idModel, hruid, param, err, message)
   ! Start procedure here
   err=0; message="write_soil_param/"
   select case (idModel)
-    case (1)
-      call write_soil_param_vic( hruid, param, err, cmessage)
-      if (err/=0)then; message=message//cmessage; return; endif
-    case default
-      err=10; message=message//"model is not implemented"; return
+    case (1); call write_soil_param_vic( hruid, param, err, cmessage)
+    case (2); call write_soil_param_sac( hruid, param, err, cmessage)
+    case default; err=10; message=message//"model is not implemented"; return
   end select  
+  if (err/=0)then; message=message//cmessage; return; endif
   return
 end subroutine
 
 subroutine read_hru_id(idModel, hruid, err, message)
   use vic_routines, only: vic_hru_id
+  use sac_routines, only: sac_hru_id
   implicit none
   ! input 
   integer(i4b),         intent(in)   :: idModel 
@@ -139,12 +134,12 @@ subroutine read_hru_id(idModel, hruid, err, message)
 
   err=0; message="read_hru_id/"
   select case (idModel)
-    case (1)
-      call vic_hru_id( hruid, err, cmessage)
-      if (err/=0)then; message=message//cmessage; return; endif
+    case (1); call vic_hru_id( hruid, err, cmessage)
+    case (2); call sac_hru_id( hruid, err, cmessage)
     case default
       err=10; message=message//"model is not implemented"; return
   end select  
+  if (err/=0)then; message=message//cmessage; return; endif
   return
 end subroutine
 
@@ -162,19 +157,18 @@ subroutine read_soil_lyr(idModel, hlyr, err, message)
 
   err=0; message="read_soil_lyr/"
   select case (idModel)
-    case (1)
-      call vic_soil_layer( hlyr, err, cmessage)
-      if (err/=0)then; message=message//cmessage; return; endif
+    case (1); call vic_soil_layer( hlyr, err, cmessage)
     case default
       err=10; message=message//"model is not implemented"; return
   end select  
+  if (err/=0)then; message=message//cmessage; return; endif
   return
 end subroutine
 
 subroutine read_sim( idModel, sim, err, message)
   use vic_routines, only: read_vic_sim
+  use sac_routines, only: read_sac_sim
   implicit none
-
   ! input 
   integer(i4b),         intent(in)   :: idModel 
   ! output
@@ -186,12 +180,12 @@ subroutine read_sim( idModel, sim, err, message)
 
   err=0; message="read_sim/"
   select case (idModel)
-    case (1)
-      call read_vic_sim( sim, err, cmessage)
-      if (err/=0)then; message=message//cmessage; return; endif
+    case (1); call read_vic_sim( sim, err, cmessage)
+    case (2); call read_sac_sim( sim, err, cmessage)
     case default
       err=10; message=message//"model is not implemented"; return
   end select  
+  if (err/=0)then; message=message//cmessage; return; endif
   return
 end subroutine
 

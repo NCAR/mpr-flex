@@ -14,7 +14,6 @@ public::get_ixPar     ! assign variable index to parameter
 public::get_ixDataMap       ! assign variable index to variables in mapping netCDF data
 public::get_ixDataVeg       ! assign variable index to variables in veg netCDF data
 public::get_ixDataSoil      ! assign variable index to variables in soil netCDF data
-public::get_ixVarHru        ! assign variable index to model hru variables
 public::get_ixPrpVeg
 
 contains
@@ -76,33 +75,43 @@ contains
 
     case('uhshape');          get_ixPar = ixPar%uhshape           ! gamma pdf uh shape parameter [-]
     case('uhscale');          get_ixPar = ixPar%uhscale           ! gamma pdf uh scale parameter [-] 
+    case('ks');               get_ixPar = ixPar%ks                ! saturated hydrologic conductivity [mm/day]
+    case('bd');               get_ixPar = ixPar%bd                ! soil particle density [kg/m^3]
+    case('sd');               get_ixPar = ixPar%sd                ! soil particle density [kg/m^3]
+    case('psis');             get_ixPar = ixPar%psis              ! matric potential [kPa]  
+    case('b');                get_ixPar = ixPar%b                 ! Fractional soil moisture content at wilting point [-]  
+    case('phi');              get_ixPar = ixPar%phi               ! porosity [-]  
+    case('fc');               get_ixPar = ixPar%fc                ! field capacity[-]  
+    case('wp');               get_ixPar = ixPar%wp                ! wilting point [-]  
+    case('myu');              get_ixPar = ixPar%myu               ! Fractional soil moisture content at wilting point [-]  
+    case('binfilt');          get_ixPar = ixPar%binfilt           ! variable infilitration curve parameter 
+    case('D1');               get_ixPar = ixPar%D1                ! 
+    case('D4');               get_ixPar = ixPar%D4                ! 
+    case('D2');               get_ixPar = ixPar%D2                ! 
+    case('D3');               get_ixPar = ixPar%D3                ! 
+    case('c');                get_ixPar = ixPar%c                 ! 
+    case('Dsmax');            get_ixPar = ixPar%Dsmax             !  
+    case('Ds');               get_ixPar = ixPar%Ds                ! 
+    case('Ws');               get_ixPar = ixPar%Ws                ! 
+    case('expt');             get_ixPar = ixPar%expt              ! exponent in Campbell equatin for Kh
+    case('bbl');              get_ixPar = ixPar%bbl               ! bubbling pressure of soil [cm] 
     case('h1');               get_ixPar = ixPar%h1                ! top layer thickness [m] 
     case('h2');               get_ixPar = ixPar%h2                ! 2nd layer thickness [m] 
     case('h3');               get_ixPar = ixPar%h3                ! 3rd layer thickness [m] 
     case('h4');               get_ixPar = ixPar%h4                ! 4th layer thickness [m] 
     case('h5');               get_ixPar = ixPar%h5                ! 5th layer thickness [m] 
-    case('binfilt');          get_ixPar = ixPar%binfilt           ! variable infilitration curve parameter 
-    case('D1');               get_ixPar = ixPar%D1                ! 
-    case('D2');               get_ixPar = ixPar%D2                ! 
-    case('D3');               get_ixPar = ixPar%D3                ! 
-    case('D4');               get_ixPar = ixPar%D4                ! 
-    case('Ds');               get_ixPar = ixPar%Ds                ! 
-    case('Dsmax');            get_ixPar = ixPar%Dsmax             !  
-    case('Ws');               get_ixPar = ixPar%Ws                ! 
-    case('c');                get_ixPar = ixPar%c                 ! 
-    case('expt');             get_ixPar = ixPar%expt              ! exponent in Campbell equatin for Kh
-    case('ks');               get_ixPar = ixPar%ks                ! saturated hydrologic conductivity [mm/day]
-    case('bbl');              get_ixPar = ixPar%bbl               ! bubbling pressure of soil [cm] 
-    case('SD');               get_ixPar = ixPar%SD                ! soil particle density [kg/m^3]
-    case('BD');               get_ixPar = ixPar%BD                ! soil particle density [kg/m^3]
     case('WcrFrac');          get_ixPar = ixPar%WcrFrac           ! Fractional soil moisture content at critical point [-] 
     case('WpwpFrac');         get_ixPar = ixPar%WpwpFrac          ! Fractional soil moisture content at wilting point [-]  
-    case('phi');              get_ixPar = ixPar%phi               ! porosity [-]  
-    case('fc');               get_ixPar = ixPar%fc                ! field capacity[-]  
-    case('wp');               get_ixPar = ixPar%wp                ! wilting point [-]  
-    case('psis');             get_ixPar = ixPar%psis              ! matric potential [kPa]  
-    case('b');                get_ixPar = ixPar%b                 ! Fractional soil moisture content at wilting point [-]  
-    case('myu');              get_ixPar = ixPar%myu               ! Fractional soil moisture content at wilting point [-]  
+    case('twm');              get_ixPar = ixPar%twm               ! Tention water content [mm]
+    case('fwm');              get_ixPar = ixPar%fwm               ! Free water content [mm] 
+    case('fsm');              get_ixPar = ixPar%fsm               ! Supplemental free water content [mm] 
+    case('fpm');              get_ixPar = ixPar%fpm               ! Primary free water content [mm]
+    case('zk');               get_ixPar = ixPar%zk                ! draw coefficient from free water content [/day]
+    case('zsk');              get_ixPar = ixPar%zsk               ! draw coefficient from supplemental free water content [/day]
+    case('zpk');              get_ixPar = ixPar%zpk               ! draw coefficient form primary free water content [/day]
+    case('pfree');            get_ixPar = ixPar%pfree             !  
+    case('zperc');            get_ixPar = ixPar%zperc             ! 
+    case('rexp');             get_ixPar = ixPar%rexp              ! 
     case('rmin');             get_ixPar = ixPar%rmin              ! minimum stomatal resistance
     case('lai');              get_ixPar = ixPar%lai               ! monthly lai
     ! get to here if cannot find the variable
@@ -174,28 +183,6 @@ contains
    case default;     get_ixdataSoil = imiss
   endselect
  end function get_ixDataSoil
-
-! *******************************************************************************************************************
-! Function: get the index of the named variables for the hru characteristics
-! *******************************************************************************************************************
- function get_ixVarHru(varName)
-  USE var_lookup,only:ixVarHru                  ! indices of the named variables
-  implicit none
-  ! define dummy variables
-  character(*), intent(in) :: varName            ! variable name
-  integer(i4b)             :: get_ixVarHru         ! index of the named variable
-  ! get the index of the named variables
-  select case(trim(varName))
-   case('lat');    get_ixVarHru = ixVarHru%lat      ! latitude (degrees north)
-   case('lon');    get_ixVarHru = ixVarHru%lon      ! longitude (degrees east)
-   case('ele');    get_ixVarHru = ixVarHru%ele      ! elevation (m)
-   case('ann_P');  get_ixVarHru = ixVarHru%ann_P    ! average annual precipitation (mm)
-   case('avg_T');  get_ixVarHru = ixVarHru%avg_T    ! average annual temperatur e(C)
-   case('july_T'); get_ixVarHru = ixVarHru%july_T   ! average July Temperature (C)
-   ! get to here if cannot find the variable
-   case default;   get_ixVarHru = imiss
-  endselect
- end function get_ixVarHru
 
 ! *******************************************************************************************************************
 ! function: get the index of the named variables for vegetation properties 

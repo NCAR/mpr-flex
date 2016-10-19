@@ -91,7 +91,7 @@ subroutine vic_soil_layer(hlyr, err, message)
   implicit none
   ! input 
   ! output
-  real(dp),    intent(out)           :: hlyr(:,:) ! calibrating parameter list 
+  real(dp),    intent(out)           :: hlyr(:,:) ! soil layer thickness (bucket size) matrix (nHru x nLyr)
   integer(i4b),intent(out)           :: err       ! error code
   character(*),intent(out)           :: message   ! error message
   ! local variables
