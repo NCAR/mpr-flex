@@ -72,6 +72,13 @@ contains
     case('BD1gamma1');        get_ixPar = ixPar%BD1gamma1       ! soil particle density [kg/m^3]
     case('WcrFrac1gamma1');   get_ixPar = ixPar%WcrFrac1gamma1  ! Fractional soil moisture content at critical point [-] 
     case('WpwpFrac1gamma1');  get_ixPar = ixPar%WpwpFrac1gamma1 ! Fractional soil moisture content at wilting point [-]  
+    case('fsm1gamma1');       get_ixPar = ixPar%fsm1gamma1      ! 
+    case('zk1gamma1');        get_ixPar = ixPar%zk1gamma1       ! 
+    case('zsk1gamma1');       get_ixPar = ixPar%zsk1gamma1      ! 
+    case('zsk1gamma2');       get_ixPar = ixPar%zsk1gamma2      ! 
+    case('zpk1gamma1');       get_ixPar = ixPar%zpk1gamma1      ! 
+    case('pfree1gamma1');     get_ixPar = ixPar%pfree1gamma1    ! 
+    case('rexp1gamma1');      get_ixPar = ixPar%rexp1gamma1     ! 
 
     case('uhshape');          get_ixPar = ixPar%uhshape           ! gamma pdf uh shape parameter [-]
     case('uhscale');          get_ixPar = ixPar%uhscale           ! gamma pdf uh scale parameter [-] 

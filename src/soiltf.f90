@@ -151,9 +151,47 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
          checkDone(iParm)=.true.
          xPar=D3( ParTemp(ixPar%fc)%varData, hslyrs, gammaPar )
        case(ixPar%Ws);
-         if(.not.checkDone(ixPar%D3)) then;ierr=10;message=trim(message)//'need to process "D3" before "Dsmax"';return;endif 
+         if(.not.checkDone(ixPar%D3))then;ierr=10;message=trim(message)//'need to process "D3" before "Dsmax"';return;endif 
          checkDone(iParm)=.true. 
-         xPar=Ws( ParTemp(ixPar%D3)%varData, ParTemp(ixPar%phi)%varData, hslyrs )
+         xPar=Ws( ParTemp(ixPar%D3)%varData, ParTemp(ixPar%phi)%varData,hslyrs )
+       case(ixPar%twm)
+         checkDone(iParm)=.true. 
+         xPar= twm( ParTemp(ixPar%fc)%varData,ParTemp(ixPar%wp)%varData,hslyrs )
+       case(ixPar%fwm)
+         checkDone(iParm)=.true. 
+         xPar= fwm( ParTemp(ixPar%phi)%varData,ParTemp(ixPar%fc)%varData,hslyrs )
+       case(ixPar%fsm)
+         if(.not.checkDone(ixPar%fwm))then;ierr=10;message=trim(message)//'need to process "fwm" before "fsm"';return;endif 
+         checkDone(iParm)=.true. 
+         xPar= fsm( ParTemp(ixPar%fwm)%varData,ParTemp(ixPar%phi)%varData,ParTemp(ixPar%wp)%varData,gammaPar )
+       case(ixPar%fpm)
+         if(.not.checkDone(ixPar%fwm))then;ierr=10;message=trim(message)//'need to process "fwm" before "fpm"';return;endif 
+         if(.not.checkDone(ixPar%fsm))then;ierr=10;message=trim(message)//'need to process "fsm" before "fpm"';return;endif 
+         checkDone(iParm)=.true. 
+         xPar= fpm( ParTemp(ixPar%fwm)%varData, ParTemp(ixPar%fsm)%varData )
+       case(ixPar%zk)
+         checkDone(iParm)=.true. 
+         xPar= zk( ParTemp(ixPar%phi)%varData,ParTemp(ixPar%fc)%varData,gammaPar )
+       case(ixPar%zsk)
+         checkDone(iParm)=.true. 
+         xPar= zsk( ParTemp(ixPar%phi)%varData,ParTemp(ixPar%fc)%varData,ParTemp(ixPar%wp)%varData,gammaPar )
+       case(ixPar%zpk)
+         checkDone(iParm)=.true. 
+         xPar= zpk( ParTemp(ixPar%ks)%varData,ParTemp(ixPar%myu)%varData,hslyrs,gammaPar )
+       case(ixPar%pfree)
+         checkDone(iParm)=.true. 
+         xPar= pfree( ParTemp(ixPar%phi)%varData,ParTemp(ixPar%wp)%varData,gammaPar )
+       case(ixPar%zperc)
+         if(.not.checkDone(ixPar%twm))then;ierr=10;message=trim(message)//'need to process "twm" before "pfree"';return;endif 
+         if(.not.checkDone(ixPar%fsm))then;ierr=10;message=trim(message)//'need to process "fsm" before "pfree"';return;endif 
+         if(.not.checkDone(ixPar%zsk))then;ierr=10;message=trim(message)//'need to process "zsk" before "pfree"';return;endif 
+         if(.not.checkDone(ixPar%fpm))then;ierr=10;message=trim(message)//'need to process "fpm" before "pfree"';return;endif 
+         if(.not.checkDone(ixPar%zpk))then;ierr=10;message=trim(message)//'need to process "zpk" before "pfree"';return;endif 
+         checkDone(iParm)=.true. 
+         xPar= zperc(ParTemp(ixPar%twm)%varData,ParTemp(ixPar%fsm)%varData,ParTemp(ixPar%zsk)%varData,ParTemp(ixPar%fpm)%varData,ParTemp(ixPar%zsk)%varData)
+       case(ixPar%rexp)
+         checkDone(iParm)=.true. 
+         xPar= rexp( ParTemp(ixPar%wp)%varData,gammaPar )
      end select ! end of parameter case
      end associate
   end do ! end of parameter loop
@@ -586,6 +624,226 @@ function WpwpFrac( wp_in, phi_in, gammaPar)
     WpwpFrac = g1*wp_in/phi_in
   else where
     wpwpFrac = dmiss
+  end where
+  end associate
+  return
+end function
+
+! ************
+! TWM parameter (UZTWM for top layer and LZTWM for bottom layer)
+! *********************************************************************
+function twm( fc_in, wp_in, h_in )
+  implicit none
+  ! input
+  real(dp), intent(in) :: fc_in(:,:)                       ! input: field capacity [-]           
+  real(dp), intent(in) :: wp_in(:,:)                       ! input: wilting point [-]
+  real(dp), intent(in) :: h_in(:,:)                        ! input: thickness of layer [mm]
+  ! local 
+  real(dp)             :: twm(size(wp_in,1),size(wp_in,2)) ! output: tension water maximum [mm]
+
+  where ( wp_in/=dmiss .and. fc_in/=dmiss ) 
+    twm=(fc_in-wp_in)*h_in*1000.0_dp  ! convert m to mm 
+  else where
+    twm=dmiss
+  end where
+  return
+end function 
+
+! *********************************************************************
+! FWM parameter (UZFWM for top layer and LZFWM for bottom layer)
+! *********************************************************************
+function fwm( phi_in, fc_in, h_in )
+  implicit none
+  ! input
+  real(dp), intent(in) :: phi_in(:,:)                      ! input: porosity [-]
+  real(dp), intent(in) :: fc_in(:,:)                       ! input: field capacity [-]           
+  real(dp), intent(in) :: h_in(:,:)                        ! input: thickness of layer [mm]
+  ! local 
+  real(dp)             :: fwm(size(fc_in,1),size(fc_in,2)) ! output: free water maximum [mm]
+
+  where ( phi_in/=dmiss .and. fc_in/=dmiss .and. h_in/=dmiss ) 
+    fwm=(phi_in-fc_in)*h_in*1000.0_dp ! convert m to mm
+  else where
+    fwm=dmiss
+  end where
+  return
+end function 
+
+! *********************************************************************
+! FSM parameter (LZFSM for bottom layer)
+! *********************************************************************
+function fsm( fwm_in, phi_in, wp_in, gammaPar )
+  implicit none
+  ! input
+  real(dp), intent(in)  :: fwm_in(:,:)   ! Free water maximum 
+  real(dp), intent(in)  :: phi_in(:,:)   ! Porosity
+  real(dp), intent(in)  :: wp_in(:,:)    ! Wilting point
+  real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
+  ! local 
+  real(dp)             :: fsm(size(wp_in,1),size(wp_in,2)) ! output: supplementary free water maximum [mm]
+
+  associate(g1=>gammaPar(ixPar%fsm1gamma1))
+  where ( phi_in/=dmiss .and. wp_in/=dmiss .and. fwm_in/=dmiss ) 
+    fsm=fwm_in*(wp_in/phi_in)**g1
+  else where
+    fsm=dmiss
+  end where
+  end associate
+  return
+end function 
+
+! *********************************************************************
+! FPM parameter (LZFPM for bottom layer)
+! *********************************************************************
+function fpm( fwm_in, fsm_in )
+  implicit none
+  ! input
+  real(dp), intent(in)  :: fwm_in(:,:)   ! Free water maximum 
+  real(dp), intent(in)  :: fsm_in(:,:)   ! supplementary Free water maximum 
+  ! local 
+  real(dp)             :: fpm(size(fwm_in,1),size(fwm_in,2)) ! output: primary free water maximum [mm]
+
+  where ( fwm_in/=dmiss .and. fsm_in/=dmiss )
+    fpm=fwm_in-fsm_in
+  else where
+    fpm=dmiss
+  end where
+  return
+end function 
+
+! *********************************************************************
+! ZK parameter (UZK for top layer)
+! *********************************************************************
+function zk( phi_in, fc_in, gammaPar )
+  implicit none
+  ! input
+  real(dp), intent(in) :: phi_in(:,:)   ! Porosity
+  real(dp), intent(in) :: fc_in(:,:)    ! field capacity 
+  real(dp), intent(in) :: gammaPar(:)   ! input: gamma parameter array 
+  ! local 
+  real(dp)             :: zk(size(fc_in,1),size(fc_in,2)) ! output: draw coefficient from free water content [/day] 
+
+  associate(g1=>gammaPar(ixPar%zk1gamma1))
+  where ( phi_in/=dmiss .and. fc_in/=dmiss ) 
+    zk=1.0_dp-(fc_in/phi_in)**g1
+  else where
+    zk=dmiss
+  end where
+  end associate
+  return
+end function 
+
+! *********************************************************************
+! ZSK parameter (LZSK for top layer)
+! *********************************************************************
+function zsk( phi_in, fc_in, wp_in, gammaPar )
+  implicit none
+  ! input
+  real(dp), intent(in) :: phi_in(:,:)   ! Porosity
+  real(dp), intent(in) :: fc_in(:,:)    ! field capacity 
+  real(dp), intent(in) :: wp_in(:,:)    ! Wilting point
+  real(dp), intent(in) :: gammaPar(:)   ! input: gamma parameter array 
+  ! local 
+  real(dp)             :: zsk(size(fc_in,1),size(fc_in,2)) ! output: draw coefficient from supplementary free water content [/day] 
+
+  associate(g1=>gammaPar(ixPar%zsk1gamma1),&
+            g2=>gammaPar(ixPar%zsk1gamma2))
+  where ( phi_in/=dmiss .and. fc_in/=dmiss .and. wp_in/=dmiss ) 
+    zsk=(1.0_dp-(fc_in/phi_in)**g1)/(1.0_dp+g2*(1.0_dp-wp_in)) 
+  else where
+    zsk=dmiss
+  end where
+  end associate
+  return
+end function 
+
+! *********************************************************************
+! ZPK parameter (LZPK for top layer)
+! *********************************************************************
+function zpk( ks_in, h_in, myu_in, gammaPar )
+  implicit none
+  ! input
+  real(dp), intent(in) :: ks_in(:,:)                       ! Ksat [mm/s]
+  real(dp), intent(in) :: myu_in(:,:)                      ! specific yield [-]
+  real(dp), intent(in) :: h_in(:,:)                        ! input: thickness of layer [mm]
+  real(dp), intent(in) :: gammaPar(:)                      ! input: gamma parameter array 
+  ! local 
+  real(dp)             :: zpk(size(ks_in,1),size(ks_in,2)) ! output: draw coefficient from primary free water content [/day] 
+  real(dp)             :: dt                               ! time step of the simulation [hr]
+
+  dt=24.0_dp ! unit: hr
+  associate(g1=>gammaPar(ixPar%zpk1gamma1))
+  where ( ks_in/=dmiss .and. myu_in/=dmiss .and. h_in/= dmiss ) 
+    zpk=1.0_dp-exp(-1.0_dp*g1**2.0_dp*pi*ks_in*60.0_dp*h_in*1000.0_dp*dt/myu_in)
+  else where
+    zpk=dmiss
+  end where
+  end associate
+  return
+end function 
+
+! *********************************************************************
+! PFREE parameter 
+! *********************************************************************
+function pfree( phi_in, wp_in, gammaPar)
+  implicit none
+  ! input
+  real(dp), intent(in) :: phi_in(:,:)                        ! input: wilting point [-]
+  real(dp), intent(in) :: wp_in(:,:)                         ! input: wilting point [-]
+  real(dp), intent(in) :: gammaPar(:)                         ! input: gamma parameter array 
+  ! local 
+  real(dp)             :: pfree(size(wp_in,1),size(wp_in,2)) ! output: tension water maximum [mm]
+
+  associate(g1=>gammaPar(ixPar%pfree1gamma1))
+  where ( phi_in/=dmiss .and. wp_in/=dmiss ) 
+    pfree=(wp_in/phi_in)**g1
+  else where 
+    pfree=dmiss
+  end where
+  end associate
+  return
+end function
+
+! *********************************************************************
+! ZPERC parameter 
+! *********************************************************************
+function zperc( twm_in, fsm_in, zsk_in, fpm_in, zpk_in )
+  implicit none
+  ! input
+  real(dp), intent(in) :: twm_in(:,:)   ! input: tension water maximum [mm] 
+  real(dp), intent(in) :: fsm_in(:,:)   ! input: supplemental free water maximum [mm] 
+  real(dp), intent(in) :: zsk_in(:,:)   ! input: flow rate from supplemental free water maximum [day-1] 
+  real(dp), intent(in) :: fpm_in(:,:)   ! input: primary free water maximum [mm] 
+  real(dp), intent(in) :: zpk_in(:,:)   ! input: flow rate from primary free water maximum [day-1] 
+  ! output 
+  real(dp)             :: zperc(size(twm_in,1),size(twm_in,2))    ! output: ratio of max and min percolation rates
+  ! local 
+                       
+  where ( twm_in/=dmiss .and. fsm_in/=dmiss ) 
+    zperc=(twm_in+fsm_in*(1.0_dp-zsk_in)+fsm_in*(1.0_dp-zpk_in))/ &
+          (fsm_in*zsk_in+fpm_in*zpk_in)
+  else where
+    zperc=dmiss
+  end where
+  return
+end function
+
+! *********************************************************************
+! REXP parameter 
+! *********************************************************************
+function rexp( wp_in, gammaPar)
+  implicit none
+  ! input
+  real(dp), intent(in) :: wp_in(:,:)                       ! input: wilting point [-]
+  real(dp), intent(in) :: gammaPar(:)                         ! input: gamma parameter array 
+  ! local 
+  real(dp)             :: rexp(size(wp_in,1),size(wp_in,2)) ! output: tension water maximum [mm]
+  
+  associate(g1=>gammaPar(ixPar%rexp1gamma1))
+  where ( wp_in/=dmiss ) 
+    rexp=sqrt(wp_in/(g1-0.001))
+  else where
+    rexp=dmiss
   end where
   end associate
   return

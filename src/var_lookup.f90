@@ -57,12 +57,19 @@ MODULE var_lookup
    integer(i4b)     :: SD1gamma1       = imiss  ! 
    integer(i4b)     :: WcrFrac1gamma1  = imiss  ! 
    integer(i4b)     :: WpwpFrac1gamma1 = imiss  ! 
+   integer(i4b)     :: fsm1gamma1      = imiss  ! 
+   integer(i4b)     :: zk1gamma1       = imiss  ! 
+   integer(i4b)     :: zsk1gamma1      = imiss  ! 
+   integer(i4b)     :: zsk1gamma2      = imiss  ! 
+   integer(i4b)     :: zpk1gamma1      = imiss  ! 
+   integer(i4b)     :: pfree1gamma1    = imiss  ! 
+   integer(i4b)     :: rexp1gamma1     = imiss  ! 
    ! Beta parameter
    integer(i4b)     :: uhshape         = imiss  ! uh gamma pdf shape parameter
    integer(i4b)     :: uhscale         = imiss  ! uh gamma pdf scale parameter
    integer(i4b)     :: ks              = imiss  ! Saturated conductivity 
    integer(i4b)     :: bd              = imiss  ! bulk density
-   integer(i4b)     :: sd              = imiss ! soil density
+   integer(i4b)     :: sd              = imiss  ! soil density
    integer(i4b)     :: psis            = imiss  ! saturation matric potential 
    integer(i4b)     :: b               = imiss  ! retension courve slope in log space
    integer(i4b)     :: phi             = imiss  ! porosity 
@@ -175,8 +182,7 @@ MODULE var_lookup
                                                                                  51,52,53,54,55,56,57,58,59,60,&
                                                                                  61,62,63,64,65,66,67,68,69,70,&
                                                                                  71,72,73,74,75,76,77,78,79,80.&
-                                                                                 81,82,83)
-
+                                                                                 81,82,83,84,85,86,87,88,89,90)
  type(iLook_VarMapData),  public,parameter :: ixVarMapData   = iLook_VarMapData  (1,2,3)
  type(iLook_VarSoilData), public,parameter :: ixVarSoilData  = iLook_VarSoilData (1,2,3,4,5,6,7,8,9,10)
  type(iLook_VarVegData),  public,parameter :: ixVarVegData   = iLook_VarVegData  (1,2,3,4)
@@ -188,7 +194,7 @@ MODULE var_lookup
 ! define size of data vectors
 ! ***********************************************************************************************************
 ! Number of vairables defined
- integer(i4b),parameter,public    :: nPar = 83 
+ integer(i4b),parameter,public    :: nPar = 90 
  integer(i4b),parameter,public    :: nVarMapData=3
  integer(i4b),parameter,public    :: nVarSoilData=10
  integer(i4b),parameter,public    :: nVarVegData=4
