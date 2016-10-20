@@ -7,8 +7,8 @@
 !> 1 = run only MPR and skip model calibration or run
 mprOnly                = 0
 !> Option to run only MPR to compute parameter values 
+!> 0 = only run model with parameter
 !> 1 = calibrate with DDS
-!> 2 = only run model with parameter
 opt                    = 1
 /
 
@@ -30,8 +30,6 @@ vclass_table           = "NOAHMP_veg_type.txt"     ! name of vegetation class lo
 dname_spoly            = "polyid"                  ! name of soil polygon dimension in soil netCDf
 dname_slyrs            = "layer"                   ! name of soil layer dimension in soil data in soil netCDf
 dname_vpoly            = "polyid"                  ! name of vegetation polygon dimension in vegetation netCDf
-dname_mhru             = "hru"                     ! name of model hru dimension
-dname_mlyrs            = "lyr"                     ! name of model layer dimension
 /
 
 !---------------------------------------

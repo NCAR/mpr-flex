@@ -34,8 +34,6 @@ module public_var
   character(len=strLen),public    :: dname_spoly 
   character(len=strLen),public    :: dname_slyrs
   character(len=strLen),public    :: dname_vpoly 
-  character(len=strLen),public    :: dname_mhru
-  character(len=strLen),public    :: dname_mlyrs
   ! calconfig 
   character(len=strLen),public    :: filelist_name
   character(len=strLen),public    :: cellfrac_name

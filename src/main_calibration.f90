@@ -33,6 +33,8 @@ program main_calibration
   call param_setup(param, parMask)
   ! optimization starts
   select case (opt)
+    case (0)     ! just output ascii of sim and obs series
+      call opt_run(objfn, restrt_file)
     case (1)     ! DDS
       call dds(objfn,                   & ! function to get object function
                param(:,1),              & ! initial parameter values
@@ -45,8 +47,6 @@ program main_calibration
                maxiter=maxn,            & ! maximum iteration
                maxit=isMax,             & ! minimzation (0) or maximization (1)
                tmp_file=state_file)       !
-    case (2)     ! just output ascii of sim and obs series 
-      call opt_run(objfn, restrt_file) 
     case default
       print*, 'integer to specify optimization scheme is not valid' 
   end select 

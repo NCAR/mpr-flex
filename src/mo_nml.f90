@@ -25,9 +25,7 @@ module mo_nml
                           vclass_table,            &
                           dname_spoly,             &
                           dname_slyrs,             &              
-                          dname_vpoly,             &
-                          dname_mhru,              &              
-                          dname_mlyrs              
+                          dname_vpoly
 ! calibration run specification 
   namelist / calconfig /  filelist_name,           &
                           cellfrac_name,           &

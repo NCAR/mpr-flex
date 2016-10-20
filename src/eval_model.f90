@@ -472,6 +472,7 @@ subroutine calc_sigBias_region(sim, obs, sigBias)
   integer(i4b)                         :: idx(1)
   integer(i4b)                         :: nTime            
   integer(i4b)                         :: offset
+  real(dp)                             :: pBias
   real(dp)                             :: pBiasFHV
   real(dp)                             :: pBiasFLV
   real(dp)                             :: pBiasFMS
@@ -503,10 +504,11 @@ subroutine calc_sigBias_region(sim, obs, sigBias)
     obsBasin=obs(offset+start_cal:offset+end_cal)+valMin
     call sort(simBasin)
     call sort(obsBasin)
-    pBiasFMS=((log(simBasin(i80))-log(simBasin(i30)) )-(log(obsBasin(i80))-log(obsBasin(i30))))/( log(obsBasin(i80))-log(obsBasin(i30)) )*100.0_dp
-    pBiasFHV=sum(simBasin(i80:nTime)-obsBasin(i80:nTime))/sum(obsBasin(i80:nTime))*100.0_dp
-    pBiasFLV=(sum(log(simBasin(1:i30))-log(simBasin(1)) )-sum(log(obsBasin(1:i30))-log(obsBasin(1))))/sum( log(obsBasin(1:i30))-log(obsBasin(1)) )*100.0_dp
-    basin_sigBias(iBasin+1) = abs(pBiasFHV)+abs(pBiasFLV)+abs(pBiasFMS)
+    pBias=sum( sim(ibasin+1,:)-obs(offset+start_cal:offset+end_cal) )/sum(obs(offset+start_cal:offset+end_cal))
+    pBiasFMS=((log(simBasin(i80))-log(simBasin(i30)) )-(log(obsBasin(i80))-log(obsBasin(i30))))/( log(obsBasin(i80))-log(obsBasin(i30)) )
+    pBiasFHV=sum(simBasin(i80:nTime)-obsBasin(i80:nTime))/sum(obsBasin(i80:nTime))
+    pBiasFLV=(sum(log(simBasin(1:i30))-log(simBasin(1)) )-sum(log(obsBasin(1:i30))-log(obsBasin(1))))/sum( log(obsBasin(1:i30))-log(obsBasin(1)) )
+    basin_sigBias(iBasin+1) = abs(pBiasFHV)+abs(pBiasFLV)+abs(pBiasFMS) 
   enddo
   sigBias = sum(basin_sigBias*obj_fun_weight)
   return
