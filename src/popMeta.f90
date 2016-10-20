@@ -61,7 +61,7 @@ contains
     parMaster(ixPar%myu1gamma1)      = par_meta('myu1gamma1'     ,     3.5_dp,    0.8_dp,    0.4_dp,"myu"          , "soil", .False.,      "na",       "na")
     parMaster(ixPar%myu1gamma2)      = par_meta('myu1gamma2'     ,    1.66_dp,    0.8_dp,    0.4_dp,"myu"          , "soil", .False.,      "na",       "na")
     ! total depth multiplier
-    parMaster(ixPar%z1gamma1)        = par_meta('z1gamma1'       ,     1.0_dp,    0.1_dp,    0.4_dp,"z"            , "soil", .False.,      "na",       "na")
+    parMaster(ixPar%z1gamma1)        = par_meta('z1gamma1'       ,     1.0_dp,    0.1_dp,    4.0_dp,"z"            , "soil", .False.,      "na",       "na")
     ! layer fractions
     parMaster(ixPar%h1gamma1)        = par_meta('h1gamma1'       ,    0.05_dp,   0.01_dp,    0.1_dp,"h"            , "soil", .False.,      "na",       "na")
     parMaster(ixPar%h1gamma2)        = par_meta('h1gamma2'       ,     0.3_dp,   0.12_dp,    0.5_dp,"h"            , "soil", .False.,      "na",       "na")
@@ -76,8 +76,8 @@ contains
     parMaster(ixPar%exp1gamma2)      = par_meta('exp1gamma2'     ,     2.0_dp,    0.8_dp,    1.2_dp,"exp"          , "soil", .False.,      "na",       "na")
     parMaster(ixPar%bbl1gamma1)      = par_meta('bbl1gamma1'     ,    0.32_dp,    0.8_dp,    1.2_dp,"bbl"          , "soil", .False.,      "na",       "na")
     parMaster(ixPar%bbl1gamma2)      = par_meta('bbl1gamma2'     ,     4.2_dp,    0.8_dp,    1.2_dp,"bbl"          , "soil", .False.,      "na",       "na")
-    parMaster(ixPar%BD1gamma1)       = par_meta('BD1gamma1'      ,     1.0_dp,    0.9_dp,    1.1_dp,"BD"           , "soil", .False.,      "na",       "na")
-    parMaster(ixPar%SD1gamma1)       = par_meta('SD1gamma1'      ,     1.0_dp,    0.9_dp,    1.1_dp,"SD"           , "soil", .False.,      "na",       "na")
+    parMaster(ixPar%bd1gamma1)       = par_meta('bd1gamma1'      ,     1.0_dp,    0.9_dp,    1.1_dp,"bd"           , "soil", .False.,      "na",       "na")
+    parMaster(ixPar%sd1gamma1)       = par_meta('sd1gamma1'      ,     1.0_dp,    0.9_dp,    1.1_dp,"sd"           , "soil", .False.,      "na",       "na")
     parMaster(ixPar%WcrFrac1gamma1)  = par_meta('WcrFrac1gamma1' ,     1.0_dp,    0.8_dp,    1.2_dp,"WcrFrac"      , "soil", .False.,      "na",       "na")
     parMaster(ixPar%WpwpFrac1gamma1) = par_meta('WpwpFrac1gamma1',     1.0_dp,    0.8_dp,    1.2_dp,"WcrFrac"      , "soil", .False.,      "na",       "na")
     parMaster(ixPar%fsm1gamma1)      = par_meta('fsm1gamma1',          1.0_dp,    0.8_dp,    1.2_dp,"fwm"          , "soil", .False.,      "na",       "na")

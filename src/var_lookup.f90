@@ -53,8 +53,8 @@ MODULE var_lookup
    integer(i4b)     :: exp1gamma2      = imiss  ! 
    integer(i4b)     :: bbl1gamma1      = imiss  ! 
    integer(i4b)     :: bbl1gamma2      = imiss  ! 
-   integer(i4b)     :: BD1gamma1       = imiss  ! 
-   integer(i4b)     :: SD1gamma1       = imiss  ! 
+   integer(i4b)     :: bd1gamma1       = imiss  ! 
+   integer(i4b)     :: sd1gamma1       = imiss  ! 
    integer(i4b)     :: WcrFrac1gamma1  = imiss  ! 
    integer(i4b)     :: WpwpFrac1gamma1 = imiss  ! 
    integer(i4b)     :: fsm1gamma1      = imiss  ! 
@@ -181,7 +181,7 @@ MODULE var_lookup
                                                                                  41,42,43,44,45,46,47,48,49,50,&
                                                                                  51,52,53,54,55,56,57,58,59,60,&
                                                                                  61,62,63,64,65,66,67,68,69,70,&
-                                                                                 71,72,73,74,75,76,77,78,79,80.&
+                                                                                 71,72,73,74,75,76,77,78,79,80,&
                                                                                  81,82,83,84,85,86,87,88,89,90)
  type(iLook_VarMapData),  public,parameter :: ixVarMapData   = iLook_VarMapData  (1,2,3)
  type(iLook_VarSoilData), public,parameter :: ixVarSoilData  = iLook_VarSoilData (1,2,3,4,5,6,7,8,9,10)

@@ -68,8 +68,8 @@ contains
     case('exp1gamma2');       get_ixPar = ixPar%exp1gamma2      ! exponent in Campbell equatin for Kh
     case('bbl1gamma1');       get_ixPar = ixPar%bbl1gamma1      ! bubbling pressure of soil [cm] 
     case('bbl1gamma2');       get_ixPar = ixPar%bbl1gamma2      ! bubbling pressure of soil [cm] 
-    case('SD1gamma1');        get_ixPar = ixPar%SD1gamma1       ! soil particle density [kg/m^3]
-    case('BD1gamma1');        get_ixPar = ixPar%BD1gamma1       ! soil particle density [kg/m^3]
+    case('sd1gamma1');        get_ixPar = ixPar%sd1gamma1       ! soil particle density [kg/m^3]
+    case('bd1gamma1');        get_ixPar = ixPar%bd1gamma1       ! soil particle density [kg/m^3]
     case('WcrFrac1gamma1');   get_ixPar = ixPar%WcrFrac1gamma1  ! Fractional soil moisture content at critical point [-] 
     case('WpwpFrac1gamma1');  get_ixPar = ixPar%WpwpFrac1gamma1 ! Fractional soil moisture content at wilting point [-]  
     case('fsm1gamma1');       get_ixPar = ixPar%fsm1gamma1      ! 

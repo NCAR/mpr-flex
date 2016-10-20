@@ -158,7 +158,7 @@ subroutine calc_rmse_region(sim, obs, rmse)
     offset = ibasin*sim_len
     !then run from the starting calibration point to the ending calibration point
     nTime=end_cal-start_cal+1
-    basin_rmse(ibasin+1) = sqrt( sum((simIn(ibasin+1,start_cal:end_cal-1)-obsIn(offset+start_cal:offset+end_cal-1))**2)/real(nTime) )
+    basin_rmse(ibasin+1) = sqrt( sum((simIn(ibasin+1,start_cal:end_cal)-obsIn(offset+start_cal:offset+end_cal))**2)/real(nTime) )
   enddo
   rmse = sum(basin_rmse*obj_fun_weight)
   return
@@ -393,9 +393,6 @@ subroutine calc_kge_region( sim, obs, kge)
   return
 end subroutine
 
-!******************************
-! compute pearson correlation coefficient 
-!******************************
 subroutine pearsn(x,y,r)
   implicit none
   !input variables
@@ -512,10 +509,6 @@ subroutine calc_sigBias_region(sim, obs, sigBias)
     basin_sigBias(iBasin+1) = abs(pBiasFHV)+abs(pBiasFLV)+abs(pBiasFMS)
   enddo
   sigBias = sum(basin_sigBias*obj_fun_weight)
-  print*,'p=',p
-  print*,'obs=',obsBasin
-  print*,'sim=',simBasin
-  stop
   return
 end subroutine
 
@@ -657,12 +650,10 @@ subroutine route_q(qin,qroute,ushape,uscale, err, message)
   nEle=size(qin,1) 
   ! route flow for each basin in the region now
   if (ushape .le. 0.0 .and. uscale .le. 0.0) then 
-    do iEle=1,nEle
-      qroute(iEle,:) = qin(iEle,:)
-    enddo
+    qroute=qin
   else
     do iEle=1,nEle
-      call duamel(qin(iEle,1:sim_len-1), ushape, uscale, 1.0_dp, sim_len-1, qroute(iEle,1:sim_len-1), 0)
+      call duamel(qin(iEle,1:sim_len), ushape, uscale, 1.0_dp, sim_len, qroute(iEle,1:sim_len), 0)
     enddo
   end if
 end subroutine route_q

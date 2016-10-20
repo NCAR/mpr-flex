@@ -1,5 +1,5 @@
 !---------------------------------------
-! Run configuration
+! General run configuration
 !---------------------------------------
 &runconfig
 !> Option to run only MPR to compute parameter values
@@ -18,22 +18,25 @@ opt                    = 1
 &mprconfig
 mpr_input_dir          = "/home/mizukami/MPR/input/hcdn/"
 mpr_output_dir         = "/d3/mizukami/hydro_params/vic_regionalization/upscale_hcdn/test/01022500/params/" 
-fname_soil             = "statsgo_v4.nc"
-fname_veg              = "modis.vege.noahmp.nc"
-fname_smapping         = "statsgo_HCDN.sub.nc"
-fname_vmapping         = "modis5.6km_HCDN.sub.nc"
-dname_overSpoly        = "overlapPoly"
-dname_overVpoly        = "overlapPoly"
-dname_hru              = "hru_id"
-sclass_table           = "USDA_soil_class.txt"
-vclass_table           = "NOAHMP_veg_type.txt"
-dname_spoly            = "polyid"
-dname_slyrs            = "layer"
-dname_vpoly            = "polyid"
-dname_mhru             = "hru"
-dname_mlyrs            = "lyr"
+fname_soil             = "statsgo_v4.nc"           ! name soil netCDF
+fname_veg              = "modis.vege.noahmp.nc"    ! name vege netCDF
+fname_smapping         = "statsgo_HCDN.sub.nc"     ! name of mapping netCDF (soil polygon to model hru)
+fname_vmapping         = "modis5.6km_HCDN.sub.nc"  ! name of mapping netCDF  (vege polygon to model hru)
+dname_overSpoly        = "overlapPoly"             ! name of dimension of soil polygon intersectiong hru in soil-hru mapping NetCDf
+dname_overVpoly        = "overlapPoly"             ! name of dimension of vege polygon intersectiong hru in soil-hru mapping NetCDf
+dname_hru              = "hru_id"                  ! name of model hru dimension in mapping netCDF
+sclass_table           = "USDA_soil_class.txt"     ! name of USDA soil class look up table 
+vclass_table           = "NOAHMP_veg_type.txt"     ! name of vegetation class look up table
+dname_spoly            = "polyid"                  ! name of soil polygon dimension in soil netCDf
+dname_slyrs            = "layer"                   ! name of soil layer dimension in soil data in soil netCDf
+dname_vpoly            = "polyid"                  ! name of vegetation polygon dimension in vegetation netCDf
+dname_mhru             = "hru"                     ! name of model hru dimension
+dname_mlyrs            = "lyr"                     ! name of model layer dimension
 /
 
+!---------------------------------------
+! Model Setting 
+!---------------------------------------
 &calconfig
 filelist_name            = "FILELIST"         ! name of ascii listing model output name
 cellfrac_name            = "CELLFRAC"         ! name of ascii listing fraction of all the hru contributing to basin 
@@ -46,10 +49,8 @@ sim_dir                  = "OUTDIR"           ! name of directory where model ou
 obs_name                 = "CALIBFLOW"        ! name of ascii observed flow data
 executable               = "EXE"              ! name of model executable
 basin_objfun_weight_file = "OBJWEIGHT"        ! name of ascii listing weight of each basin that is appplied to basin objective function   
-objfntype                = IDOBJFNC
-calpar                   = "calBeta.txt"      ! name of ascii meta listing calibration parameter
-idModel                  = IDMODEL            ! id of model
-eval_length              = "daily"
+objfntype                = "OBJFNCNAME"       ! name of objective function to be minimized- "nse", "rmse", "kge", "month-nse", "month-rmse", "sigBias"
+calpar                   = "calBeta.txt"      ! name of ascii file listing calibrating parameters
 dt                       = 86400              ! simulation time step [sec]
 sim_len                  = 6940               ! number of simulation time step 
 start_cal                = 3652               ! time step when calibration starts
@@ -60,6 +61,16 @@ Npro                     = 1                  ! number of processors to use
 initcell                 = 1                  ! index of the first cell assigned to each processor
 endcell                  = 1                  ! index of the last cell assigned to each processor
 /
+
+!---------------------------------------
+! Model Setting 
+!---------------------------------------
+&modelconfig
+idModel                  = IDMODEL            ! id of model
+TotNpar                  = NUMPAR             ! total number of soil parameter
+nLyr                     = NUMLYR             ! number of soil layers
+/
+
 !---------------------------------------
 ! DDS parameters
 !---------------------------------------
