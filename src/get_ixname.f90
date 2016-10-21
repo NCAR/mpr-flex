@@ -110,6 +110,7 @@ contains
     case('WcrFrac');          get_ixPar = ixPar%WcrFrac           ! Fractional soil moisture content at critical point [-] 
     case('WpwpFrac');         get_ixPar = ixPar%WpwpFrac          ! Fractional soil moisture content at wilting point [-]  
     case('twm');              get_ixPar = ixPar%twm               ! Tention water content [mm]
+    case('ltwm');             get_ixPar = ixPar%ltwm              ! Tention water content for lower zone [mm]
     case('fwm');              get_ixPar = ixPar%fwm               ! Free water content [mm] 
     case('fsm');              get_ixPar = ixPar%fsm               ! Supplemental free water content [mm] 
     case('fpm');              get_ixPar = ixPar%fpm               ! Primary free water content [mm]

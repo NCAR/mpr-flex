@@ -199,6 +199,7 @@ subroutine replace_soil_param_sac(param, hModel, parMxyMz, adjParam, ierr, messa
       select case( parMaster(ix)%pname )
         case('twm')
           adjParam(iHru,1)  = parMxyMz(iPar)%varData(1,iHru)
+        case('ltwm')
           adjParam(iHru,3)  = parMxyMz(iPar)%varData(nLyr,iHru)
         case('fwm')
           adjParam(iHru,2)  = parMxyMz(iPar)%varData(1,iHru)
