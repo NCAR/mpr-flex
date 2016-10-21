@@ -29,14 +29,14 @@ contains
     ! -----------------------
     !                                                        name,    default, lwr bound, upr bound,    parent beta,   type,    mask, h-upscale, v upscale
     !ks transfer function
-    parMaster(ixPar%ks1gamma1)       = par_meta('ks1gamma1'      ,   -0.6_dp ,   -0.8_dp,   -0.4_dp,"ks"           , "soil", .False.,      "na",       "na")
-    parMaster(ixPar%ks1gamma2)       = par_meta('ks1gamma2'      , 0.0126_dp ,   -0.8_dp,   -0.4_dp,"ks"           , "soil", .False.,      "na",       "na")
-    parMaster(ixPar%ks1gamma3)       = par_meta('ks1gamma3'      ,-0.0064_dp ,   -0.8_dp,   -0.4_dp,"ks"           , "soil", .False.,      "na",       "na")
-    parMaster(ixPar%ks2gamma1)       = par_meta('ks2gamma1'      ,   54.0_dp ,   -0.8_dp,   -0.4_dp,"ks"           , "soil", .False.,      "na",       "na")
-    parMaster(ixPar%ks2gamma2)       = par_meta('ks2gamma2'      ,  -0.07_dp ,   -0.8_dp,   -0.4_dp,"ks"           , "soil", .False.,      "na",       "na")
+    parMaster(ixPar%ks1gamma1)       = par_meta('ks1gamma1'      ,   -0.6_dp ,  -0.66_dp,  -0.54_dp,"ks"           , "soil", .False.,      "na",       "na")
+    parMaster(ixPar%ks1gamma2)       = par_meta('ks1gamma2'      , 0.0126_dp , 0.0113_dp, 0.0139_dp,"ks"           , "soil", .False.,      "na",       "na")
+    parMaster(ixPar%ks1gamma3)       = par_meta('ks1gamma3'      ,-0.0064_dp ,-0.0058_dp,-0.0070_dp,"ks"           , "soil", .False.,      "na",       "na")
+    parMaster(ixPar%ks2gamma1)       = par_meta('ks2gamma1'      ,   54.0_dp ,   48.6_dp,   59.4_dp,"ks"           , "soil", .False.,      "na",       "na")
+    parMaster(ixPar%ks2gamma2)       = par_meta('ks2gamma2'      ,  -0.07_dp , -0.077_dp, -0.063_dp,"ks"           , "soil", .False.,      "na",       "na")
     parMaster(ixPar%ks2gamma3)       = par_meta('ks2gamma3'      , -0.167_dp ,   -0.8_dp,   -0.4_dp,"ks"           , "soil", .False.,      "na",       "na")
     !pororsity transfer function
-    parMaster(ixPar%phi1gamma1)      = par_meta('phi1gamma1'     ,    50.5_dp,   -0.8_dp,   -0.4_dp,"phi"          , "soil", .False.,      "na",       "na")
+    parMaster(ixPar%phi1gamma1)      = par_meta('phi1gamma1'     ,    50.5_dp,   45.5_dp,   55.5_dp,"phi"          , "soil", .False.,      "na",       "na")
     parMaster(ixPar%phi1gamma2)      = par_meta('phi1gamma2'     ,  -0.142_dp,   -0.8_dp,   -0.4_dp,"phi"          , "soil", .False.,      "na",       "na")
     parMaster(ixPar%phi1gamma3)      = par_meta('phi1gamma3'     ,  -0.037_dp,   -0.8_dp,   -0.4_dp,"phi"          , "soil", .False.,      "na",       "na")
     parMaster(ixPar%phi2gamma1)      = par_meta('phi2gamma1'     ,    0.76_dp,   -0.8_dp,   -0.4_dp,"phi"          , "soil", .False.,      "na",       "na")

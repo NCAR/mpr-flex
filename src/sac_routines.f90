@@ -225,6 +225,97 @@ subroutine replace_soil_param_sac(param, hModel, parMxyMz, adjParam, ierr, messa
   return
 end subroutine
 
+subroutine adj_snow_param_sac(multiplier, err, message)
+  use globalData, only: parSubset
+  implicit none
+  !input
+  real(dp),    intent(in)    :: multiplier(:)   ! mulitpliers for calibrating soil parameter 
+  ! output
+  integer(i4b),intent(out)   :: err             ! error code
+  character(*),intent(out)   :: message         ! error message
+  ! Local
+  character(len=strLen)      :: parName         ! parameter name
+  character(len=strLen)      :: rowfmt
+  integer(i4b)               :: iPar,iHru       ! loop index
+  real(dp)                   :: param(:,:)      ! original snow parameters matrix (nHru x nParamInModel) 
+  real(dp)                   :: paramTemp(nHru) ! temporal parameter vector (nHru) 
+  integer(i4b)               :: stat,io
+
+  ! initialize error control
+  err=0; message='adj_snow_param_sac/'
+  !Open original and modified vege parameter files
+  open (UNIT=50,file=origvege_name,form='formatted',status='old',IOSTAT=stat)
+  open (UNIT=51,file=calivege_name,action='write',status='replace' )
+  ! Read original soil parameter file
+  do 
+    read(unit=50,fmt=*,iostat=io) parName, (paramTemp(iHru), iHru=1,nHru)
+    if (io>0) then
+      stop 'something wrong in input'
+    elseif (io<0) then
+      exit
+    else
+      select case(trim(parName))
+        case('scf');   param(:,1)=paramTemp
+        case('mfmax'); param(:,2)=paramTemp
+        case('mfmin'); param(:,3)=paramTemp
+        case('uadj');  param(:,4)=paramTemp
+        case('si');    param(:,5)=paramTemp
+        case('pxtemp');param(:,6)=paramTemp
+        case('nmf');   param(:,7)=paramTemp
+        case('tipm');  param(:,8)=paramTemp
+        case('mbase'); param(:,9)=paramTemp
+        case('plwhc'); param(:,10)=paramTemp
+        case('daygm'); param(:,11)=paramTemp
+        case('adc1');  param(:,12)=paramTemp
+        case('adc2');  param(:,13)=paramTemp
+        case('adc3');  param(:,14)=paramTemp
+        case('adc4');  param(:,15)=paramTemp
+        case('adc5');  param(:,16)=paramTemp
+        case('adc6');  param(:,17)=paramTemp
+        case('adc7');  param(:,18)=paramTemp
+        case('adc8');  param(:,19)=paramTemp
+        case('adc9');  param(:,20)=paramTemp
+        case('adc10'); param(:,21)=paramTemp
+        case('adc11'); param(:,22)=paramTemp
+      end select
+    endif
+  enddo
+  do iPar=1,nParCal
+    select case( parSubset(iPar)%pname )
+      case('scf');    param(:,1)=multiplier(iPar)*param(:,1) 
+      case('mfmax');  param(:,2)=multiplier(iPar)*param(:,1) 
+      case('mfmin');  param(:,3)=multiplier(iPar)*param(:,1) 
+      case('uadj');   param(:,4)=multiplier(iPar)*param(:,1) 
+      case('si');     param(:,5)=multiplier(iPar)*param(:,1) 
+      case('pxtemp'); param(:,6)=multiplier(iPar)*param(:,1) 
+      case('nmf');    param(:,7)=multiplier(iPar)*param(:,1) 
+      case('tipm');   param(:,9)=multiplier(iPar)*param(:,1) 
+      case('plwhc');  param(:,10)=multiplier(iPar)*param(:,1) 
+      case('daygm');  param(:,11)=multiplier(iPar)*param(:,1) 
+    end select
+  enddo
+  write(rowfmt,'(A,I3,A)') 'A, (',nHru,'(1X,F10.5))' 
+  write(51,fmt=trim(rowfmt)) 'uztwm',( param(iHru,1), iHru=1,nHru )
+  write(51,fmt=trim(rowfmt)) 'uzfwm',( param(iHru,2), iHru=1,nHru )
+  write(51,fmt=trim(rowfmt)) 'lztwm',( param(iHru,3), iHru=1,nHru )
+  write(51,fmt=trim(rowfmt)) 'lzfpm',( param(iHru,4), iHru=1,nHru )
+  write(51,fmt=trim(rowfmt)) 'lzfsm',( param(iHru,5), iHru=1,nHru )
+  write(51,fmt=trim(rowfmt)) 'adimp',( param(iHru,6), iHru=1,nHru )
+  write(51,fmt=trim(rowfmt)) 'uzk',  ( param(iHru,7), iHru=1,nHru )
+  write(51,fmt=trim(rowfmt)) 'lzpk', ( param(iHru,8), iHru=1,nHru )
+  write(51,fmt=trim(rowfmt)) 'lzsk', ( param(iHru,9), iHru=1,nHru )
+  write(51,fmt=trim(rowfmt)) 'zperc',( param(iHru,10),iHru=1,nHru )
+  write(51,fmt=trim(rowfmt)) 'rexp', ( param(iHru,11),iHru=1,nHru )
+  write(51,fmt=trim(rowfmt)) 'pctim',( param(iHru,12),iHru=1,nHru )
+  write(51,fmt=trim(rowfmt)) 'pfree',( param(iHru,13),iHru=1,nHru )
+  write(51,fmt=trim(rowfmt)) 'riva', ( param(iHru,14),iHru=1,nHru )
+  write(51,fmt=trim(rowfmt)) 'side', ( param(iHru,15),iHru=1,nHru )
+  write(51,fmt=trim(rowfmt)) 'rserv',( param(iHru,16),iHru=1,nHru )
+  close(UNIT=50)
+  close(UNIT=51)
+  return
+end subroutine
+
 !***************************
 ! Adjust sac soil parameters with multipliers 
 !***************************
