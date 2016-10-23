@@ -8,6 +8,7 @@ module subset_meta
   private
 
   public::get_parm_meta
+  public::total_calParam
   public::param_setup 
   public::check_gammaZ
   public::check_gammaH
@@ -18,9 +19,12 @@ contains
 ! Subroutine: read calibrating parameter metadata from a meta file 
 ! ************************************************************************************************
 subroutine get_parm_meta(infile, err, message)
-  ! used to read parameter list ascii and obtain meta data from master parameter list (paramMaster.f90) 
+  ! used to read parameter list ascii and obtain meta data from master parameter list (popMeta.f90) 
   use data_type,  only:cpar_meta
-  use globalData, only:parMaster, parSubset, gammaSubset, betaInGamma  ! data type definition
+  use globalData, only:parMaster,  & ! meta for all gamma and beta parameters
+                       parSubset,  & ! meta for only parameter listed in input
+                       gammaSubset,& ! meta for only gamma parameters listed in input
+                       betaInGamma   ! list of beta parameter associated with gamma parameters in list
   use ascii_util, only:file_open
   use get_ixname, only:get_ixPar
   implicit none
@@ -87,6 +91,7 @@ subroutine get_parm_meta(infile, err, message)
     parSubset(ixLocal)%ptype    = parMaster(ivar)%ptype
     parSubset(ixLocal)%hups     = parMaster(ivar)%hups
     parSubset(ixLocal)%vups     = parMaster(ivar)%vups
+    parSubset(ixLocal)%perLyr   = parMaster(ivar)%perLyr
     ixLocal = ixLocal+1
     ! extract only gamma parameter list (consider putting this structure in private here)
     associate( parentp => parSubset(ixLocal-1)%beta )
@@ -100,6 +105,7 @@ subroutine get_parm_meta(infile, err, message)
       tempMeta(ixGamma)%ptype    = parMaster(ivar)%ptype
       tempMeta(ixGamma)%hups     = parMaster(ivar)%hups
       tempMeta(ixGamma)%vups     = parMaster(ivar)%vups
+      tempMeta(ixGamma)%perLyr   = parMaster(ivar)%perLyr
       ixGamma = ixGamma+1
     endif
     end associate
@@ -212,22 +218,54 @@ subroutine check_gammaH( err, message)
 end subroutine
 
 ! ************************************************************************************************
+! public subroutine: Count total number of calibrating parameter including each layer parameters 
+! ************************************************************************************************
+subroutine total_calParam( )
+  ! save nParCalSum in public_var
+  use globalData,  only:parSubset
+  implicit none
+  ! local variables
+  integer(i4b)                 :: iPar          ! loop indices
+  
+  nParCalSum=0_i4b
+  do iPar=1,nParCal
+    if (parSubset(iPar)%perLyr)then
+      nParCalSum=nParCalSum+nLyr
+    else
+      nParCalSum=nParCalSum+1
+    endif
+  enddo  
+  return
+end subroutine
+
+! ************************************************************************************************
 ! public subroutine: convert parameter data structure to simple arrays 
 ! ************************************************************************************************
-subroutine param_setup( param, mask)
+subroutine param_setup( param, mask )
   use globalData,  only:parSubset
   implicit none
   ! output variables
   real(dp),dimension(:,:),   intent(out)     :: param 
   logical,dimension(:),      intent(out)     :: mask
   ! local variables
-  integer(i4b)                               :: iPar  ! loop indices
+  integer(i4b)                               :: iPar    ! loop indices
+  integer(i4b)                               :: idx     ! count of calibrating parameter including per layer parameter 
   
+  idx=0_i4b
   do iPar=1,nParCal
-    param(iPar,1) = parSubset(iPar)%val
-    param(iPar,2) = parSubset(iPar)%lwr
-    param(iPar,3) = parSubset(iPar)%upr
-    mask(iPar)    = parSubset(iPar)%flag
+    if (parSubset(iPar)%perLyr)then
+      idx=idx+nLyr
+      param(idx-nLyr+1:idx,1) = parSubset(iPar)%val
+      param(idx-nLyr+1:idx,2) = parSubset(iPar)%lwr
+      param(idx-nLyr+1:idx,3) = parSubset(iPar)%upr
+      mask (idx-nLyr+1:idx)   = parSubset(iPar)%flag
+    else
+      idx=idx+1
+      param(idx,1) = parSubset(iPar)%val
+      param(idx,2) = parSubset(iPar)%lwr
+      param(idx,3) = parSubset(iPar)%upr
+      mask (idx)   = parSubset(iPar)%flag
+    endif
   enddo  
   return
 end subroutine

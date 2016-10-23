@@ -4,7 +4,7 @@ program main_calibration
   use public_var
   use mo_nml,               only: read_nml 
   use popMeta,              only: paramMaster
-  use subset_meta,          only: get_parm_meta,param_setup,check_gammaZ,check_gammaH
+  use subset_meta,          only: get_parm_meta, total_calParam, param_setup, check_gammaZ, check_gammaH
   use mo_dds,               only: dds
   use mo_opt_run,           only: opt_run
   use eval_model,           only: objfn
@@ -28,8 +28,9 @@ program main_calibration
   call check_gammaZ( ierr, cmessage)
   call check_gammaH( ierr, cmessage)
   ! initialize parameter and mask arrays 
-  allocate(param(nParCal,3))
-  allocate(parMask(nParCal))
+  call total_calParam()
+  allocate(param(nParCalSum,3))
+  allocate(parMask(nParCalSum))
   call param_setup(param, parMask)
   ! optimization starts
   select case (opt)

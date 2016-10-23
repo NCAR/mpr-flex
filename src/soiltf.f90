@@ -275,7 +275,7 @@ function D1(slope_in, ks_in, phi_in, h_in, gammaPar)
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
 ! output 
 ! local 
-  real(dp)              :: D1(size(ks_in,1),size(ks_in,2))
+  real(dp)              :: D1(size(ks_in,1),size(ks_in,2)) !output: [day-1]
   real(dp),allocatable  :: slope2d(:,:)
   integer(i4b)          :: n1            ! number of 1st dimension 
   integer(i4b)          :: n2            ! number of 1st dimension 
@@ -295,7 +295,7 @@ function D1(slope_in, ks_in, phi_in, h_in, gammaPar)
   associate(g1=>gammaPar(ixPar%D11gamma1))
   ! compute parameters 
   where ( slope2d /= dmiss .and. Ks_in /= dmiss )
-    D1 = S**(-1)*10**(-1*g1)*Ks_in*(slope2d*0.01)
+    D1 = S**(-1)*10**(-1*g1)*Ks_in*(60*60*24)*(slope2d*0.01)
   else where
     D1 = dmiss
   end where
@@ -317,7 +317,7 @@ function Ds( D1, D3, Dsmax)
  real(dp), intent(in)  :: Dsmax(:,:)    ! ARNO Dsmax parameter [mm/day]
 ! output 
 ! local 
- real(dp)              :: Ds(size(D1,1),size(D1,2))
+ real(dp)              :: Ds(size(D1,1),size(D1,2)) !output: [-]
  real(dp), parameter   :: Ds_min=0.0001_dp
  real(dp), parameter   :: Ds_max=1.0_dp
 
@@ -340,11 +340,11 @@ function D2(slope_in, ks_in, D4_in, gammaPar)
   ! input
   real(dp), intent(in)  :: slope_in(:)   ! slope percent
   real(dp), intent(in)  :: Ks_in(:,:)    ! ksat [mm/s]
-  real(dp), intent(in)  :: D4_in(:,:)    ! VIC D4 paramet
+  real(dp), intent(in)  :: D4_in(:,:)    ! VIC D4 parameter [-]
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
-  real(dp)              :: D2(size(Ks_in,1),size(Ks_in,2))
+  real(dp)              :: D2(size(Ks_in,1),size(Ks_in,2)) ! output [day^-D4]
   real(dp),allocatable  :: slope2d(:,:)
   integer(i4b)          :: n1           ! number of element for 1st dimension
   integer(i4b)          :: n2           ! number of element for 2nd dimension
@@ -363,7 +363,7 @@ function D2(slope_in, ks_in, D4_in, gammaPar)
   associate(g1=>gammaPar(ixPar%D21gamma1))
  ! compute parameters 
   where ( slope2d /= dmiss .and. Ks_in /= dmiss )
-    D2 = S**(-1*D4_in)*10**(-1*g1)*Ks_in*(slope2d*0.01)
+    D2 = S**(-1*D4_in)*10**(-1*g1)*Ks_in*(60*60*24)*(slope2d*0.01)
   else where
     D2 = dmiss
   end where
@@ -398,7 +398,7 @@ function Dsmax( D1,           & ! input:  Nijssen baseflow D1 parameter [day^-1]
   real(dp), parameter   :: Dsmax_max=30.0_dp
 
   where ( phi_in /= dmiss .and. h_in /= dmiss )
-    Dsmax = D2*(phi_in*h_in-D3)**c+D1*(phi_in*h_in)
+    Dsmax = D2*(phi_in*h_in*1000-D3)**c+D1*(phi_in*h_in*1000)
   else where
     Dsmax = dmiss
   end where
@@ -414,12 +414,12 @@ end function
 function D3( fc_in, h_in, gammaPar ) 
   implicit none
   ! input
-  real(dp), intent(in)  :: fc_in(:,:)
-  real(dp), intent(in)  :: h_in(:,:)
+  real(dp), intent(in)  :: fc_in(:,:)    ! input: field capacity [frac]
+  real(dp), intent(in)  :: h_in(:,:)     ! input: layer thickness [m]
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
-  real(dp)              :: D3(size(fc_in,1),size(fc_in,2))
+  real(dp)              :: D3(size(fc_in,1),size(fc_in,2)) !output: [mm]
   real(dp), parameter   :: D3_min=0.0001_dp
   real(dp), parameter   :: D3_max=1000.0_dp
 
@@ -449,12 +449,12 @@ function Ws( D3,         & ! input:  D3 parameter [mm]
   real(dp), intent(in)  :: h_in(:,:)
   ! output 
   ! local 
-  real(dp)              :: Ws(size(D3,1),size(D3,2))
+  real(dp)              :: Ws(size(D3,1),size(D3,2))   ! output [-]
   real(dp), parameter   :: Ws_min=0.05_dp
   real(dp), parameter   :: Ws_max=1.0_dp
 
   where ( phi_in /= dmiss .and. h_in /= dmiss .and. D3 /= dmiss ) 
-    Ws = D3 / phi_in / h_in
+    Ws = D3 / phi_in / (h_in*1000)
   else where
     Ws = dmiss
   end where
@@ -502,11 +502,11 @@ end function cexpt
 function expt( b_in, gammaPar )
   implicit none
   ! input
-  real(dp), intent(in)   :: b_in(:,:)
+  real(dp), intent(in)   :: b_in(:,:)     ! inpuy [-]
   real(dp), intent(in)   :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
-  real(dp)               :: expt(size(b_in,1),size(b_in,2))
+  real(dp)               :: expt(size(b_in,1),size(b_in,2)) ! exponent in campbel equation [-]
 
   associate(g1=>gammaPar(ixPar%exp1gamma1), &
             g2=>gammaPar(ixPar%exp1gamma2))
@@ -568,7 +568,7 @@ end function
 function soilDensity( srho_in, gammaPar )
   implicit none
   ! input
-  real(dp), intent(in)  :: srho_in(:,:)
+  real(dp), intent(in)  :: srho_in(:,:)  ! input: kg/m^3]
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
@@ -590,12 +590,12 @@ end function
 function WcrFrac(fc_in, phi_in, gammaPar)
   implicit none
   ! input
-  real(dp), intent(in)  :: fc_in(:,:)
-  real(dp), intent(in)  :: phi_in(:,:)
+  real(dp), intent(in)  :: fc_in(:,:)    ! input: field capacity [frac]
+  real(dp), intent(in)  :: phi_in(:,:)   ! input: porosity [frac]
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
-  real(dp)              :: WcrFrac(size(fc_in,1),size(fc_in,2)) 
+  real(dp)              :: WcrFrac(size(fc_in,1),size(fc_in,2)) !output: [frac]
   
   associate(g1=>gammaPar(ixPar%WcrFrac1gamma1))
   where ( fc_in /= dmiss .and. phi_in /= dmiss ) 
@@ -613,11 +613,11 @@ end function
 function WpwpFrac( wp_in, phi_in, gammaPar)
   implicit none
   ! input
-  real(dp), intent(in)  :: wp_in(:,:)   ! Wilting point
-  real(dp), intent(in)  :: phi_in(:,:)   ! Porosity
+  real(dp), intent(in)  :: wp_in(:,:)    ! Wilting point [frac]
+  real(dp), intent(in)  :: phi_in(:,:)   ! Porosity [frac]
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! local 
-  real(dp)              :: WpwpFrac(size(wp_in,1),size(wp_in,2)) 
+  real(dp)              :: WpwpFrac(size(wp_in,1),size(wp_in,2)) !output: [frac] 
   
   associate(g1=>gammaPar(ixPar%WpwpFrac1gamma1))
   where ( wp_in /= dmiss .and. phi_in /= dmiss ) 
@@ -717,8 +717,8 @@ end function
 function zk( phi_in, fc_in, gammaPar )
   implicit none
   ! input
-  real(dp), intent(in) :: phi_in(:,:)   ! Porosity
-  real(dp), intent(in) :: fc_in(:,:)    ! field capacity 
+  real(dp), intent(in) :: phi_in(:,:)   ! Porosity [frac]
+  real(dp), intent(in) :: fc_in(:,:)    ! field capacity [frac]
   real(dp), intent(in) :: gammaPar(:)   ! input: gamma parameter array 
   ! local 
   real(dp)             :: zk(size(fc_in,1),size(fc_in,2)) ! output: draw coefficient from free water content [/day] 
@@ -739,9 +739,9 @@ end function
 function zsk( phi_in, fc_in, wp_in, gammaPar )
   implicit none
   ! input
-  real(dp), intent(in) :: phi_in(:,:)   ! Porosity
-  real(dp), intent(in) :: fc_in(:,:)    ! field capacity 
-  real(dp), intent(in) :: wp_in(:,:)    ! Wilting point
+  real(dp), intent(in) :: phi_in(:,:)   ! Porosity [frac]
+  real(dp), intent(in) :: fc_in(:,:)    ! field capacity [frac]
+  real(dp), intent(in) :: wp_in(:,:)    ! Wilting point [frac]
   real(dp), intent(in) :: gammaPar(:)   ! input: gamma parameter array 
   ! local 
   real(dp)             :: zsk(size(fc_in,1),size(fc_in,2)) ! output: draw coefficient from supplementary free water content [/day] 
@@ -765,7 +765,7 @@ function zpk( ks_in, h_in, myu_in, gammaPar )
   ! input
   real(dp), intent(in) :: ks_in(:,:)                       ! Ksat [mm/s]
   real(dp), intent(in) :: myu_in(:,:)                      ! specific yield [-]
-  real(dp), intent(in) :: h_in(:,:)                        ! input: thickness of layer [mm]
+  real(dp), intent(in) :: h_in(:,:)                        ! input: thickness of layer [m]
   real(dp), intent(in) :: gammaPar(:)                      ! input: gamma parameter array 
   ! local 
   real(dp)             :: zpk(size(ks_in,1),size(ks_in,2)) ! output: draw coefficient from primary free water content [/day] 
@@ -788,9 +788,9 @@ end function
 function pfree( phi_in, wp_in, gammaPar)
   implicit none
   ! input
-  real(dp), intent(in) :: phi_in(:,:)                        ! input: wilting point [-]
-  real(dp), intent(in) :: wp_in(:,:)                         ! input: wilting point [-]
-  real(dp), intent(in) :: gammaPar(:)                         ! input: gamma parameter array 
+  real(dp), intent(in) :: phi_in(:,:)                        ! input: porosity [frac]
+  real(dp), intent(in) :: wp_in(:,:)                         ! input: wilting point [frac]
+  real(dp), intent(in) :: gammaPar(:)                        ! input: gamma parameter array 
   ! local 
   real(dp)             :: pfree(size(wp_in,1),size(wp_in,2)) ! output: tension water maximum [mm]
 
@@ -816,7 +816,7 @@ function zperc( twm_in, fsm_in, zsk_in, fpm_in, zpk_in )
   real(dp), intent(in) :: fpm_in(:,:)   ! input: primary free water maximum [mm] 
   real(dp), intent(in) :: zpk_in(:,:)   ! input: flow rate from primary free water maximum [day-1] 
   ! output 
-  real(dp)             :: zperc(size(twm_in,1),size(twm_in,2))    ! output: ratio of max and min percolation rates
+  real(dp)             :: zperc(size(twm_in,1),size(twm_in,2))    ! output: ratio of max and min percolation rates [day-1]
   ! local 
                        
   where ( twm_in/=dmiss .and. fsm_in/=dmiss ) 
@@ -834,7 +834,7 @@ end function
 function rexp( wp_in, gammaPar)
   implicit none
   ! input
-  real(dp), intent(in) :: wp_in(:,:)                       ! input: wilting point [-]
+  real(dp), intent(in) :: wp_in(:,:)                          ! input: wilting point [frac]
   real(dp), intent(in) :: gammaPar(:)                         ! input: gamma parameter array 
   ! local 
   real(dp)             :: rexp(size(wp_in,1),size(wp_in,2)) ! output: tension water maximum [mm]
@@ -860,7 +860,7 @@ function ks( sand_in, clay_in, gammaPar, opt)
   real(dp), intent(in)  :: gammaPar(:)                         ! input: gamma parameter array 
   integer(i2b)          :: opt                                 ! input: option for transfer function form
   ! local 
-  real(dp)              :: ks(size(sand_in,1),size(sand_in,2))
+  real(dp)              :: ks(size(sand_in,1),size(sand_in,2)) ! output: mm/s
   character(len=strLen) :: message                           
 
   ! opt 1: Cosby et al. WRR 1984
@@ -876,7 +876,7 @@ function ks( sand_in, clay_in, gammaPar, opt)
     case(1); 
       where ( sand_in /= dmiss .and. clay_in /= dmiss ) 
         ks = g1 + g2*sand_in + g3*clay_in
-        ks = 10**ks*2.54   ! 2.54 cm/inch. Cosby give Ksat in inch/hr 
+        ks = (10**ks)*25.4/60/60   ! 25.4 mm/inch. Cosby give Ksat in inch/hr 
       else where
         ks = dmiss 
       end where
@@ -899,7 +899,7 @@ function bd( bd_in, gammaPar )
   ! Define variables
   implicit none
   ! input
-  real(dp), intent(in)  :: bd_in(:,:) 
+  real(dp), intent(in)  :: bd_in(:,:)    ! input: bd from dataset [kg/m3]
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
   ! output 
   ! local 
@@ -937,10 +937,10 @@ end function
 function phi(sand_in, clay_in, db_in, gammaPar, opt)      
   implicit none
   ! input
-  real(dp), intent(in)       :: sand_in(:,:)   ! input: sand  
-  real(dp), intent(in)       :: clay_in(:,:)   ! input: clay 
-  real(dp), intent(in)       :: db_in(:,:)     ! input: bulk density 
-  real(dp), intent(in)       :: gammaPar(:)   ! input: gamma parameter array 
+  real(dp), intent(in)       :: sand_in(:,:)   ! input: sand [percent] 
+  real(dp), intent(in)       :: clay_in(:,:)   ! input: clay [percent]
+  real(dp), intent(in)       :: db_in(:,:)     ! input: bulk density [kg/m^3]
+  real(dp), intent(in)       :: gammaPar(:)    ! input: gamma parameter array 
   integer(i2b)               :: opt            ! option for transfer function form
   ! local 
   real(dp)                   :: phi(size(db_in,1),size(db_in,2))  ! estimated porosity [fraction]
@@ -962,7 +962,7 @@ function phi(sand_in, clay_in, db_in, gammaPar, opt)
     select case(opt)
       case(1);  ! Cosby
         where ( sand_in /= dmiss .and. clay_in /= dmiss ) 
-          phi = g1+g2*sand_in+g3*clay_in
+          phi = ( g1+g2*sand_in+g3*clay_in )/100.0_dp
         else where
           phi = dmiss 
         end where
@@ -990,9 +990,9 @@ function fc(sand_in, phi_in, psis_in, b_in, gammaPar, opt)
   ! input
   real(dp), intent(in)       :: sand_in(:,:)   ! input: sand  
   real(dp), intent(in)       :: phi_in(:,:)    ! input: porosity [fraction]  
-  real(dp), intent(in)       :: psis_in(:,:)   ! input: saturation matric potential [ 
+  real(dp), intent(in)       :: psis_in(:,:)   ! input: saturation matric potential [kPa] 
   real(dp), intent(in)       :: b_in(:,:)      ! input: slope of cambell retention curve 
-  real(dp), intent(in)       :: gammaPar(:)   ! input: gamma parameter array 
+  real(dp), intent(in)       :: gammaPar(:)    ! input: gamma parameter array 
   integer(i2b)               :: opt            ! id for transfer function form
   ! output 
   character(len=strLen)      :: message        ! error message
@@ -1069,8 +1069,8 @@ end function
 function ret_curve(sand_in, clay_in, gammaPar, opt)
   implicit none
   ! input
-  real(dp),    intent(in)   :: sand_in(:,:)   ! input: sand  
-  real(dp),    intent(in)   :: clay_in(:,:)   ! input: clay 
+  real(dp),    intent(in)   :: sand_in(:,:)   ! input: sand [percent]  
+  real(dp),    intent(in)   :: clay_in(:,:)   ! input: clay [percent]
   real(dp),    intent(in)   :: gammaPar(:)    ! input: gamma parameter array 
   integer(i2b)              :: opt            ! input: option for transfer function form
   ! local 

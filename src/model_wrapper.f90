@@ -19,11 +19,12 @@ contains
 
 subroutine adjust_param( idModel, param, multiplier, adjParam, err, message)
   use vic_routines, only: adj_soil_param_vic,adj_vege_param_vic
+  use sac_routines, only: adj_soil_param_sac,adj_snow_param_sac
   implicit none
   ! input 
   integer(i4b),         intent(in)   :: idModel 
   real(dp),             intent(in)   :: param(:,:)    ! original soil parameters 
-  real(dp),             intent(in)   :: multiplier(:) ! calibrating parameters
+  type(var_d),          intent(in)   :: multiplier(:) ! calibrating parameters
   ! output
   real(dp),             intent(out)  :: adjParam(:,:) ! adjusted soil parameter
   integer(i4b),         intent(out)  :: err           ! error code
@@ -41,6 +42,11 @@ subroutine adjust_param( idModel, param, multiplier, adjParam, err, message)
       ! Read/Adjust/Output vege parameters 
       call adj_vege_param_vic( multiplier, err, cmessage)
       if (err/=0)then; message=message//cmessage; return; endif
+    case (2)
+      call adj_soil_param_sac( param, multiplier, adjParam, err, cmessage)
+      if (err/=0)then; message=message//cmessage; return; endif
+      call adj_snow_param_sac( multiplier, err, cmessage)
+      if (err/=0)then; message=message//cmessage; return; endif
     case default; err=10; message=message//"model is not implemented"; return
   end select  
   return
@@ -48,6 +54,7 @@ end subroutine
 
 subroutine replace_param( idModel, param, hModel, parMxyMz, adjParam, err, message)
   use vic_routines, only: replace_soil_param_vic
+  use sac_routines, only: replace_soil_param_sac
   implicit none
   ! input 
   integer(i4b),         intent(in)   :: idModel       ! model id
@@ -64,6 +71,7 @@ subroutine replace_param( idModel, param, hModel, parMxyMz, adjParam, err, messa
   err=0; message="replace_param/"
   select case (idModel)
     case (1); call replace_soil_param_vic( param, hModel, parMxyMz, adjParam,  err, cmessage)
+    case (2); call replace_soil_param_sac( param, hModel, parMxyMz, adjParam,  err, cmessage)
     case default; err=10; message=message//"model is not implemented"; return
   end select  
   if (err/=0)then; message=message//cmessage; return; endif

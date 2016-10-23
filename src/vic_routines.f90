@@ -160,7 +160,8 @@ subroutine replace_soil_param_vic(param, hModel, parMxyMz, adjParam, ierr, messa
   nSoilParModel=size(parMxyMz)
   adjParam=param
   hru: do iHru = 1,nHru
-    ! replace parameter values
+  ! replace parameter values
+    adjParam(iHru,23:25)    = hModel(:,iHru)
     do iPar=1,nSoilParModel
       associate( ix=>get_ixPar(trim(betaInGamma(iPar))) )
       select case( parMaster(ix)%pname )
@@ -170,10 +171,7 @@ subroutine replace_soil_param_vic(param, hModel, parMxyMz, adjParam, ierr, messa
         case('D3');       adjParam(iHru,8)     = parMxyMz(iPar)%varData(nLyr,iHru)
         case('D4');       adjParam(iHru,9)     = parMxyMz(iPar)%varData(nLyr,iHru)
         case('expt');     adjParam(iHru,10:12) = parMxyMz(iPar)%varData(:,iHru)
-        case('ks');       adjParam(iHru,13:15) = parMxyMz(iPar)%varData(:,iHru)
-        case('h1');       adjParam(iHru,23)    = hModel(1,iHru)
-        case('h2');       adjParam(iHru,24)    = hModel(2,iHru)
-        case('h3');       adjParam(iHru,25)    = hModel(3,iHru)
+        case('ks');       adjParam(iHru,13:15) = parMxyMz(iPar)%varData(:,iHru)*60*60*24
         case('bbl');      adjParam(iHru,28:30) = parMxyMz(iPar)%varData(:,iHru)
         case('bd');       adjParam(iHru,34:36) = parMxyMz(iPar)%varData(:,iHru)
         case('sd');       adjParam(iHru,37:39) = parMxyMz(iPar)%varData(:,iHru)
@@ -196,7 +194,7 @@ subroutine adj_soil_param_vic(param, multiplier, adjParam,  err, message)
   implicit none
   !input variables
   real(dp),    intent(in)    :: param(:,:)    ! original soil parameters 
-  real(dp),    intent(in)    :: multiplier(:) ! mulitpliers for calibrating soil parameter 
+  type(var_d), intent(in)    :: multiplier(:) ! mulitpliers for calibrating soil parameter 
   ! output
   real(dp),    intent(out)   :: adjParam(:,:) ! adjusted soil parameter
   integer(i4b),intent(out)   :: err           ! error code
@@ -211,21 +209,21 @@ subroutine adj_soil_param_vic(param, multiplier, adjParam,  err, message)
     ! Modify parameter values
     do iPar=1,nParCal
       select case( parSubset(iPar)%pname )
-        case('binfilt');  adjParam(iHru,5)     = multiplier( iPar )*Param(iHru,5)
-        case('D1');       adjParam(iHru,6)     = multiplier( iPar )*Param(iHru,6)
-        case('D2');       adjParam(iHru,7)     = multiplier( iPar )*Param(iHru,7)
-        case('D3');       adjParam(iHru,8)     = multiplier( iPar )*Param(iHru,8)
-        case('D4');       adjParam(iHru,9)     = multiplier( iPar )*Param(iHru,9)
-        case('expt');     adjParam(iHru,10:12) = multiplier( iPar )*Param(iHru,10:12)
-        case('ks');       adjParam(iHru,13:15) = multiplier( iPar )*Param(iHru,13:15)
-        case('h1');       adjParam(iHru,23)    = multiplier( iPar )*Param(iHru,23)
-        case('h2');       adjParam(iHru,24)    = multiplier( iPar )*Param(iHru,24)
-        case('h3');       adjParam(iHru,25)    = multiplier( iPar )*Param(iHru,25)
-        case('bbl');      adjParam(iHru,28:30) = multiplier( iPar )*Param(iHru,28:30)
-        case('bd');       adjParam(iHru,34:36) = multiplier( iPar )*Param(iHru,34:36)
-        case('sd');       adjParam(iHru,37:39) = multiplier( iPar )*Param(iHru,37:39)
-        case('WcrFrac');  adjParam(iHru,41:43) = multiplier( iPar )*Param(iHru,41:43)
-        case('WpwpFrac'); adjParam(iHru,44:46) = multiplier( iPar )*Param(iHru,44:46)
+        case('binfilt');  adjParam(iHru,5)     = multiplier( iPar )%var(1)*Param(iHru,5)
+        case('D1');       adjParam(iHru,6)     = multiplier( iPar )%var(1)*Param(iHru,6)
+        case('D2');       adjParam(iHru,7)     = multiplier( iPar )%var(1)*Param(iHru,7)
+        case('D3');       adjParam(iHru,8)     = multiplier( iPar )%var(1)*Param(iHru,8)
+        case('D4');       adjParam(iHru,9)     = multiplier( iPar )%var(1)*Param(iHru,9)
+        case('expt');     adjParam(iHru,10:12) = multiplier( iPar )%var(1:nLyr)*Param(iHru,10:12)
+        case('ks');       adjParam(iHru,13:15) = multiplier( iPar )%var(1:nLyr)*Param(iHru,13:15)
+        case('h1');       adjParam(iHru,23)    = multiplier( iPar )%var(1)*Param(iHru,23)
+        case('h2');       adjParam(iHru,24)    = multiplier( iPar )%var(1)*Param(iHru,24)
+        case('h3');       adjParam(iHru,25)    = multiplier( iPar )%var(1)*Param(iHru,25)
+        case('bbl');      adjParam(iHru,28:30) = multiplier( iPar )%var(1:nLyr)*Param(iHru,28:30)
+        case('bd');       adjParam(iHru,34:36) = multiplier( iPar )%var(1:nLyr)*Param(iHru,34:36)
+        case('sd');       adjParam(iHru,37:39) = multiplier( iPar )%var(1:nLyr)*Param(iHru,37:39)
+        case('WcrFrac');  adjParam(iHru,41:43) = multiplier( iPar )%var(1:nLyr)*Param(iHru,41:43)
+        case('WpwpFrac'); adjParam(iHru,44:46) = multiplier( iPar )%var(1:nLyr)*Param(iHru,44:46)
        end select
     end do
     ! Limit parameters to correct possible values without physical meaning: this applies for all configurations
@@ -273,7 +271,7 @@ subroutine adj_vege_param_vic(multiplier, err, message)
   implicit none
 
   ! input variables
-  real(dp),             intent(in) :: multiplier(:)             ! list of calibratin parameters 
+  type(var_d),          intent(in) :: multiplier(:)             ! list of calibratin parameters 
   ! output
   integer(i4b),intent(out)         :: err                       ! error code
   character(*),intent(out)         :: message                   ! error message
@@ -305,7 +303,7 @@ subroutine adj_vege_param_vic(multiplier, err, message)
       ! Modify parameter values
       par:do iPar=1,nParCal
         select case( parSubset(iPar)%pname )
-          case('lai');    laiMonth = multiplier( iPar )*laiMonth
+          case('lai');    laiMonth = multiplier( iPar )%var(1)*laiMonth
         end select
       enddo par
       ! Write the modified parameter file for the entire basin/region for traditional upscaling

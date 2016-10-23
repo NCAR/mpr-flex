@@ -72,4 +72,6 @@ module public_var
   character(len=strLen),public    :: restrt_file    ! restart file
   logical,public                  :: isRestart      ! ues restart option? 
 
+  integer(i8b)                    :: nParCalSum     ! Total number of calibratin parameters including per layer parameters 
+
 end module public_var

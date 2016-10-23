@@ -24,15 +24,17 @@ function objfn( calPar )
   !input variables
   real(dp),             intent(in)  :: calPar(:)              ! parameter in namelist, not necessarily all parameters are calibrated
   !local variables
+  type(var_d)                       :: calParStr(nParCal)     ! parameter storage converted from parameter array 
   real(dp)                          :: objfn                  ! object function value 
   integer(i4b)                      :: iPar                   ! loop index for parameter 
+  integer(i4b)                      :: idx                    ! 
   integer(i4b)                      :: nVegParModel           ! Number of model vege parameters associated with calibrating gamma parameter 
   integer(i4b)                      :: nSoilParModel          ! Number of model soil parameters associated with calibrating gamma parameter 
   logical(lgc),         allocatable :: mask(:)                ! 1D mask
   integer(i4b)                      :: hruID(nHru)            ! Hru ID
   real(dp)                          :: param(nHru,TotNPar)    ! original soil parameter (model hru x parameter)
   real(dp)                          :: adjParam(nHru,TotNPar) ! adjustet soil parameter (model hru x parameter) 
-  real(dp),             allocatable :: paramGamma(:)          ! calibratin gamma parameter
+  type(var_d),          allocatable :: paramGammaStr(:)       ! calibratin gamma parameter
   real(dp),             allocatable :: obs(:)                 ! observation (number of basin*number of time step)
   real(dp),             allocatable :: sim(:,:)               ! instantaneous sim value (hru x number of time step)
   real(dp),             allocatable :: simBasin(:,:)          ! instantaneous basin aggregated sim value (basin x number of time step)
@@ -50,13 +52,35 @@ function objfn( calPar )
   allocate(sim(nHru,sim_len))
   allocate(simBasin(nbasin,sim_len))
   allocate(simBasinRouted(nbasin,sim_len))
+  idx=1
+  do iPar=1,nParCal
+    if (parSubset(iPar)%perLyr)then
+      allocate(calParStr(iPar)%var(nLyr))
+      calParStr(iPar)%var=calPar(idx:idx+nLyr-1)
+      idx=idx+nLyr
+    else
+      allocate(calParStr(iPar)%var(1))
+      calParStr(iPar)%var=calPar(idx)
+      idx=idx+1
+    endif
+  end do
+
+  print*,'calParStr='
+  do iPar=1,nParCal
+  print*,calParStr(iPar)%var
+  end do
+
   call read_hru_id(idModel, hruID, err, cmessage)    ! to get hruID
   if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
-  call read_soil_param(idModel, param, err, cmessage)! to get soil param (=param) 
+  call read_soil_param(idModel, param, err, cmessage)! to read soil param template (=param) 
   if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   adjParam=param
+
+  print*,'original='
+  print*,adjParam
+
   if ( any(parSubset(:)%beta == "beta") )then ! calpar include multipliers for original model parameter 
-    call adjust_param(idModel, param, calPar, adjParam, err, cmessage) ! to output model parameter via multiplier method
+    call adjust_param(idModel, param, calParStr, adjParam, err, cmessage) ! to adjust "param" with multiplier method and output in adjParam 
     if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   endif
   if ( any(parSubset(:)%beta /= "beta") )then ! calPar includes gamma parameters to be used for MPR 
@@ -71,15 +95,22 @@ function objfn( calPar )
     do iPar=1,nVegParModel
       allocate(vegParMxy(iPar)%varData(nHru),stat=err)
     enddo
-    allocate(mask(size(calPar)))
+    allocate(mask(nParCal))
     mask=parSubset(:)%beta/="beta"
-    allocate(paramGamma(count(mask)))
-    paramGamma=pack(calPar,mask)
-    call mpr(idModel, paramGamma, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
+    allocate(paramGammaStr(count(mask)))
+    paramGammaStr=pack(calParStr,mask)
+    do iPar=1,size(paramGammaStr)
+      if (size(paramGammaStr(iPar)%var)>1)then;;print*,trim(message)//'gammaParameter should not have perLayer value';stop;endif
+    enddo
+    call mpr(idModel, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
     call replace_param(idModel, adjparam, hModel, parMxyMz, adjParam, err, cmessage)
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   endif
+
+  print*,'adjsted='
+  print*,adjParam
+
   call write_soil_param(idModel, hruID, adjParam, err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   call system(executable) ! to run hydrologic model   
@@ -94,8 +125,8 @@ function objfn( calPar )
   uscale=parMaster(ixPar%uhscale)%val
   do iPar=1,nParCal
     select case( parSubset(iPar)%pname )
-      case('uhshape');  ushape = calPar( iPar )
-      case('uhscale');  uscale = calPar( iPar )
+      case('uhshape');  ushape = calParStr( iPar )%var(1)
+      case('uhscale');  uscale = calParStr( iPar )%var(1)
      end select
   end do
   call route_q(simBasin, simBasinRouted, ushape, uscale, err, cmessage)

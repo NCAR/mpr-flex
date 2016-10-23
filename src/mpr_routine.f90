@@ -13,7 +13,7 @@ module mpr_routine
 contains
 
 subroutine mpr(idModel,           &     ! input: model ID
-               gammaPar,          &     ! input: array of gamma parameter 
+               gammaParStr,       &     ! input: array of gamma parameter 
                gammaParMeta,      &     ! input: array of gamma parameter metadata
                hModel,            &     ! output: Model layer thickness
                parMxyMz,          &     ! output: MPR derived soil parameter
@@ -41,7 +41,7 @@ subroutine mpr(idModel,           &     ! input: model ID
    implicit none
   ! input
   integer(i4b),         intent(in)   :: idModel 
-  real(dp),             intent(in)   :: gammaPar(:)              ! array of parameter value adjusted with calibration
+  type(var_d),          intent(in)   :: gammaParStr(:)           ! data structure of gamma parameter value adjusted with calibration
   type(cpar_meta),      intent(in)   :: gammaParMeta(:)          ! array of calibrating meta data
   ! output
   real(dp),             intent(out)  :: hModel(:,:)              ! Model layer thickness at model layer x model hru 
@@ -51,7 +51,7 @@ subroutine mpr(idModel,           &     ! input: model ID
   character(len=strLen),intent(out)  :: message                  ! error message 
   ! local
   character(len=strLen)              :: cmessage                 ! error message from downward subroutine
-  integer,     parameter             :: iHruPrint = 2            ! model hru id for which everything is printed for checking
+  integer,     parameter             :: iHruPrint = 1            ! model hru id for which everything is printed for checking
   integer(i4b),parameter             :: nSub=11                  ! max. number of Soil layer within Model layer
   integer(i4b)                       :: iLocal                   ! index of hru array in mapping file that match hru id of interest 
   integer(i4b)                       :: iDummy(1)                ! 1D integer array for temporal storage 
@@ -115,13 +115,13 @@ subroutine mpr(idModel,           &     ! input: model ID
   nSoilParModel=size(betaInGamma)                ! number of soil and vege parameters associated with gamma parameter
   nVegParModel=1
   ! Swap gammaParMasterMeta%val with gammaPar value
-  do iGamma=1,size(gammaPar)
-    gammaParMasterMeta(gammaParMeta(iGamma)%ixMaster)%val=gammaPar(iGamma)
+  do iGamma=1,size(gammaParStr)
+    gammaParMasterMeta(gammaParMeta(iGamma)%ixMaster)%val=gammaParStr(iGamma)%var(1)
   enddo
   call popMprMeta( err, cmessage)   !for sdata_meta, vdata_meta, map_meta
   if(err/=0)then; message=trim(message)//cmessage; return; endif
   hmult=gammaParMasterMeta(ixPar%z1gamma1)%val
-  call pop_hfrac(gammaPar, gammaParMeta, hfrac, err, cmessage) ! to get hfrac 
+  call pop_hfrac(gammaParStr, gammaParMeta, hfrac, err, cmessage) ! to get hfrac 
   if(err/=0)then; message=trim(message)//cmessage; return; endif
   ! Memory allocation
   allocate(parSxySz(nSoilParModel),stat=err);if(err/=0)then; message=trim(message)//'error allocating parSxySz'; return; endif
@@ -535,11 +535,11 @@ subroutine subSoilData(soilData, subPolyID, soilDataLocal, err, message)
 end subroutine 
 
 ! private subroutine:
-subroutine pop_hfrac(gammaPar, gammaParMeta,hfrac, err, message)
+subroutine pop_hfrac(gammaParStr, gammaParMeta,hfrac, err, message)
   use globalData,   only: gammaSubset
   implicit none
   !input variables
-  real(dp),             intent(in)  :: gammaPar(:)
+  type(var_d),          intent(in)  :: gammaParStr(:)
   type(cpar_meta),      intent(in)  :: gammaParMeta(:)
   !output variables
   real(dp),             intent(out) :: hfrac(:)
@@ -555,10 +555,10 @@ subroutine pop_hfrac(gammaPar, gammaParMeta,hfrac, err, message)
   dummy=-999
   !check h parameters - now can chcek up to 5 layers
   do i=1,size(gammaSubset)
-    if (gammaParMeta(i)%pname=="h1gamma1")then;dummy(1)=gammaPar(i);cycle;endif 
-    if (gammaParMeta(i)%pname=="h1gamma2")then;dummy(2)=gammaPar(i);cycle;endif
-    if (gammaParMeta(i)%pname=="h1gamma3")then;dummy(3)=gammaPar(i);cycle;endif
-    if (gammaParMeta(i)%pname=="h1gamma4")then;dummy(4)=gammaPar(i);cycle;endif
+    if (gammaParMeta(i)%pname=="h1gamma1")then;dummy(1)=gammaParStr(i)%var(1);cycle;endif 
+    if (gammaParMeta(i)%pname=="h1gamma2")then;dummy(2)=gammaParStr(i)%var(1);cycle;endif
+    if (gammaParMeta(i)%pname=="h1gamma3")then;dummy(3)=gammaParStr(i)%var(1);cycle;endif
+    if (gammaParMeta(i)%pname=="h1gamma4")then;dummy(4)=gammaParStr(i)%var(1);cycle;endif
   enddo
   mask=(dummy>0)
   if ( count(mask)/=nLyr-1 ) stop 'number of h1gamma prameters mismatch with nLyr'

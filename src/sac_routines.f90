@@ -10,6 +10,7 @@ module sac_routines
   private
 
   public :: adj_soil_param_sac 
+  public :: adj_snow_param_sac 
   public :: replace_soil_param_sac 
   public :: sac_hru_id
   public :: sac_soil_layer
@@ -230,7 +231,7 @@ subroutine adj_snow_param_sac(multiplier, err, message)
   use globalData, only: parSubset
   implicit none
   !input
-  real(dp),    intent(in)    :: multiplier(:)   ! mulitpliers for calibrating soil parameter 
+  type(var_d), intent(in)    :: multiplier(:)   ! mulitpliers for calibrating soil parameter 
   ! output
   integer(i4b),intent(out)   :: err             ! error code
   character(*),intent(out)   :: message         ! error message
@@ -283,16 +284,16 @@ subroutine adj_snow_param_sac(multiplier, err, message)
   enddo
   do iPar=1,nParCal
     select case( parSubset(iPar)%pname )
-      case('scf');    param(:,1)=multiplier(iPar)*param(:,1) 
-      case('mfmax');  param(:,2)=multiplier(iPar)*param(:,1) 
-      case('mfmin');  param(:,3)=multiplier(iPar)*param(:,1) 
-      case('uadj');   param(:,4)=multiplier(iPar)*param(:,1) 
-      case('si');     param(:,5)=multiplier(iPar)*param(:,1) 
-      case('pxtemp'); param(:,6)=multiplier(iPar)*param(:,1) 
-      case('nmf');    param(:,7)=multiplier(iPar)*param(:,1) 
-      case('tipm');   param(:,9)=multiplier(iPar)*param(:,1) 
-      case('plwhc');  param(:,10)=multiplier(iPar)*param(:,1) 
-      case('daygm');  param(:,11)=multiplier(iPar)*param(:,1) 
+      case('scf');    param(:,1)=multiplier(iPar)%var(1)*param(:,1) 
+      case('mfmax');  param(:,2)=multiplier(iPar)%var(1)*param(:,1) 
+      case('mfmin');  param(:,3)=multiplier(iPar)%var(1)*param(:,1) 
+      case('uadj');   param(:,4)=multiplier(iPar)%var(1)*param(:,1) 
+      case('si');     param(:,5)=multiplier(iPar)%var(1)*param(:,1) 
+      case('pxtemp'); param(:,6)=multiplier(iPar)%var(1)*param(:,1) 
+      case('nmf');    param(:,7)=multiplier(iPar)%var(1)*param(:,1) 
+      case('tipm');   param(:,9)=multiplier(iPar)%var(1)*param(:,1) 
+      case('plwhc');  param(:,10)=multiplier(iPar)%var(1)*param(:,1) 
+      case('daygm');  param(:,11)=multiplier(iPar)%var(1)*param(:,1) 
     end select
   enddo
   write(rowfmt,'(A,I3,A)') 'A, (',nHru,'(1X,F10.5))' 
@@ -327,7 +328,7 @@ subroutine adj_soil_param_sac(param, multiplier, adjParam,  err, message)
   implicit none
   !input variables
   real(dp),    intent(in)    :: param(:,:)    ! original soil parameters matrix (nHru x nParamInModel) 
-  real(dp),    intent(in)    :: multiplier(:) ! mulitpliers for calibrating soil parameter 
+  type(var_d), intent(in)    :: multiplier(:) ! mulitpliers for calibrating soil parameter 
   ! output
   real(dp),    intent(out)   :: adjParam(:,:) ! adjusted soil parameter
   integer(i4b),intent(out)   :: err           ! error code
@@ -343,26 +344,26 @@ subroutine adj_soil_param_sac(param, multiplier, adjParam,  err, message)
     do iPar=1,nParCal
       select case( parSubset(iPar)%pname )
         case('twm')
-          adjParam(iHru,1) = multiplier( iPar )*Param(iHru,1)
-          adjParam(iHru,3) = multiplier( iPar )*Param(iHru,3)
+          adjParam(iHru,1) = multiplier( iPar )%var(1)*Param(iHru,1)
+          adjParam(iHru,3) = multiplier( iPar )%var(2)*Param(iHru,3)
         case('fwm')
-          adjParam(iHru,2) = multiplier( iPar )*Param(iHru,2)
+          adjParam(iHru,2) = multiplier( iPar )%var(1)*Param(iHru,2)
         case('fpm')
-          adjParam(iHru,4) = multiplier( iPar )*Param(iHru,4)
+          adjParam(iHru,4) = multiplier( iPar )%var(1)*Param(iHru,4)
         case('fsm')
-          adjParam(iHru,5) = multiplier( iPar )*Param(iHru,5)
+          adjParam(iHru,5) = multiplier( iPar )%var(1)*Param(iHru,5)
         case('zk')
-          adjParam(iHru,7) = multiplier( iPar )*Param(iHru,7)
+          adjParam(iHru,7) = multiplier( iPar )%var(1)*Param(iHru,7)
         case('zpk')
-          adjParam(iHru,8) = multiplier( iPar )*Param(iHru,8)
+          adjParam(iHru,8) = multiplier( iPar )%var(1)*Param(iHru,8)
         case('zsk')
-          adjParam(iHru,9) = multiplier( iPar )*Param(iHru,9)
+          adjParam(iHru,9) = multiplier( iPar )%var(1)*Param(iHru,9)
         case('zperc')
-          adjParam(iHru,10)= multiplier( iPar )*Param(iHru,10)
+          adjParam(iHru,10)= multiplier( iPar )%var(1)*Param(iHru,10)
         case('rexp')
-          adjParam(iHru,11)= multiplier( iPar )*Param(iHru,11)
+          adjParam(iHru,11)= multiplier( iPar )%var(1)*Param(iHru,11)
         case('pfree')
-          adjParam(iHru,13)= multiplier( iPar )*Param(iHru,12)
+          adjParam(iHru,13)= multiplier( iPar )%var(1)*Param(iHru,12)
        end select
     end do
     ! Limit parameters to correct possible values without physical meaning: this applies for all configurations
