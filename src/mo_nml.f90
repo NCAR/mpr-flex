@@ -25,10 +25,8 @@ module mo_nml
                           vclass_table,            &
                           dname_spoly,             &
                           dname_slyrs,             &              
-                          dname_vpoly,             &
-                          dname_mhru,              &              
-                          dname_mlyrs              
-! time control namelist for running models
+                          dname_vpoly
+! calibration run specification 
   namelist / calconfig /  filelist_name,           &
                           cellfrac_name,           &
                           origparam_name,          & 
@@ -50,8 +48,11 @@ module mo_nml
                           Npro,                    & 
                           initcell,                & 
                           endcell,                 &
-                          calpar,                  &
-                          idModel 
+                          calpar
+! Model specification 
+  namelist / modelconfig / idModel,                &
+                           TotNpar,                &    
+                           nLyr
 ! DDS algorithm 
   namelist / DDS / NparCal,     & 
                    rpar,        &
@@ -87,6 +88,9 @@ subroutine read_nml(nmlfile, err, message)
   ! read "calconfig" group 
   read(unit=30, NML=calconfig, iostat=err)
   if (err/=0)then; message=trim(message)//"Error:Read calconfig"; return; endif
+  ! read "modelconfig" group 
+  read(unit=30, NML=modelconfig, iostat=err)
+  if (err/=0)then; message=trim(message)//"Error:Read modelconfig"; return; endif
   ! read DDS group 
   read(UNIT=30, NML=DDS, iostat=err)
   if (err/=0)then; message=trim(message)//"Error:Read DDS"; return; endif

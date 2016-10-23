@@ -4,7 +4,7 @@ program main_calibration
   use public_var
   use mo_nml,               only: read_nml 
   use popMeta,              only: paramMaster
-  use subset_meta,          only: get_parm_meta,param_setup,check_gammaZ,check_gammaH
+  use subset_meta,          only: get_parm_meta, total_calParam, param_setup, check_gammaZ, check_gammaH
   use mo_dds,               only: dds
   use mo_opt_run,           only: opt_run
   use eval_model,           only: objfn
@@ -28,11 +28,14 @@ program main_calibration
   call check_gammaZ( ierr, cmessage)
   call check_gammaH( ierr, cmessage)
   ! initialize parameter and mask arrays 
-  allocate(param(nParCal,3))
-  allocate(parMask(nParCal))
+  call total_calParam()
+  allocate(param(nParCalSum,3))
+  allocate(parMask(nParCalSum))
   call param_setup(param, parMask)
   ! optimization starts
   select case (opt)
+    case (0)     ! just output ascii of sim and obs series
+      call opt_run(objfn, restrt_file)
     case (1)     ! DDS
       call dds(objfn,                   & ! function to get object function
                param(:,1),              & ! initial parameter values
@@ -45,8 +48,6 @@ program main_calibration
                maxiter=maxn,            & ! maximum iteration
                maxit=isMax,             & ! minimzation (0) or maximization (1)
                tmp_file=state_file)       !
-    case (2)     ! just output ascii of sim and obs series 
-      call opt_run(objfn, restrt_file) 
     case default
       print*, 'integer to specify optimization scheme is not valid' 
   end select 

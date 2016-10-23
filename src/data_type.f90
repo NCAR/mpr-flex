@@ -11,15 +11,16 @@ module data_type
 ! Define data structure of master parameter (both gamma and beta) metadata
 ! ***********************************************************************************************************
 type,public  :: par_meta
-  character(len=strLen)        :: pname=''        ! parameter name
-  real(dp)                     :: val  =-999.0_dp ! default bound 
-  real(dp)                     :: lwr  =-999.0_dp ! lower and upper bounds
-  real(dp)                     :: upr  =-999.0_dp ! lower and upper bounds
-  character(len=strLen)        :: beta =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
-  character(len=strLen)        :: ptype=''
-  logical(lgc)                 :: flag =.False.   ! flag to calibrate or not 
-  character(len=strLen)        :: hups =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
-  character(len=strLen)        :: vups =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
+  character(len=strLen)        :: pname  =''        ! parameter name
+  real(dp)                     :: val    =-999.0_dp ! default bound 
+  real(dp)                     :: lwr    =-999.0_dp ! lower and upper bounds
+  real(dp)                     :: upr    =-999.0_dp ! lower and upper bounds
+  character(len=strLen)        :: beta   =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
+  character(len=strLen)        :: ptype  =''
+  logical(lgc)                 :: flag   =.False.   ! flag to calibrate or not 
+  character(len=strLen)        :: hups   =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
+  character(len=strLen)        :: vups   =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
+  logical(lgc)                 :: perLyr =.False.   ! calibrate per layer (only applicable to multiplier method)
 endtype par_meta
 
 ! extended parameter meta data for selected set 

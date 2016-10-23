@@ -24,15 +24,17 @@ function objfn( calPar )
   !input variables
   real(dp),             intent(in)  :: calPar(:)              ! parameter in namelist, not necessarily all parameters are calibrated
   !local variables
+  type(var_d)                       :: calParStr(nParCal)     ! parameter storage converted from parameter array 
   real(dp)                          :: objfn                  ! object function value 
   integer(i4b)                      :: iPar                   ! loop index for parameter 
+  integer(i4b)                      :: idx                    ! 
   integer(i4b)                      :: nVegParModel           ! Number of model vege parameters associated with calibrating gamma parameter 
   integer(i4b)                      :: nSoilParModel          ! Number of model soil parameters associated with calibrating gamma parameter 
   logical(lgc),         allocatable :: mask(:)                ! 1D mask
   integer(i4b)                      :: hruID(nHru)            ! Hru ID
   real(dp)                          :: param(nHru,TotNPar)    ! original soil parameter (model hru x parameter)
   real(dp)                          :: adjParam(nHru,TotNPar) ! adjustet soil parameter (model hru x parameter) 
-  real(dp),             allocatable :: paramGamma(:)          ! calibratin gamma parameter
+  type(var_d),          allocatable :: paramGammaStr(:)       ! calibratin gamma parameter
   real(dp),             allocatable :: obs(:)                 ! observation (number of basin*number of time step)
   real(dp),             allocatable :: sim(:,:)               ! instantaneous sim value (hru x number of time step)
   real(dp),             allocatable :: simBasin(:,:)          ! instantaneous basin aggregated sim value (basin x number of time step)
@@ -50,13 +52,35 @@ function objfn( calPar )
   allocate(sim(nHru,sim_len))
   allocate(simBasin(nbasin,sim_len))
   allocate(simBasinRouted(nbasin,sim_len))
+  idx=1
+  do iPar=1,nParCal
+    if (parSubset(iPar)%perLyr)then
+      allocate(calParStr(iPar)%var(nLyr))
+      calParStr(iPar)%var=calPar(idx:idx+nLyr-1)
+      idx=idx+nLyr
+    else
+      allocate(calParStr(iPar)%var(1))
+      calParStr(iPar)%var=calPar(idx)
+      idx=idx+1
+    endif
+  end do
+
+  print*,'calParStr='
+  do iPar=1,nParCal
+  print*,calParStr(iPar)%var
+  end do
+
   call read_hru_id(idModel, hruID, err, cmessage)    ! to get hruID
   if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
-  call read_soil_param(idModel, param, err, cmessage)! to get soil param (=param) 
+  call read_soil_param(idModel, param, err, cmessage)! to read soil param template (=param) 
   if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   adjParam=param
+
+  print*,'original='
+  print*,adjParam
+
   if ( any(parSubset(:)%beta == "beta") )then ! calpar include multipliers for original model parameter 
-    call adjust_param(idModel, param, calPar, adjParam, err, cmessage) ! to output model parameter via multiplier method
+    call adjust_param(idModel, param, calParStr, adjParam, err, cmessage) ! to adjust "param" with multiplier method and output in adjParam 
     if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   endif
   if ( any(parSubset(:)%beta /= "beta") )then ! calPar includes gamma parameters to be used for MPR 
@@ -71,15 +95,22 @@ function objfn( calPar )
     do iPar=1,nVegParModel
       allocate(vegParMxy(iPar)%varData(nHru),stat=err)
     enddo
-    allocate(mask(size(calPar)))
+    allocate(mask(nParCal))
     mask=parSubset(:)%beta/="beta"
-    allocate(paramGamma(count(mask)))
-    paramGamma=pack(calPar,mask)
-    call mpr(idModel, paramGamma, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
+    allocate(paramGammaStr(count(mask)))
+    paramGammaStr=pack(calParStr,mask)
+    do iPar=1,size(paramGammaStr)
+      if (size(paramGammaStr(iPar)%var)>1)then;;print*,trim(message)//'gammaParameter should not have perLayer value';stop;endif
+    enddo
+    call mpr(idModel, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
     call replace_param(idModel, adjparam, hModel, parMxyMz, adjParam, err, cmessage)
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   endif
+
+  print*,'adjsted='
+  print*,adjParam
+
   call write_soil_param(idModel, hruID, adjParam, err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   call system(executable) ! to run hydrologic model   
@@ -94,8 +125,8 @@ function objfn( calPar )
   uscale=parMaster(ixPar%uhscale)%val
   do iPar=1,nParCal
     select case( parSubset(iPar)%pname )
-      case('uhshape');  ushape = calPar( iPar )
-      case('uhscale');  uscale = calPar( iPar )
+      case('uhshape');  ushape = calParStr( iPar )%var(1)
+      case('uhscale');  uscale = calParStr( iPar )%var(1)
      end select
   end do
   call route_q(simBasin, simBasinRouted, ushape, uscale, err, cmessage)
@@ -104,16 +135,12 @@ function objfn( calPar )
     call out_opt_sim(simBasinRouted, obs) ! to just output optimal run
   else
     select case( trim(objfntype) )
-    case('rmse');
-      call calc_rmse_region(simBasinRouted, obs, objfn) 
-    case('month-rmse');
-      call calc_month_rmse_region(simBasinRouted, obs, objfn) 
-    case('nse');
-      call calc_nse_region(simBasinRouted, obs, objfn) 
-    case('month-nse');
-      call calc_month_nse_region(simBasinRouted, obs, objfn) 
-    case('kge');
-      call calc_kge_region(simBasinRouted, obs, objfn) 
+    case('rmse');       call calc_rmse_region(simBasinRouted, obs, objfn) 
+    case('month-rmse'); call calc_month_rmse_region(simBasinRouted, obs, objfn) 
+    case('nse');        call calc_nse_region(simBasinRouted, obs, objfn) 
+    case('month-nse');  call calc_month_nse_region(simBasinRouted, obs, objfn) 
+    case('kge');        call calc_kge_region(simBasinRouted, obs, objfn) 
+    case('sigBias');    call calc_sigBias_region(simBasinRouted, obs, objfn) 
     case default; print*,trim(message)//'objective function not recognized';stop
     end select
   endif
@@ -162,7 +189,7 @@ subroutine calc_rmse_region(sim, obs, rmse)
     offset = ibasin*sim_len
     !then run from the starting calibration point to the ending calibration point
     nTime=end_cal-start_cal+1
-    basin_rmse(ibasin+1) = sqrt( sum((simIn(ibasin+1,start_cal:end_cal-1)-obsIn(offset+start_cal:offset+end_cal-1))**2)/real(nTime) )
+    basin_rmse(ibasin+1) = sqrt( sum((simIn(ibasin+1,start_cal:end_cal)-obsIn(offset+start_cal:offset+end_cal))**2)/real(nTime) )
   enddo
   rmse = sum(basin_rmse*obj_fun_weight)
   return
@@ -397,9 +424,6 @@ subroutine calc_kge_region( sim, obs, kge)
   return
 end subroutine
 
-!******************************
-! compute pearson correlation coefficient 
-!******************************
 subroutine pearsn(x,y,r)
   implicit none
   !input variables
@@ -425,37 +449,116 @@ subroutine pearsn(x,y,r)
 end subroutine
 
 !******************************
-! compute pearson correlation coefficient 
+! compute percent bias of flow 
 !******************************
-subroutine calc_bias_region(sim, obs, bias) 
+subroutine calc_pBias_region(sim, obs, pBias) 
+  ! absolute percentage bias
   implicit none
   !input variables 
   real(dp), dimension(:,:), intent(in)  :: sim 
   real(dp), dimension(:),   intent(in)  :: obs 
   !output variables
-  real(dp),                 intent(out) :: bias 
+  real(dp),                 intent(out) :: pBias 
   ! local variables
   integer(i4b)                          :: ibasin ! loop index
   integer(i4b),allocatable,dimension(:) :: basin_id
   real(dp),    allocatable,dimension(:) :: obj_fun_weight
-  real(dp),    allocatable,dimension(:) :: basin_bias
+  real(dp),    allocatable,dimension(:) :: basin_pBias
   integer(i4b)                          :: offset
 
   allocate(obj_fun_weight(nbasin))
-  allocate(basin_bias(nbasin))
+  allocate(basin_pBias(nbasin))
   allocate(basin_id(nbasin))
   open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
-  do ibasin = 1,nbasin
-    read (UNIT=58,fmt=*) basin_id(ibasin),obj_fun_weight(ibasin)
-  enddo
+  read (UNIT=58,fmt=*) ( basin_id(ibasin),obj_fun_weight(ibasin), ibasin=1,nbasin)
   close(UNIT=58)
   do ibasin = 0,nbasin-1
     !offset places me at the start of each basin
     offset = ibasin*sim_len
     !! mean
-    basin_bias(ibasin+1)=sum( sim(ibasin+1,:)-obs(offset+start_cal:offset+end_cal) )/sum(obs(offset+start_cal:offset+end_cal))
+    basin_pBias(ibasin+1)=abs(sum( sim(ibasin+1,:)-obs(offset+start_cal:offset+end_cal) ))/sum(obs(offset+start_cal:offset+end_cal))
   enddo
-  bias = sum(basin_bias*obj_fun_weight)
+  pBias = sum(basin_pBias*obj_fun_weight)
+  return
+end subroutine
+
+!******************************
+! compute percent bias of hydrologic signatures
+!******************************
+subroutine calc_sigBias_region(sim, obs, sigBias) 
+  ! aggregated absolute percentage signature bias
+  ! Refer to paper below
+  ! Yilmaz, K. K., H. V. Gupta, and T. Wagener (2008), 
+  ! A process-based diagnostic approach to model evaluation: Application to the NWS distributed hydrologic model, 
+  ! Water Resour. Res., 44, W09417, doi:10.1029/2007WR006716.
+  implicit none
+  !input variables 
+  real(dp),                intent(in)  :: sim(:,:)
+  real(dp),                intent(in)  :: obs(:) 
+  !output variables
+  real(dp),                intent(out) :: sigBias 
+  ! local variables
+  integer(i4b)                         :: ibasin,iTime ! loop index
+  integer(i4b)                         :: i30,i80
+  integer(i4b)                         :: idx(1)
+  integer(i4b)                         :: nTime            
+  integer(i4b)                         :: offset
+  real(dp)                             :: pBias
+  real(dp)                             :: pBiasFHV
+  real(dp)                             :: pBiasFLV
+  real(dp)                             :: pBiasFMS
+  real(dp),    allocatable             :: p(:)            ! probability
+  real(dp),    allocatable             :: simBasin(:)
+  real(dp),    allocatable             :: obsBasin(:)
+  integer(i4b),allocatable             :: basin_id(:)
+  real(dp),    allocatable             :: obj_fun_weight(:)
+  real(dp),    allocatable             :: basin_sigBias(:)
+  
+  allocate(obj_fun_weight(nbasin))
+  allocate(basin_sigBias(nbasin))
+  allocate(basin_id(nbasin))
+  open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
+  read (UNIT=58,fmt=*) ( basin_id(ibasin),obj_fun_weight(ibasin), ibasin=1,nbasin)
+  close(UNIT=58)
+  nTime=end_cal-start_cal+1
+  allocate(p(nTime))
+  allocate(simBasin(nTime))
+  allocate(obsBasin(nTime))
+  p=(/ (real(itime)/(real(nTime)+1.0_dp), iTime=1,nTime) /)
+  idx=minloc(abs(p-0.3_dp))
+  i30=idx(1)
+  idx=minloc(abs(p-0.8_dp))
+  i80=idx(1)
+  do ibasin = 0,nbasin-1
+    offset = ibasin*sim_len
+    simBasin=sim(ibasin+1,:)+valMin
+    obsBasin=obs(offset+start_cal:offset+end_cal)+valMin
+    call sort(simBasin)
+    call sort(obsBasin)
+    pBias=sum( sim(ibasin+1,:)-obs(offset+start_cal:offset+end_cal) )/sum(obs(offset+start_cal:offset+end_cal))
+    pBiasFMS=((log(simBasin(i80))-log(simBasin(i30)) )-(log(obsBasin(i80))-log(obsBasin(i30))))/( log(obsBasin(i80))-log(obsBasin(i30)) )
+    pBiasFHV=sum(simBasin(i80:nTime)-obsBasin(i80:nTime))/sum(obsBasin(i80:nTime))
+    pBiasFLV=(sum(log(simBasin(1:i30))-log(simBasin(1)) )-sum(log(obsBasin(1:i30))-log(obsBasin(1))))/sum( log(obsBasin(1:i30))-log(obsBasin(1)) )
+    basin_sigBias(iBasin+1) = abs(pBiasFHV)+abs(pBiasFLV)+abs(pBiasFMS) 
+  enddo
+  sigBias = sum(basin_sigBias*obj_fun_weight)
+  return
+end subroutine
+
+subroutine sort(vec)
+  implicit none
+  real(dp) ,intent(inout) :: vec(:)
+  real(dp)                :: buf
+  integer(i4b)            :: nsize, i
+  integer(i4b)            :: k(1)
+
+  nsize = size(vec)
+  do i = 1, nsize
+    k   = minloc(vec(i:nsize))+i-1
+    buf = vec(i)
+    vec(i) = vec(k(1))
+    vec(k(1)) = buf
+  enddo
   return
 end subroutine
 
@@ -580,12 +683,10 @@ subroutine route_q(qin,qroute,ushape,uscale, err, message)
   nEle=size(qin,1) 
   ! route flow for each basin in the region now
   if (ushape .le. 0.0 .and. uscale .le. 0.0) then 
-    do iEle=1,nEle
-      qroute(iEle,:) = qin(iEle,:)
-    enddo
+    qroute=qin
   else
     do iEle=1,nEle
-      call duamel(qin(iEle,1:sim_len-1), ushape, uscale, 1.0_dp, sim_len-1, qroute(iEle,1:sim_len-1), 0)
+      call duamel(qin(iEle,1:sim_len), ushape, uscale, 1.0_dp, sim_len, qroute(iEle,1:sim_len), 0)
     enddo
   end if
 end subroutine route_q

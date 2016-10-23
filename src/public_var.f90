@@ -34,8 +34,6 @@ module public_var
   character(len=strLen),public    :: dname_spoly 
   character(len=strLen),public    :: dname_slyrs
   character(len=strLen),public    :: dname_vpoly 
-  character(len=strLen),public    :: dname_mhru
-  character(len=strLen),public    :: dname_mlyrs
   ! calconfig 
   character(len=strLen),public    :: filelist_name
   character(len=strLen),public    :: cellfrac_name
@@ -58,7 +56,10 @@ module public_var
   integer(i4b),public             :: Npro
   real,dimension(16),public       :: initcell,endcell
   character(len=strLen),public    :: calpar 
+  ! modelconfig
   integer(i4b),public             :: idModel 
+  integer(i4b),public             :: TotNpar  != 54(VIC)
+  integer(i4b),public             :: nLyr     != 3 (VIC)
   !
   !DDS 
   !input parameters
@@ -70,9 +71,7 @@ module public_var
   character(len=strLen),public    :: state_file     ! state file
   character(len=strLen),public    :: restrt_file    ! restart file
   logical,public                  :: isRestart      ! ues restart option? 
-  !
-  ! Model specific parameters
-  integer,parameter,public        :: TotNpar = 54
-  integer,parameter,public        :: nLyr = 3 
+
+  integer(i8b)                    :: nParCalSum     ! Total number of calibratin parameters including per layer parameters 
 
 end module public_var
