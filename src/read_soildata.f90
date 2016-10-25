@@ -6,8 +6,6 @@ USE data_type
 USE public_var                                     ! Including common constant (physical constant, other e.g., missingVal, etc.)
 USE var_lookup,only:ixPar,nPar                    ! index of soil polygon variables and number of variables
 USE var_lookup,only:ixVarSoilData,nVarSoilData    ! index of soil polygon variables and number of variables
-USE var_lookup,only:ixVarSoil,nVarSoil            ! index of soil polygon variables and number of variables
-USE var_lookup,only:ixVarTopo,nVarTopo            ! index of soil polygon variables and number of variables
 
 implicit none
 

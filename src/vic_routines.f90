@@ -41,7 +41,7 @@ subroutine write_soil_param_vic(hruid, param, ierr, message)
   if(size(hruid)/=nHru)then;ierr=12;message=trim(message)//'hruid size different than nHru';return;endif
   open(UNIT=51,file=trim(calibparam_name),action='write',status='unknown' )
   hru:do iHru = 1,nHru
-    write(51,'(I,2X)',advance='no') 1
+    write(51,'(I1,2X)',advance='no') 1
     write(51,'(I8,2X)',advance='no') hruid(iHru)
     write(51,'(f9.4,X)',advance='no') param(iHru,3:4)
     write(51,'(f9.5,X)',advance='no') param(iHru,5)
@@ -78,7 +78,7 @@ subroutine vic_hru_id(hruid, err, message)
  ! Read original soil parameter file
   do iHru = 1,nHru
     read(unit=50,fmt=*) (realline(ipar), ipar=1,TotNpar)
-    hruid(iHru)=realline(2)
+    hruid(iHru)=int(realline(2))
   end do
   close(UNIT=50)
   return
@@ -296,7 +296,7 @@ subroutine adj_vege_param_vic(multiplier, err, message)
  ! Read original vege parameter file
   hru:do iHru = 1,nHru
     read(unit=50,fmt=*) hruID,nTile
-    write(51,'(I10,1X,I2)') (hruID,nTile)
+    write(51,'(I10,1X,I2)') hruID, nTile
     tile:do iTile = 1,nTile
       read(unit=50,fmt=*) vegClass,vegFrac,(rootDepth(iLyr), iLyr=1,nLyr),(rootFrac(iLyr), iLyr=1,nLyr)
       read(unit=50,fmt=*) (laiMonth(iMon), iMon=1,12)
@@ -307,7 +307,7 @@ subroutine adj_vege_param_vic(multiplier, err, message)
         end select
       enddo par
       ! Write the modified parameter file for the entire basin/region for traditional upscaling
-      write(51,'(3X,I2,1X,F8.6)',advance='no') (vegClass,vegFrac)
+      write(51,'(3X,I2,1X,F8.6)',advance='no') vegClass, vegFrac
       write(51,rowfmt,advance='no')            (rootDepth(iLyr), iLyr=1,nLyr)
       write(51,rowfmt)                         (rootFrac(iLyr), iLyr=1,nLyr)
       write(51,'(5X,12(1X,F6.3))')             (laiMonth(iMon), iMon=1,12)

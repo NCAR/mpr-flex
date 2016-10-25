@@ -34,7 +34,6 @@ subroutine write_soil_param_sac(hruid, param, ierr, message)
   ! local variables
   character(len=strLen)              :: rowfmt
   integer(i4b)                       :: iHru         ! loop index
-  integer(i4b)                       :: stat
 
   ! initialize error control
   ierr=0; message='write_soil_param_sac/'
@@ -75,8 +74,7 @@ subroutine sac_hru_id(hruid, err, message)
   character(*),intent(out)                   :: message      ! error message
   ! local variables
   character(len=strLen)                      :: dummy 
-  real(dp),dimension(TotNpar)                :: realline
-  integer(i4b)                               :: ipar,iHru    ! loop index
+  integer(i4b)                               :: iHru         ! loop index
   integer(i4b)                               :: stat
 
   ! initialize error control
@@ -100,9 +98,9 @@ subroutine sac_soil_layer(hlyr, ierr, message)
   character(*),intent(out)           :: message         ! error message
   ! local variables
   real(dp)                           :: paramTemp(nHru) ! temporal parameter vector (nHru) 
-  real(dp)                           :: hlyrTemp(:,:)   ! calibrating parameter list 
+  real(dp)                           :: hlyrTemp(nHru,5)! calibrating parameter list 
   character(len=strLen)              :: parName         ! parameter name
-  integer(i4b)                       :: iPar,iHru,iLyr  ! loop index
+  integer(i4b)                       :: iPar,iHru       ! loop index
   integer(i4b)                       :: stat
 
   ! initialize error control
@@ -238,7 +236,7 @@ subroutine adj_snow_param_sac(multiplier, err, message)
   character(len=strLen)      :: parName         ! parameter name
   character(len=strLen)      :: rowfmt
   integer(i4b)               :: iPar,iHru       ! loop index
-  real(dp)                   :: param(:,:)      ! original snow parameters matrix (nHru x nParamInModel) 
+  real(dp)                   :: param(nHru,22)      ! original snow parameters matrix (nHru x nParamInModel) 
   real(dp)                   :: paramTemp(nHru) ! temporal parameter vector (nHru) 
   integer(i4b)               :: stat,io
 
@@ -449,10 +447,10 @@ subroutine read_sac_sim(sim, err, message)
   open (UNIT=54,file=trim(cellfrac_name),form='formatted',status='old')
   open (UNIT=51,file=trim(region_info),form='formatted',status='old')
   do ibasin = 1,nbasin
-    read (UNIT=51,*) dum,dum,basin_area,ncell
+    read (UNIT=51,fmt=*) dum,dum,basin_area,ncell
     do icell = 1,ncell
-      read (UNIT=53,*) filename
-      read (UNIT=54,*) cellfraction
+      read (UNIT=53,fmt=*) filename
+      read (UNIT=54,fmt=*) cellfraction
       filename=trim(sim_dir)//trim(filename)
       open (UNIT=55,file= filename,form='formatted',status='old')
       read (UNIT=55,fmt=*) strDum 
