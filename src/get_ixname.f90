@@ -110,7 +110,6 @@ contains
     case('WcrFrac');          get_ixPar = ixPar%WcrFrac           ! Fractional soil moisture content at critical point [-] 
     case('WpwpFrac');         get_ixPar = ixPar%WpwpFrac          ! Fractional soil moisture content at wilting point [-]  
     case('twm');              get_ixPar = ixPar%twm               ! Tention water content [mm]
-    case('ltwm');             get_ixPar = ixPar%ltwm              ! Tention water content for lower zone [mm]
     case('fwm');              get_ixPar = ixPar%fwm               ! Free water content [mm] 
     case('fsm');              get_ixPar = ixPar%fsm               ! Supplemental free water content [mm] 
     case('fpm');              get_ixPar = ixPar%fpm               ! Primary free water content [mm]
@@ -122,6 +121,16 @@ contains
     case('rexp');             get_ixPar = ixPar%rexp              ! 
     case('rmin');             get_ixPar = ixPar%rmin              ! minimum stomatal resistance
     case('lai');              get_ixPar = ixPar%lai               ! monthly lai
+    case('scf');              get_ixPar = ixPar%scf               ! 
+    case('mfmax');            get_ixPar = ixPar%mfmax             ! 
+    case('mfmin');            get_ixPar = ixPar%mfmin             ! 
+    case('uadj');             get_ixPar = ixPar%uadj              ! 
+    case('si');               get_ixPar = ixPar%si                ! 
+    case('pxtemp');           get_ixPar = ixPar%pxtemp            ! 
+    case('nmf');              get_ixPar = ixPar%nmf               ! 
+    case('tipm');             get_ixPar = ixPar%tipm              ! 
+    case('plwhc');            get_ixPar = ixPar%plwhc             ! 
+    case('daygm');            get_ixPar = ixPar%daygm             ! 
     ! get to here if cannot find the variable
     case default;             get_ixPar = imiss
   endselect

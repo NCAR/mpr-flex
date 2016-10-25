@@ -95,7 +95,6 @@ MODULE var_lookup
    integer(i4b)     :: WcrFrac         = imiss  ! 
    integer(i4b)     :: WpwpFrac        = imiss  ! 
    integer(i4b)     :: twm             = imiss  !  tention water maximum 
-   integer(i4b)     :: ltwm            = imiss  !  tension water maximum for only lower zone (no transfer function)
    integer(i4b)     :: fwm             = imiss  ! 
    integer(i4b)     :: fsm             = imiss  ! 
    integer(i4b)     :: fpm             = imiss  ! 
@@ -107,6 +106,16 @@ MODULE var_lookup
    integer(i4b)     :: rexp            = imiss  ! 
    integer(i4b)     :: rmin            = imiss  ! minimum stomatal resistance
    integer(i4b)     :: lai             = imiss  ! Lai
+   integer(i4b)     :: scf             = imiss  !  
+   integer(i4b)     :: mfmax           = imiss  !  
+   integer(i4b)     :: mfmin           = imiss  !  
+   integer(i4b)     :: uadj            = imiss  !  
+   integer(i4b)     :: si              = imiss  !  
+   integer(i4b)     :: pxtemp          = imiss  !  
+   integer(i4b)     :: nmf             = imiss  !  
+   integer(i4b)     :: tipm            = imiss  !  
+   integer(i4b)     :: plwhc           = imiss  !  
+   integer(i4b)     :: daygm           = imiss  !  
  endtype iLook_par
 
 ! ***********************************************************************************************************
@@ -184,7 +193,7 @@ MODULE var_lookup
                                                                                  61,62,63,64,65,66,67,68,69,70,&
                                                                                  71,72,73,74,75,76,77,78,79,80,&
                                                                                  81,82,83,84,85,86,87,88,89,90,&
-                                                                                 91)
+                                                                                 91,92,93,94,95,96,97,98,99,100)
  type(iLook_VarMapData),  public,parameter :: ixVarMapData   = iLook_VarMapData  (1,2,3)
  type(iLook_VarSoilData), public,parameter :: ixVarSoilData  = iLook_VarSoilData (1,2,3,4,5,6,7,8,9,10)
  type(iLook_VarVegData),  public,parameter :: ixVarVegData   = iLook_VarVegData  (1,2,3,4)
@@ -196,7 +205,7 @@ MODULE var_lookup
 ! define size of data vectors
 ! ***********************************************************************************************************
 ! Number of vairables defined
- integer(i4b),parameter,public    :: nPar = 91 
+ integer(i4b),parameter,public    :: nPar = 100 
  integer(i4b),parameter,public    :: nVarMapData=3
  integer(i4b),parameter,public    :: nVarSoilData=10
  integer(i4b),parameter,public    :: nVarVegData=4

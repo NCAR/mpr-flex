@@ -15,7 +15,6 @@ subroutine paramMaster(err,message)
   use var_lookup, only:ixPar
   use globalData, only:parMaster
   implicit none
-
   !output variable
   integer(i4b),intent(out)      :: err     ! error code
   character(*),intent(out)      :: message ! error message
@@ -89,91 +88,98 @@ subroutine paramMaster(err,message)
   !  Master list of beta parameters  
   ! -----------------------
   !                                                        name,    default, lwr bound, upr bound,parent beta,    type,    mask, h-upscale, v upscale,  perLyr
-  parMaster(ixPar%uhshape)           = par_meta('uhshape'      ,     1.0_dp,    0.1_dp,    3.0_dp,     "beta", "route", .False.,      "na",       "na", .False.)
-  parMaster(ixPar%uhscale)           = par_meta('uhscale'      ,     1.0_dp,    0.5_dp,    3.0_dp,     "beta", "route", .False.,      "na",       "na", .False.)
-  parMaster(ixPar%ks)                = par_meta('ks'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "whmean",   "whmean", .True.)
-  parMaster(ixPar%bd)                = par_meta('bd'           ,     1.0_dp,    0.9_dp,    1.1_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%sd)                = par_meta('sd'           ,     1.0_dp,    0.9_dp,    1.1_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%psis)              = par_meta('psis'         ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%b)                 = par_meta('b'            ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%phi)               = par_meta('phi'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%fc)                = par_meta('fc'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%wp)                = par_meta('wp'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%myu)               = par_meta('myu'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%binfilt)           = par_meta('binfilt'      ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .False.)
-  parMaster(ixPar%D1)                = par_meta('D1'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "whmean",   "whmean", .False.)
-  parMaster(ixPar%D2)                = par_meta('D2'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "whmean",   "whmean", .False.)
-  parMaster(ixPar%D3)                = par_meta('D3'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .False.)
-  parMaster(ixPar%D4)                = par_meta('D4'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .False.)
-  parMaster(ixPar%c)                 = par_meta('c'            ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .False.)
-  parMaster(ixPar%Dsmax)             = par_meta('Dsmax'        ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "whmean",   "whmean", .False.)
-  parMaster(ixPar%Ds)                = par_meta('Ds'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "whmean",   "whmean", .False.)
-  parMaster(ixPar%Ws)                = par_meta('Ws'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "whmean",   "whmean", .False.)
-  parMaster(ixPar%expt)              = par_meta('expt'         ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%bbl)               = par_meta('bbl'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%h1)                = par_meta('h1'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%h2)                = par_meta('h2'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%h3)                = par_meta('h3'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%h4)                = par_meta('h4'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%h5)                = par_meta('h5'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%WcrFrac)           = par_meta('WcrFrac'      ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%WpwpFrac)          = par_meta('WpwpFrac'     ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%twm)               = par_meta('twm'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%ltwm)              = par_meta('ltwm'         ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .False.)
-  parMaster(ixPar%fwm)               = par_meta('fwm'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%fsm)               = par_meta('fsm'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%fpm)               = par_meta('fpm'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%zk)                = par_meta('zk'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%zsk)               = par_meta('zsk'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "whmean",   "whmean", .True.)
-  parMaster(ixPar%zpk)               = par_meta('zpk'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "whmean",   "whmean", .True.)
-  parMaster(ixPar%pfree)             = par_meta('pfree'        ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%zperc)             = par_meta('zperc'        ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%rexp)              = par_meta('rexp'         ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
-  parMaster(ixPar%rmin)              = par_meta('rmin'         ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "vege", .False.,  "wamean",       "na", .False.)
-  parMaster(ixPar%lai)               = par_meta('lai'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "vege", .False.,  "wamean",       "na", .False.)
+  parMaster(ixPar%uhshape)         = par_meta('uhshape'      ,     1.0_dp,    0.1_dp,    3.0_dp,     "beta", "route", .False.,      "na",       "na", .False.)
+  parMaster(ixPar%uhscale)         = par_meta('uhscale'      ,     1.0_dp,    0.5_dp,    3.0_dp,     "beta", "route", .False.,      "na",       "na", .False.)
+  parMaster(ixPar%ks)              = par_meta('ks'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "whmean",   "whmean", .True.)
+  parMaster(ixPar%bd)              = par_meta('bd'           ,     1.0_dp,    0.9_dp,    1.1_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%sd)              = par_meta('sd'           ,     1.0_dp,    0.9_dp,    1.1_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%psis)            = par_meta('psis'         ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%b)               = par_meta('b'            ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%phi)             = par_meta('phi'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%fc)              = par_meta('fc'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%wp)              = par_meta('wp'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%myu)             = par_meta('myu'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%binfilt)         = par_meta('binfilt'      ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .False.)
+  parMaster(ixPar%D1)              = par_meta('D1'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "whmean",   "whmean", .False.)
+  parMaster(ixPar%D2)              = par_meta('D2'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "whmean",   "whmean", .False.)
+  parMaster(ixPar%D3)              = par_meta('D3'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .False.)
+  parMaster(ixPar%D4)              = par_meta('D4'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .False.)
+  parMaster(ixPar%c)               = par_meta('c'            ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .False.)
+  parMaster(ixPar%Dsmax)           = par_meta('Dsmax'        ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "whmean",   "whmean", .False.)
+  parMaster(ixPar%Ds)              = par_meta('Ds'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "whmean",   "whmean", .False.)
+  parMaster(ixPar%Ws)              = par_meta('Ws'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "whmean",   "whmean", .False.)
+  parMaster(ixPar%expt)            = par_meta('expt'         ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%bbl)             = par_meta('bbl'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%h1)              = par_meta('h1'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%h2)              = par_meta('h2'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%h3)              = par_meta('h3'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%h4)              = par_meta('h4'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%h5)              = par_meta('h5'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%WcrFrac)         = par_meta('WcrFrac'      ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%WpwpFrac)        = par_meta('WpwpFrac'     ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%twm)             = par_meta('twm'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%fwm)             = par_meta('fwm'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%fsm)             = par_meta('fsm'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%fpm)             = par_meta('fpm'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%zk)              = par_meta('zk'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%zsk)             = par_meta('zsk'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "whmean",   "whmean", .True.)
+  parMaster(ixPar%zpk)             = par_meta('zpk'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "whmean",   "whmean", .True.)
+  parMaster(ixPar%pfree)           = par_meta('pfree'        ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%zperc)           = par_meta('zperc'        ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%rexp)            = par_meta('rexp'         ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "soil", .False.,  "wamean",   "wamean", .True.)
+  parMaster(ixPar%rmin)            = par_meta('rmin'         ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "vege", .False.,  "wamean",       "na", .False.)
+  parMaster(ixPar%lai)             = par_meta('lai'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "vege", .False.,  "wamean",       "na", .False.)
+  parMaster(ixPar%lai)             = par_meta('scf'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "snow", .False.,  "wamean",       "na", .False.)
+  parMaster(ixPar%lai)             = par_meta('mfmax'        ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "snow", .False.,  "wamean",       "na", .False.)
+  parMaster(ixPar%lai)             = par_meta('mfmin'        ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "snow", .False.,  "wamean",       "na", .False.)
+  parMaster(ixPar%lai)             = par_meta('uadj'         ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "snow", .False.,  "wamean",       "na", .False.)
+  parMaster(ixPar%lai)             = par_meta('si'           ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "snow", .False.,  "wamean",       "na", .False.)
+  parMaster(ixPar%lai)             = par_meta('pxtemp'       ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "snow", .False.,  "wamean",       "na", .False.)
+  parMaster(ixPar%lai)             = par_meta('nmf'          ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "snow", .False.,  "wamean",       "na", .False.)
+  parMaster(ixPar%lai)             = par_meta('tipm'         ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "snow", .False.,  "wamean",       "na", .False.)
+  parMaster(ixPar%lai)             = par_meta('plwhc'        ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "snow", .False.,  "wamean",       "na", .False.)
+  parMaster(ixPar%lai)             = par_meta('daygm'        ,     1.0_dp,    0.8_dp,    1.2_dp,     "beta",  "snow", .False.,  "wamean",       "na", .False.)
 
 end subroutine 
 
-  subroutine popMprmeta(err,message)
-    use nrtype
-    use data_type,  only:var_meta
-    use var_lookup, only:ixVarMapData
-    use var_lookup, only:ixVarSoilData
-    use var_lookup, only:ixVarVegData
-    use globalData, only:map_meta
-    use globalData, only:sdata_meta
-    use globalData, only:vdata_meta
-    
-    implicit none
+subroutine popMprmeta(err,message)
+  use nrtype
+  use data_type,  only:var_meta
+  use var_lookup, only:ixVarMapData
+  use var_lookup, only:ixVarSoilData
+  use var_lookup, only:ixVarVegData
+  use globalData, only:map_meta
+  use globalData, only:sdata_meta
+  use globalData, only:vdata_meta
   
-    !output variable
-    integer(i4b),intent(out)      :: err     ! error code
-    character(*),intent(out)      :: message ! error message
-    
-    ! initialize error control
-    err=0; message='popMprMeta/'
+  implicit none
+  !output variable
+  integer(i4b),intent(out)      :: err     ! error code
+  character(*),intent(out)      :: message ! error message
+  
+  ! initialize error control
+  err=0; message='popMprMeta/'
+  ! Mapping data meta
+  map_meta(ixVarMapData%hru_id)          = var_meta('hru_id'       ,"hru id"                            , "-"              ,"1D", "integer")
+  map_meta(ixVarMapData%weight)          = var_meta('weight'       ,"areal weight of intersect polygon" , "-"              ,"1D", "integer")
+  map_meta(ixVarMapData%overlapPolyId)   = var_meta('overlapPolyId',"id of intersect polygo"            , "-"              ,"1D", "integer")
+  ! Soil data variables
+  sdata_meta(ixVarSoilData%polyid)       = var_meta('polyid'       , "soil polygon id"                  ,  "-"             ,"1D", "integer")
+  sdata_meta(ixVarSoilData%soilclass)    = var_meta('soilclass'    , "USDA soil class"                  ,  "-"             ,"2D", "integer")
+  sdata_meta(ixVarSoilData%hslyrs)       = var_meta('hslyrs'       , "soil layer thickness"             ,  "m"             ,"2D", "double" )
+  sdata_meta(ixVarSoilData%sand_frc)     = var_meta('sand_frc'     , "sand percentage"                  ,  "%"             ,"2D", "double" )
+  sdata_meta(ixVarSoilData%silt_frc)     = var_meta('silt_frc'     , "silt percentage"                  ,  "%"             ,"2D", "double" )
+  sdata_meta(ixVarSoilData%clay_frc)     = var_meta('clay_frc'     , "clay percentage"                  ,  "%"             ,"2D", "double" )
+  sdata_meta(ixVarSoilData%bulk_density) = var_meta('bulk_density' , "bulk density"                     ,  "kg/m^3"        ,"2D", "double" )
+  sdata_meta(ixVarSoilData%ele_mean)     = var_meta('ele_mean'     , "mean elevation"                   ,  "m"             ,"1D", "double" )
+  sdata_meta(ixVarSoilData%ele_std)      = var_meta('ele_std'      , "std elevation"                    ,  "m"             ,"1D", "double" )
+  sdata_meta(ixVarSoilData%slp_mean)     = var_meta('slp_mean'     , "mean slope"                       ,  "-"             ,"1D", "double" )
+  ! Vege data variables 
+  vdata_meta(ixVarVegData%polyid)        = var_meta('polyid'       , "vege polygon id"                  ,  "-"             ,"1D", "integer")
+  vdata_meta(ixVarVegData%vegclass)      = var_meta('vegclass'     , "vegetation class"                 ,  "-"             ,"1D", "double" )
+  vdata_meta(ixVarVegData%grnfrc)        = var_meta('grnfrc'       , "green fraction"                   ,  "-"             ,"1D", "double" )
+  vdata_meta(ixVarVegData%lai)           = var_meta('lai'          , "monthly lai"                      ,  "m^2/m^2"       ,"2D", "double" )
 
-    ! Mapping data meta
-    map_meta(ixVarMapData%hru_id)          = var_meta('hru_id'       ,"hru id"                            , "-"              ,"1D", "integer")
-    map_meta(ixVarMapData%weight)          = var_meta('weight'       ,"areal weight of intersect polygon" , "-"              ,"1D", "integer")
-    map_meta(ixVarMapData%overlapPolyId)   = var_meta('overlapPolyId',"id of intersect polygo"            , "-"              ,"1D", "integer")
-    ! Soil data variables
-    sdata_meta(ixVarSoilData%polyid)       = var_meta('polyid'       , "soil polygon id"                  ,  "-"             ,"1D", "integer")
-    sdata_meta(ixVarSoilData%soilclass)    = var_meta('soilclass'    , "USDA soil class"                  ,  "-"             ,"2D", "integer")
-    sdata_meta(ixVarSoilData%hslyrs)       = var_meta('hslyrs'       , "soil layer thickness"             ,  "m"             ,"2D", "double" )
-    sdata_meta(ixVarSoilData%sand_frc)     = var_meta('sand_frc'     , "sand percentage"                  ,  "%"             ,"2D", "double" )
-    sdata_meta(ixVarSoilData%silt_frc)     = var_meta('silt_frc'     , "silt percentage"                  ,  "%"             ,"2D", "double" )
-    sdata_meta(ixVarSoilData%clay_frc)     = var_meta('clay_frc'     , "clay percentage"                  ,  "%"             ,"2D", "double" )
-    sdata_meta(ixVarSoilData%bulk_density) = var_meta('bulk_density' , "bulk density"                     ,  "kg/m^3"        ,"2D", "double" )
-    sdata_meta(ixVarSoilData%ele_mean)     = var_meta('ele_mean'     , "mean elevation"                   ,  "m"             ,"1D", "double" )
-    sdata_meta(ixVarSoilData%ele_std)      = var_meta('ele_std'      , "std elevation"                    ,  "m"             ,"1D", "double" )
-    sdata_meta(ixVarSoilData%slp_mean)     = var_meta('slp_mean'     , "mean slope"                       ,  "-"             ,"1D", "double" )
-    ! Vege data variables 
-    vdata_meta(ixVarVegData%polyid)        = var_meta('polyid'       , "vege polygon id"                  ,  "-"             ,"1D", "integer")
-    vdata_meta(ixVarVegData%vegclass)      = var_meta('vegclass'     , "vegetation class"                 ,  "-"             ,"1D", "double" )
-    vdata_meta(ixVarVegData%grnfrc)        = var_meta('grnfrc'       , "green fraction"                   ,  "-"             ,"1D", "double" )
-    vdata_meta(ixVarVegData%lai)           = var_meta('lai'          , "monthly lai"                      ,  "m^2/m^2"       ,"2D", "double" )
-
-  end subroutine
+end subroutine
 
 end module popMeta 
