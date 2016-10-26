@@ -171,13 +171,12 @@ end subroutine
 !***************************
 ! replace sac soil parameters 
 !***************************
-subroutine replace_soil_param_sac(param, hModel, parMxyMz, adjParam, ierr, message)
+subroutine replace_soil_param_sac(param, parMxyMz, adjParam, ierr, message)
   use globalData, only: parMaster, betaInGamma 
   use get_ixname, only: get_ixPar
   implicit none
   !input variables
   real(dp),         intent(in)   :: param(:,:)    ! original soil parameters matrix (nHru x nParamInModel) 
-  real(dp),         intent(in)   :: hModel(:,:)   ! Model layer thickness at model hrus 
   type(namedvar2),  intent(in)   :: parMxyMz(:)   ! soil model parameter at model layer x model hrus
   ! output
   real(dp),         intent(out)  :: adjParam(:,:) ! adjusted soil parameter

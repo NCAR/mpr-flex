@@ -38,16 +38,16 @@ subroutine adjust_param( idModel, param, multiplier, adjParam, err, message)
     case (1)
       ! Read/Adjust/Output soil model parameters 
       call adj_soil_param_vic( param, multiplier, adjParam, err, cmessage)
-      if (err/=0)then; message=message//cmessage; return; endif
+      if (err/=0)then; message=trim(message)//trim(cmessage); return; endif
       ! Read/Adjust/Output vege parameters 
       call adj_vege_param_vic( multiplier, err, cmessage)
-      if (err/=0)then; message=message//cmessage; return; endif
+      if (err/=0)then; message=trim(message)//trim(cmessage); return; endif
     case (2)
       call adj_soil_param_sac( param, multiplier, adjParam, err, cmessage)
-      if (err/=0)then; message=message//cmessage; return; endif
+      if (err/=0)then; message=trim(message)//trim(cmessage); return; endif
       call adj_snow_param_sac( multiplier, err, cmessage)
-      if (err/=0)then; message=message//cmessage; return; endif
-    case default; err=10; message=message//"model is not implemented"; return
+      if (err/=0)then; message=trim(message)//trim(cmessage); return; endif
+    case default; err=10; message=trim(message)//"model is not implemented"; return
   end select  
   return
 end subroutine
@@ -71,10 +71,10 @@ subroutine replace_param( idModel, param, hModel, parMxyMz, adjParam, err, messa
   err=0; message="replace_param/"
   select case (idModel)
     case (1); call replace_soil_param_vic( param, hModel, parMxyMz, adjParam,  err, cmessage)
-    case (2); call replace_soil_param_sac( param, hModel, parMxyMz, adjParam,  err, cmessage)
-    case default; err=10; message=message//"model is not implemented"; return
+    case (2); call replace_soil_param_sac( param, parMxyMz, adjParam,  err, cmessage)
+    case default; err=10; message=trim(message)//"model is not implemented"; return
   end select  
-  if (err/=0)then; message=message//cmessage; return; endif
+  if (err/=0)then; message=trim(message)//trim(cmessage); return; endif
   return
 end subroutine
   
@@ -96,9 +96,9 @@ subroutine read_soil_param(idModel, param, err, message)
   select case (idModel)
     case (1); call read_soil_param_vic( param, err, cmessage)
     case (2); call read_soil_param_sac( param, err, cmessage)
-    case default; err=10; message=message//"model is not implemented"; return
+    case default; err=10; message=trim(message)//"model is not implemented"; return
   end select  
-  if (err/=0)then; message=message//cmessage; return; endif
+  if (err/=0)then; message=trim(message)//trim(cmessage); return; endif
   return
 end subroutine
 
@@ -121,9 +121,9 @@ subroutine write_soil_param(idModel, hruid, param, err, message)
   select case (idModel)
     case (1); call write_soil_param_vic( hruid, param, err, cmessage)
     case (2); call write_soil_param_sac( hruid, param, err, cmessage)
-    case default; err=10; message=message//"model is not implemented"; return
+    case default; err=10; message=trim(message)//"model is not implemented"; return
   end select  
-  if (err/=0)then; message=message//cmessage; return; endif
+  if (err/=0)then; message=trim(message)//trim(cmessage); return; endif
   return
 end subroutine
 
@@ -145,9 +145,9 @@ subroutine read_hru_id(idModel, hruid, err, message)
     case (1); call vic_hru_id( hruid, err, cmessage)
     case (2); call sac_hru_id( hruid, err, cmessage)
     case default
-      err=10; message=message//"model is not implemented"; return
+      err=10; message=trim(message)//"model is not implemented"; return
   end select  
-  if (err/=0)then; message=message//cmessage; return; endif
+  if (err/=0)then; message=trim(message)//trim(cmessage); return; endif
   return
 end subroutine
 
@@ -167,9 +167,9 @@ subroutine read_soil_lyr(idModel, hlyr, err, message)
   select case (idModel)
     case (1); call vic_soil_layer( hlyr, err, cmessage)
     case default
-      err=10; message=message//"model is not implemented"; return
+      err=10; message=trim(message)//"model is not implemented"; return
   end select  
-  if (err/=0)then; message=message//cmessage; return; endif
+  if (err/=0)then; message=trim(message)//trim(cmessage); return; endif
   return
 end subroutine
 
@@ -191,9 +191,9 @@ subroutine read_sim( idModel, sim, err, message)
     case (1); call read_vic_sim( sim, err, cmessage)
     case (2); call read_sac_sim( sim, err, cmessage)
     case default
-      err=10; message=message//"model is not implemented"; return
+      err=10; message=trim(message)//"model is not implemented"; return
   end select  
-  if (err/=0)then; message=message//cmessage; return; endif
+  if (err/=0)then; message=trim(message)//trim(cmessage); return; endif
   return
 end subroutine
 
