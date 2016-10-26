@@ -75,10 +75,6 @@ function objfn( calPar )
   call read_soil_param(idModel, param, err, cmessage)! to read soil param template (=param) 
   if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   adjParam=param
-
-  print*,'original='
-  print*,adjParam
-
   if ( any(parSubset(:)%beta == "beta") )then ! calpar include multipliers for original model parameter 
     call adjust_param(idModel, param, calParStr, adjParam, err, cmessage) ! to adjust "param" with multiplier method and output in adjParam 
     if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
@@ -107,10 +103,6 @@ function objfn( calPar )
     call replace_param(idModel, adjparam, hModel, parMxyMz, adjParam, err, cmessage)
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   endif
-
-  print*,'adjsted='
-  print*,adjParam
-
   call write_soil_param(idModel, hruID, adjParam, err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   call system(executable) ! to run hydrologic model   
