@@ -51,7 +51,7 @@ subroutine mpr(idModel,           &     ! input: model ID
   character(len=strLen),intent(out)  :: message                  ! error message 
   ! local
   character(len=strLen)              :: cmessage                 ! error message from downward subroutine
-  integer,     parameter             :: iHruPrint = 1            ! model hru id for which everything is printed for checking
+  integer,     parameter             :: iHruPrint = 2            ! model hru id for which everything is printed for checking
   integer(i4b),parameter             :: nSub=11                  ! max. number of Soil layer within Model layer
   integer(i4b)                       :: iLocal                   ! index of hru array in mapping file that match hru id of interest 
   integer(i4b)                       :: iDummy(1)                ! 1D integer array for temporal storage 

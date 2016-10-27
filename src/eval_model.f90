@@ -64,12 +64,6 @@ function objfn( calPar )
       idx=idx+1
     endif
   end do
-
-  print*,'calParStr='
-  do iPar=1,nParCal
-  print*,calParStr(iPar)%var
-  end do
-
   call read_hru_id(idModel, hruID, err, cmessage)    ! to get hruID
   if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   call read_soil_param(idModel, param, err, cmessage)! to read soil param template (=param) 
@@ -491,7 +485,7 @@ subroutine calc_sigBias_region(sim, obs, sigBias)
   real(dp),                intent(out) :: sigBias 
   ! local variables
   integer(i4b)                         :: ibasin,iTime ! loop index
-  integer(i4b)                         :: i30,i80
+  integer(i4b)                         :: i30,i50,i80
   integer(i4b)                         :: idx(1)
   integer(i4b)                         :: nTime            
   integer(i4b)                         :: offset
@@ -499,6 +493,8 @@ subroutine calc_sigBias_region(sim, obs, sigBias)
   real(dp)                             :: pBiasFHV
   real(dp)                             :: pBiasFLV
   real(dp)                             :: pBiasFMS
+  real(dp)                             :: pBiasFMM
+  real(dp)                             :: cc              ! correlation
   real(dp),    allocatable             :: p(:)            ! probability
   real(dp),    allocatable             :: simBasin(:)
   real(dp),    allocatable             :: obsBasin(:)
@@ -521,18 +517,30 @@ subroutine calc_sigBias_region(sim, obs, sigBias)
   i30=idx(1)
   idx=minloc(abs(p-0.8_dp))
   i80=idx(1)
+  idx=minloc(abs(p-0.5_dp))
+  i50=idx(1)
   do ibasin = 0,nbasin-1
     offset = ibasin*sim_len
-    simBasin=sim(ibasin+1,:)+valMin
+    simBasin=sim(ibasin+1,start_cal:end_cal)+valMin
     obsBasin=obs(offset+start_cal:offset+end_cal)+valMin
     call sort(simBasin)
     call sort(obsBasin)
-    pBias=sum( sim(ibasin+1,:)-obs(offset+start_cal:offset+end_cal) )/sum(obs(offset+start_cal:offset+end_cal))
-    pBiasFMS=((log(simBasin(i80))-log(simBasin(i30)) )-(log(obsBasin(i80))-log(obsBasin(i30))))/( log(obsBasin(i80))-log(obsBasin(i30)) )
-    pBiasFHV=sum(simBasin(i80:nTime)-obsBasin(i80:nTime))/sum(obsBasin(i80:nTime))
-    pBiasFLV=(sum(log(simBasin(1:i30))-log(simBasin(1)) )-sum(log(obsBasin(1:i30))-log(obsBasin(1))))/sum( log(obsBasin(1:i30))-log(obsBasin(1)) )
-    basin_sigBias(iBasin+1) = abs(pBiasFHV)+abs(pBiasFLV)+abs(pBiasFMS) 
+    pBias=sum( abs(sim(ibasin+1,start_cal:end_cal)-obs(offset+start_cal:offset+end_cal)) )/sum(obs(offset+start_cal:offset+end_cal))
+    pBiasFMS=abs(((log(simBasin(i80))-log(simBasin(i30)) )-(log(obsBasin(i80))-log(obsBasin(i30)))))/( log(obsBasin(i80))-log(obsBasin(i30)) )
+    pBiasFHV=sum(abs(simBasin(i80:nTime)-obsBasin(i80:nTime)))/sum(obsBasin(i80:nTime))
+    pBiasFLV=abs((sum(log(simBasin(1:i30))-log(simBasin(1)) )-sum(log(obsBasin(1:i30))-log(obsBasin(1)))))/sum( log(obsBasin(1:i30))-log(obsBasin(1)) )
+    pBiasFMM=abs( log(simBasin(i50))-log(obsBasin(i50)) )/( log(obsBasin(i50)) )
+    call pearsn(sim(ibasin+1,start_cal:end_cal), obs(offset+start_cal:offset+end_cal), cc)
+    basin_sigBias(iBasin+1) = ( (1.0_dp-cc)+pBias+pBiasFHV+pBiasFLV+pBiasFMS+pBiasFMM )/5.0_dp
   enddo
+  print*,'Signature-Objectiver-function components'
+  print*,'pBias=',pBias
+  print*,'pBiasFMS=',pBiasFMS
+  print*,'pBiasFHV=',pBiasFHV
+  print*,'pBiasFLV=',pBiasFLV
+  print*,'pBiasFMM=',pBiasFMM
+  print*,'correlation=',cc
+
   sigBias = sum(basin_sigBias*obj_fun_weight)
   return
 end subroutine
