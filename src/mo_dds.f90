@@ -206,6 +206,7 @@ CONTAINS
         read(70,*) iStart 
         read(70,*) (pval(i),i=1,pnum)    
         close(70)
+        iStart=iStart+1
         print*, iStart
        endif
     endif 
@@ -283,7 +284,7 @@ CONTAINS
     of_best    = of_new
     if (present(history)) history(1) = of_new
 
-    file_write: if (present(tmp_file)) then
+    file_write: if (present(tmp_file) .and. (.not.restart)) then
        open(unit=999,file=trim(adjustl(tmp_file)), action='write', position='append', recl=(pnum+2)*30)
        write(rowfmt1,'(A,I5,A)') '(I6,1X',(pnum+1),'(1X,ES17.10))'
        if (imaxit .lt. 0.0_dp) then  ! Maximize
@@ -335,6 +336,7 @@ CONTAINS
        ! Write out in temp file if exist
        file_write2: if (present(tmp_file)) then
           open(unit=999,file=trim(adjustl(tmp_file)), action='write', position='append')
+          write(rowfmt1,'(A,I5,A)') '(I6,1X',(pnum+1),'(1X,ES17.10))'
           if (imaxit .lt. 0.0_dp) then       ! Maximize
              write(999,rowfmt1) i, -of_best, pbest 
           else                               ! Minimize
