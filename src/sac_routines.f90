@@ -41,23 +41,23 @@ subroutine write_soil_param_sac(hruid, param, ierr, message)
   if(size(param,1)/=nHru)then;ierr=11;message=trim(message)//'params 1st dimension size different than nHru';return;endif
   if(size(hruid)/=nHru)then;ierr=12;message=trim(message)//'hruid size different than nHru';return;endif
   open(UNIT=51,file=trim(calibparam_name),action='write',status='unknown' )
-  write(rowfmt,'(A,I3,A)') 'A, (',nHru,'(1X,F10.5))' 
-  write(51,fmt=trim(rowfmt)) 'uztwm',( param(iHru,1), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'uzfwm',( param(iHru,2), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'lztwm',( param(iHru,3), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'lzfpm',( param(iHru,4), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'lzfsm',( param(iHru,5), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'adimp',( param(iHru,6), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'uzk',  ( param(iHru,7), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'lzpk', ( param(iHru,8), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'lzsk', ( param(iHru,9), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'zperc',( param(iHru,10),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'rexp', ( param(iHru,11),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'pctim',( param(iHru,12),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'pfree',( param(iHru,13),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'riva', ( param(iHru,14),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'side', ( param(iHru,15),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'rserv',( param(iHru,16),iHru=1,nHru )
+  write(rowfmt,'(A,I3,A)') '(A,',nHru,'(1X,F10.5))' 
+  write(51,fmt=trim(rowfmt)) ('uztwm',( param(iHru,1), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('uzfwm',( param(iHru,2), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('lztwm',( param(iHru,3), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('lzfpm',( param(iHru,4), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('lzfsm',( param(iHru,5), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('adimp',( param(iHru,6), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('uzk',  ( param(iHru,7), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('lzpk', ( param(iHru,8), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('lzsk', ( param(iHru,9), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('zperc',( param(iHru,10),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('rexp', ( param(iHru,11),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('pctim',( param(iHru,12),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('pfree',( param(iHru,13),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('riva', ( param(iHru,14),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('side', ( param(iHru,15),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('rserv',( param(iHru,16),iHru=1,nHru ))
   close(UNIT=51)
   return
 end subroutine
@@ -247,6 +247,8 @@ subroutine adj_snow_param_sac(multiplier, err, message)
   ! Read original soil parameter file
   do 
     read(unit=50,fmt=*,iostat=io) parName, (paramTemp(iHru), iHru=1,nHru)
+    print*,parName
+    print*,paramTemp
     if (io>0) then
       stop 'something wrong in input'
     elseif (io<0) then
@@ -292,28 +294,28 @@ subroutine adj_snow_param_sac(multiplier, err, message)
       case('daygm');  param(:,11)=multiplier(iPar)%var(1)*param(:,1) 
     end select
   enddo
-  write(rowfmt,'(A,I3,A)') 'A, (',nHru,'(1X,F10.5))' 
-  write(51,fmt=trim(rowfmt)) 'scf',   ( param(iHru,1), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'mfmax', ( param(iHru,2), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'mfmin', ( param(iHru,3), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'uadj',  ( param(iHru,4), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'si',    ( param(iHru,5), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'pxtemp',( param(iHru,6), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'nmf',   ( param(iHru,7), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'tipm',  ( param(iHru,8), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'plwhc', ( param(iHru,9), iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'daygm', ( param(iHru,10),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'adc1',  ( param(iHru,11),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'adc2',  ( param(iHru,12),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'adc3',  ( param(iHru,13),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'adc4',  ( param(iHru,14),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'adc5',  ( param(iHru,15),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'adc6',  ( param(iHru,16),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'adc7',  ( param(iHru,17),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'adc8',  ( param(iHru,18),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'adc9',  ( param(iHru,19),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'adc10', ( param(iHru,20),iHru=1,nHru )
-  write(51,fmt=trim(rowfmt)) 'adc11', ( param(iHru,21),iHru=1,nHru )
+  write(rowfmt,'(A,I3,A)') '(A,',nHru,'(1X,F10.5))' 
+  write(51,fmt=trim(rowfmt)) ('scf',   ( param(iHru,1), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('mfmax', ( param(iHru,2), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('mfmin', ( param(iHru,3), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('uadj',  ( param(iHru,4), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('si',    ( param(iHru,5), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('pxtemp',( param(iHru,6), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('nmf',   ( param(iHru,7), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('tipm',  ( param(iHru,8), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('plwhc', ( param(iHru,9), iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('daygm', ( param(iHru,10),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('adc1',  ( param(iHru,11),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('adc2',  ( param(iHru,12),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('adc3',  ( param(iHru,13),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('adc4',  ( param(iHru,14),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('adc5',  ( param(iHru,15),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('adc6',  ( param(iHru,16),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('adc7',  ( param(iHru,17),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('adc8',  ( param(iHru,18),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('adc9',  ( param(iHru,19),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('adc10', ( param(iHru,20),iHru=1,nHru ))
+  write(51,fmt=trim(rowfmt)) ('adc11', ( param(iHru,21),iHru=1,nHru ))
   close(UNIT=50)
   close(UNIT=51)
   return
@@ -429,7 +431,7 @@ subroutine read_sac_sim(sim, err, message)
   !local variables
   character(len=strLen)              :: filename
   real(dp)                           :: cellfraction,basin_area
-  real(dp)                           :: auxflux(20)                ! This is only in case of water balance mode
+  real(dp)                           :: auxflux(18)                ! This is only in case of water balance mode
   integer(i4b)                       :: ibasin, itime, ivar, icell ! index 
   integer(i4b)                       :: ncell
   integer(i4b)                       :: dum,c_cell
@@ -452,10 +454,10 @@ subroutine read_sac_sim(sim, err, message)
       read (UNIT=54,fmt=*) cellfraction
       filename=trim(sim_dir)//trim(filename)
       open (UNIT=55,file= filename,form='formatted',status='old')
-      read (UNIT=55,fmt=*) strDum 
+      read (UNIT=55,fmt=*) (strDum, ivar=1,18)
       do itime = 1,sim_len
-        read (UNIT=55,fmt=*) (auxflux(ivar), ivar=1,20)
-        sim(c_cell,itime) = (auxflux(15))*cellfraction
+        read (UNIT=55,fmt=*) (auxflux(ivar), ivar=1,18)
+        sim(c_cell,itime) = (auxflux(18))*cellfraction
       enddo
       close(UNIT=55)
       c_cell = c_cell + 1

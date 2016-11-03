@@ -525,13 +525,15 @@ subroutine calc_sigBias_region(sim, obs, sigBias)
     obsBasin=obs(offset+start_cal:offset+end_cal)+valMin
     call sort(simBasin)
     call sort(obsBasin)
-    pBias=sum( abs(sim(ibasin+1,start_cal:end_cal)-obs(offset+start_cal:offset+end_cal)) )/sum(obs(offset+start_cal:offset+end_cal))
-    pBiasFMS=abs(((log(simBasin(i80))-log(simBasin(i30)) )-(log(obsBasin(i80))-log(obsBasin(i30)))))/( log(obsBasin(i80))-log(obsBasin(i30)) )
-    pBiasFHV=sum(abs(simBasin(i80:nTime)-obsBasin(i80:nTime)))/sum(obsBasin(i80:nTime))
-    pBiasFLV=abs((sum(log(simBasin(1:i30))-log(simBasin(1)) )-sum(log(obsBasin(1:i30))-log(obsBasin(1)))))/sum( log(obsBasin(1:i30))-log(obsBasin(1)) )
-    pBiasFMM=abs( log(simBasin(i50))-log(obsBasin(i50)) )/( log(obsBasin(i50)) )
+    ! compute signature
+    pBias=sum( sim(ibasin+1,start_cal:end_cal)-obs(offset+start_cal:offset+end_cal) )/sum(obs(offset+start_cal:offset+end_cal))
+    pBiasFMS=(( log(simBasin(i80))-log(simBasin(i30)) )-(log(obsBasin(i80))-log(obsBasin(i30))))/( log(obsBasin(i80))-log(obsBasin(i30)) )
+    pBiasFHV=sum(simBasin(i80:nTime)-obsBasin(i80:nTime))/sum(obsBasin(i80:nTime))
+    pBiasFLV=(sum(log(simBasin(1:i30))-log(simBasin(1)) )-sum(log(obsBasin(1:i30))-log(obsBasin(1))))/sum( log(obsBasin(1:i30))-log(obsBasin(1)) )
+    pBiasFMM= (log(simBasin(i50))-log(obsBasin(i50))) /( log(obsBasin(i50)) )
     call pearsn(sim(ibasin+1,start_cal:end_cal), obs(offset+start_cal:offset+end_cal), cc)
-    basin_sigBias(iBasin+1) = ( (1.0_dp-cc)+pBias+pBiasFHV+pBiasFLV+pBiasFMS+pBiasFMM )/5.0_dp
+    
+    basin_sigBias(iBasin+1) = ( (1.0_dp-cc)+abs(pBias)+abs(pBiasFHV)+abs(pBiasFLV)+abs(pBiasFMS)+abs(pBiasFMM) )/5.0_dp
   enddo
   print*,'Signature-Objectiver-function components'
   print*,'pBias=',pBias
@@ -544,6 +546,28 @@ subroutine calc_sigBias_region(sim, obs, sigBias)
   sigBias = sum(basin_sigBias*obj_fun_weight)
   return
 end subroutine
+
+function scoref(sigBias, Dstar, Dmax)
+  ! sigBias is percent bias, 
+  ! if sigBias is less than Dstar, get score one.
+  ! if sigBias is greater than Dmax, get zero score,
+  ! Dstar< sigBias < Dmax, get fractinal score between 0 and 1
+  ! Shafii and Tolson 2015, WRR
+  implicit none
+  real(dp) ,intent(in) :: sigBias
+  real(dp) ,intent(in) :: Dstar
+  real(dp) ,intent(in) :: Dmax
+  real(dp)             :: scoref
+  
+  if ( abs(sigBias) < abs(Dstar) ) then
+    scoref=1.0_dp
+  elseif ( abs(sigBias) > abs(Dmax) ) then
+    scoref=0.0_dp
+  else 
+    scoref=( abs(Dmax)-abs(sigBias) )/( abs(Dmax)-abs(Dstar) )
+  endif
+  return
+end function
 
 subroutine sort(vec)
   implicit none
