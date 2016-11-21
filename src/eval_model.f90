@@ -404,9 +404,9 @@ subroutine calc_kge_region( sim, obs, kge)
     call pearsn(sim(ibasin+1,start_cal:end_cal), obs(offset+start_cal:offset+end_cal), cc)
     betha = mu_s/mu_o
     alpha = sigma_s/sigma_o
-    basin_kge(ibasin+1) =( sqrt((cc-1.0)**2 + (alpha-1.0)**2 + (betha-1.0)**2) )
+    basin_kge(ibasin+1) =( sqrt((cc-1.0)**2.0_dp + (alpha-1.0)**2.0_dp + (betha-1.0)**2.0_dp) )
   enddo
-  kge = sum(basin_kge*obj_fun_weight)
+  kge = (sum((basin_kge*obj_fun_weight)**6.0_dp))**(1.0_dp/6.0_dp)
   return
 end subroutine
 
@@ -431,40 +431,6 @@ subroutine pearsn(x,y,r)
   syy=dot_product(yt,yt)
   sxy=dot_product(xt,yt)
   r=sxy/(sqrt(sxx*syy)+verySmall)
-  return
-end subroutine
-
-!******************************
-! compute percent bias of flow 
-!******************************
-subroutine calc_pBias_region(sim, obs, pBias) 
-  ! absolute percentage bias
-  implicit none
-  !input variables 
-  real(dp), dimension(:,:), intent(in)  :: sim 
-  real(dp), dimension(:),   intent(in)  :: obs 
-  !output variables
-  real(dp),                 intent(out) :: pBias 
-  ! local variables
-  integer(i4b)                          :: ibasin ! loop index
-  integer(i4b),allocatable,dimension(:) :: basin_id
-  real(dp),    allocatable,dimension(:) :: obj_fun_weight
-  real(dp),    allocatable,dimension(:) :: basin_pBias
-  integer(i4b)                          :: offset
-
-  allocate(obj_fun_weight(nbasin))
-  allocate(basin_pBias(nbasin))
-  allocate(basin_id(nbasin))
-  open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
-  read (UNIT=58,fmt=*) ( basin_id(ibasin),obj_fun_weight(ibasin), ibasin=1,nbasin)
-  close(UNIT=58)
-  do ibasin = 0,nbasin-1
-    !offset places me at the start of each basin
-    offset = ibasin*sim_len
-    !! mean
-    basin_pBias(ibasin+1)=abs(sum( sim(ibasin+1,:)-obs(offset+start_cal:offset+end_cal) ))/sum(obs(offset+start_cal:offset+end_cal))
-  enddo
-  pBias = sum(basin_pBias*obj_fun_weight)
   return
 end subroutine
 
