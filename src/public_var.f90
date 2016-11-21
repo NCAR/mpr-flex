@@ -53,8 +53,6 @@ module public_var
   integer(i4b),public             :: end_cal 
   integer(i4b),public             :: nHru
   integer(i4b),public             :: nbasin
-  integer(i4b),public             :: Npro
-  real,dimension(16),public       :: initcell,endcell
   character(len=strLen),public    :: calpar 
   ! modelconfig
   integer(i4b),public             :: idModel 

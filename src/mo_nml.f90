@@ -45,9 +45,6 @@ module mo_nml
                           end_cal,                 &
                           nHru,                    &
                           nbasin,                  &
-                          Npro,                    & 
-                          initcell,                & 
-                          endcell,                 &
                           calpar
 ! Model specification 
   namelist / modelconfig / idModel,                &

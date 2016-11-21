@@ -56,8 +56,6 @@ end_cal                  = 6940               ! time step when calibration end
 nbasin                   = 1                  ! number of calibrating basins
 nHru                     = 1                  ! sum of hrus consisting of each basin
 Npro                     = 1                  ! number of processors to use
-initcell                 = 1                  ! index of the first cell assigned to each processor
-endcell                  = 1                  ! index of the last cell assigned to each processor
 /
 
 !---------------------------------------

@@ -533,7 +533,7 @@ subroutine calc_sigBias_region(sim, obs, sigBias)
     pBiasFMM= (log(simBasin(i50))-log(obsBasin(i50))) /( log(obsBasin(i50)) )
     call pearsn(sim(ibasin+1,start_cal:end_cal), obs(offset+start_cal:offset+end_cal), cc)
     
-    basin_sigBias(iBasin+1) = ( (1.0_dp-cc)+abs(pBias)+abs(pBiasFHV)+abs(pBiasFLV)+abs(pBiasFMS)+abs(pBiasFMM) )/5.0_dp
+    basin_sigBias(iBasin+1) = ( (1.0_dp-cc)+abs(pBias)+abs(pBiasFHV)+abs(pBiasFLV)+abs(pBiasFMS)+abs(pBiasFMM) )/6.0_dp
   enddo
   print*,'Signature-Objectiver-function components'
   print*,'pBias=',pBias
