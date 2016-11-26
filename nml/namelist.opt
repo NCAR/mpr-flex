@@ -55,7 +55,6 @@ start_cal                = 3652               ! time step when calibration start
 end_cal                  = 6940               ! time step when calibration end
 nbasin                   = 1                  ! number of calibrating basins
 nHru                     = 1                  ! sum of hrus consisting of each basin
-Npro                     = 1                  ! number of processors to use
 /
 
 !---------------------------------------
