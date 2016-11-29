@@ -181,9 +181,9 @@ subroutine calc_rmse_region(sim, obs, agg, objfn)
     basin_rmse(ibasin+1) = sqrt( sum((simIn(ibasin+1,start_cal:end_cal)-obsIn(offset+start_cal:offset+end_cal))**2)/real(nTime) )
   enddo
   select case( agg )
-  case(1); objfn = sum(basin_rmse*obj_fun_weight)
-  case(2); objfn = (sum((basin_rmse*obj_fun_weight)**6.0_dp))**(1.0_dp/6.0_dp)
-  case default; print*,'basin aggregation method not recognized';stop
+    case(1); objfn = sum(basin_rmse*obj_fun_weight)
+    case(2); objfn = (sum((basin_rmse*obj_fun_weight)**6.0_dp))**(1.0_dp/6.0_dp)
+    case default; print*,'basin aggregation method not recognized';stop
   end select
   return
 end subroutine
@@ -317,7 +317,7 @@ subroutine calc_nse_region(sim, obs, agg, objfn)
   !input variables
   real(dp), dimension(:,:), intent(in)  :: sim 
   real(dp), dimension(:),   intent(in)  :: obs
-  integer(i4b),             intent(in)  :: agg          ! basin aggregation method
+  integer(i4b),             intent(in)  :: agg                ! basin aggregation method
   !output variables
   real(dp),                 intent(out) :: objfn 
   !local variables
@@ -326,14 +326,13 @@ subroutine calc_nse_region(sim, obs, agg, objfn)
   real(dp)                              :: sumSqrDev
   real(dp)                              :: sumQ
   real(dp)                              :: meanQ
-  integer(i4b),allocatable,dimension(:) :: basin_id
-  real(dp),allocatable,dimension(:)     :: obj_fun_weight
-  real(dp),allocatable,dimension(:)     :: basin_nse          ! nse for individual basin
+  real(dp)                              :: Smax=0.6_dp        ! upper threshold for score function 
+  real(dp)                              :: Smin=0.3_dp        ! lower threshold for score function 
+  integer(i4b),dimension(nbasin)        :: basin_id
+  real(dp),    dimension(nbasin)        :: obj_fun_weight
+  real(dp),    dimension(nbasin)        :: basin_nse          ! nse for individual basin
+  real(dp),    dimension(nbasin)        :: basin_score        ! score function  
 
-  ! variable allocation
-  allocate(obj_fun_weight(nbasin))
-  allocate(basin_nse(nbasin))
-  allocate(basin_id(nbasin))
   ! Read basin weight file
   ! this file determines how much each basin contributes to the total objective function 
   ! weights need to sum to 1 in the file
@@ -359,6 +358,11 @@ subroutine calc_nse_region(sim, obs, agg, objfn)
   select case( agg )
   case(1); objfn = sum(basin_nse*obj_fun_weight)
   case(2); objfn = (sum((basin_nse*obj_fun_weight)**6.0_dp))**(1.0_dp/6.0_dp)
+  case(3); 
+    where(basin_nse<=Smin) basin_score=1.0_dp
+    where(basin_nse>Smax)  basin_score=0.0_dp
+    where(basin_nse>Smin .and. basin_nse<=Smax) basin_score=(Smax-basin_nse)/(Smax-Smin)
+    objfn=sum(basin_score)
   end select
   return
 end subroutine
