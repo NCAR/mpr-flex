@@ -48,6 +48,7 @@ obs_name                 = "CALIBFLOW"        ! name of ascii observed flow data
 executable               = "EXE"              ! name of model executable
 basin_objfun_weight_file = "OBJWEIGHT"        ! name of ascii listing weight of each basin that is appplied to basin objective function   
 objfntype                = "OBJFNCNAME"       ! name of objective function to be minimized- "nse", "rmse", "kge", "month-nse", "month-rmse", "sigBias"
+agg                      =  1                 ! method for aggregaion of basin objective function
 calpar                   = "calBeta.txt"      ! name of ascii file listing calibrating parameters
 dt                       = 86400              ! simulation time step [sec]
 sim_len                  = 6940               ! number of simulation time step 
