@@ -39,6 +39,7 @@ module mo_nml
                           executable,              & 
                           basin_objfun_weight_file,&
                           objfntype,               &
+                          agg,                     &
                           dt,                      &
                           sim_len,                 & 
                           start_cal,               &
