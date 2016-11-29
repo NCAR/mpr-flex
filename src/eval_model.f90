@@ -406,6 +406,7 @@ subroutine calc_kge_region( sim, obs, kge)
     alpha = sigma_s/sigma_o
     basin_kge(ibasin+1) =( sqrt((cc-1.0)**2.0_dp + (alpha-1.0)**2.0_dp + (betha-1.0)**2.0_dp) )
   enddo
+  write(*,"(10f9.5)") ( basin_kge(ibasin), ibasin=1,nbasin)
   kge = (sum((basin_kge*obj_fun_weight)**6.0_dp))**(1.0_dp/6.0_dp)
   return
 end subroutine
