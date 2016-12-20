@@ -1,4 +1,4 @@
-# Hydropt (to become MPR-flex)
+# Hydropt (to be MPR-flex)
 Flexible hydrologic model parameter estimation driver. This program includes two main routines: 1) optimization and 2) mpr
 
 # General overview
