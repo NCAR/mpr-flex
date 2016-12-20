@@ -13,17 +13,19 @@ module mpr_routine
 
 contains
 
-subroutine run_mpr( calParam ) 
+subroutine run_mpr( calParam, restartFile ) 
   use globalData,    only: parSubset, betaInGamma, gammaSubset
   use model_wrapper, only: read_hru_id
   use write_param_nc,only: defSoilNetCDF, write_vec_ivar, write_array2_dvar
   implicit none
   ! input variables
-  real(dp),             intent(in)  :: calParam(:)               ! parameter in namelist, not necessarily all parameters are calibrated
+  real(dp),             intent(in)  :: calParam(:)            ! parameter in namelist, not necessarily all parameters are calibrated
+  character(len=strLen),intent(in)  :: restartFile            ! name of restart file including iteration, the most recent parameter values 
   ! output variables
   ! local
   type(var_d)                       :: calParStr(nParCal)     ! parameter storage including perLayr values converted from parameter array 
   type(var_d),          allocatable :: paramGammaStr(:)       ! calibratin gamma parameter storage extracted from calParStr
+  integer(i4b)                      :: idummy                 ! dummy vaiable
   integer(i4b)                      :: idx                    ! counter 
   integer(i4b)                      :: iLyr                   ! loop index for model layer 
   integer(i4b)                      :: iPar                   ! loop index for parameter 
@@ -32,23 +34,34 @@ subroutine run_mpr( calParam )
   logical(lgc),         allocatable :: mask(:)                ! 1D mask
   integer(i4b)                      :: hruID(nHru)            ! Hru ID
   real(dp),             allocatable :: hModel(:,:)            ! storage of model layer thickness at model layer x model hru 
+  real(dp),             allocatable :: params(:)              ! parameter vector that is input into mpr 
   type(namedvar2),      allocatable :: parMxyMz(:)            ! storage of model soil parameter at model layer x model hru 
   type(namedvar),       allocatable :: vegParMxy(:)           ! storage of model vege parameter at model hru
+  logical                           :: isExistFile            ! logical to check if the file exist or not
   integer(i4b)                      :: err                    ! error id 
   character(len=strLen)             :: message                ! error message
   character(len=strLen)             :: cmessage               ! error message from subroutine
 
   err=0; message='run_mpr/' ! to initialize error control
   if ( idModel/=0 )then;;print*,trim(message)//'idModel should be zero if you want to output mpr derived parameter';stop;endif
+  allocate(params, source=calParam) ! copy calParameter default 
+  inquire(file=trim(adjustl(restartFile)), exist=isExistFile)
+  if ( isExistFile ) then !  if state file exists, update calParam, otherwise use default value
+    print*, 'read restart file'
+    open(unit=70,file=trim(adjustl(restartFile)), action='read', status = 'unknown')
+    read(70,*) idummy ! restart file include iStart  
+    read(70,*) (params(iPar),iPar=1,nParCal)    
+    close(70)
+  endif
   idx=1
   do iPar=1,nParCal
     if (parSubset(iPar)%perLyr)then
       allocate(calParStr(iPar)%var(nLyr))
-      calParStr(iPar)%var=calParam(idx:idx+nLyr-1)
+      calParStr(iPar)%var=params(idx:idx+nLyr-1)
       idx=idx+nLyr
     else
       allocate(calParStr(iPar)%var(1))
-      calParStr(iPar)%var=calParam(idx)
+      calParStr(iPar)%var=params(idx)
       idx=idx+1
     endif
   end do
@@ -75,7 +88,7 @@ subroutine run_mpr( calParam )
     enddo
     call mpr(idModel, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-    !! put below in module!!
+    !! Write parameter derived from MPR in netCDF put below in module!!
     call defSoilNetCDF(trim(mpr_output_dir)//"soil_temp.nc",nHru,nLyr,err,cmessage)
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
     call write_vec_ivar(trim(mpr_output_dir)//"soil_temp.nc","hruid",hruID,1,err,cmessage) 
@@ -92,7 +105,10 @@ subroutine run_mpr( calParam )
   endif
   return
 end subroutine
+
+! -------------------------
 ! public subroutine: mpr 
+! -------------------------
 subroutine mpr(idModel,           &     ! input: model ID
                gammaParStr,       &     ! input: array of gamma parameter 
                gammaParMeta,      &     ! input: array of gamma parameter metadata

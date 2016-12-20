@@ -50,7 +50,7 @@ program main_calibration
                maxit=isMax,             & ! minimzation (0) or maximization (1)
                tmp_file=state_file)       !
     case (2)     ! just perform MPR only and output parameters in netCDF
-      call run_mpr( param(:,1) )
+      call run_mpr( param(:,1), restrt_file )
     case default
       print*, 'integer to specify optimization scheme is not valid' 
   end select 
