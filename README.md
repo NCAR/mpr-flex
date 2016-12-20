@@ -3,9 +3,9 @@ Flexible hydrologic model parameter estimation driver. This program includes two
 
 ## General overview
 Three options to run this program (opt in namelist):
-* 0-> Perform only MPR to estimate parameters listed in calPar.txt and restart file (for gamma parameter values), and output them in NetCDF.
-* 1-> Perform model simulation (specified in idModel in namelist) with parameters listed in calPar.txt and restart file (for gamma parameter values) and default for the rest of parameters.
-* 3-> Perform DDS calibration to estimate optimized parameters listed in calPar.txt. 
+* 0-> Perform model simulation (specified in idModel in namelist) with parameters listed in calPar.txt and restart file (for gamma parameter values) and default for the rest of parameters.
+* 1-> Perform DDS calibration to estimate optimized parameters listed in calPar.txt. 
+* 2-> Perform only MPR to estimate parameters listed in calPar.txt and restart file (for gamma parameter values), and output them in NetCDF.
 
 For opt=1, two options to calibrate 1) multiplier based calibration, 2) MPR calibration.
 if model use spatially lumped mode, option 1) is equivalent to direct parameter adjustment 
