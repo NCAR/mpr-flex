@@ -9,8 +9,7 @@ module mo_nml
   public :: read_nml
 
 ! Main configuration 
-  namelist / runconfig /  mprOnly,                 &
-                          opt
+  namelist / runconfig /  opt
 ! MPR configuration
   namelist / mprconfig /  mpr_input_dir,           &
                           mpr_output_dir,          &
@@ -45,12 +44,12 @@ module mo_nml
                           start_cal,               &
                           end_cal,                 &
                           nHru,                    &
-                          nbasin,                  &
-                          calpar
+                          nbasin
 ! Model specification 
   namelist / modelconfig / idModel,                &
                            TotNpar,                &    
-                           nLyr
+                           nLyr,                   &
+                           calpar
 ! DDS algorithm 
   namelist / DDS / NparCal,     & 
                    rpar,        &

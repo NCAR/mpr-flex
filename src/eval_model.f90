@@ -16,13 +16,13 @@ contains
 !************************************
 ! perform model evaluation 
 !************************************
-function objfn( calPar )
+function objfn( calParam )
   use mpr_routine,   only: mpr
   use globalData,    only: parMaster, parSubset, betaInGamma, gammaSubset
   use model_wrapper, only: read_hru_id, read_soil_param, adjust_param, replace_param, write_soil_param, read_sim
   implicit none
   !input variables
-  real(dp),             intent(in)  :: calPar(:)              ! parameter in namelist, not necessarily all parameters are calibrated
+  real(dp),             intent(in)  :: calParam(:)              ! parameter in namelist, not necessarily all parameters are calibrated
   !local variables
   type(var_d)                       :: calParStr(nParCal)     ! parameter storage converted from parameter array 
   real(dp)                          :: objfn                  ! object function value 
@@ -56,11 +56,11 @@ function objfn( calPar )
   do iPar=1,nParCal
     if (parSubset(iPar)%perLyr)then
       allocate(calParStr(iPar)%var(nLyr))
-      calParStr(iPar)%var=calPar(idx:idx+nLyr-1)
+      calParStr(iPar)%var=calParam(idx:idx+nLyr-1)
       idx=idx+nLyr
     else
       allocate(calParStr(iPar)%var(1))
-      calParStr(iPar)%var=calPar(idx)
+      calParStr(iPar)%var=calParam(idx)
       idx=idx+1
     endif
   end do
