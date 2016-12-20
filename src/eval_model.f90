@@ -379,24 +379,24 @@ subroutine calc_log_nse_region(sim, obs, agg, objfn)
   !output variables
   real(dp),                 intent(out) :: objfn 
   !local variables
-  integer(i4b)                          :: itime,ibasin,offset
-  real(dp),   allocatable,dimension(:,:):: simIn,logSimIn
-  real(dp),   allocatable,dimension(:)  :: obsIn,logObsIn
-  real(dp)                              :: sumSqrErr,log_sumSqrErr
-  real(dp)                              :: sumSqrDev,log_sumSqrDev
-  real(dp)                              :: meanQ,log_meanQ
-  integer(i4b),allocatable,dimension(:) :: basin_id
-  real(dp),allocatable,dimension(:)     :: obj_fun_weight
-  real(dp),allocatable,dimension(:)     :: basin_objfn          ! nse for individual basin
+  integer(i4b)                              :: itime,ibasin,offset
+  real(dp)                                  :: Smax=0.6_dp        ! upper threshold for score function 
+  real(dp)                                  :: Smin=0.3_dp        ! lower threshold for score function 
+  real(dp),   allocatable,dimension(:,:)    :: simIn,logSimIn
+  real(dp),   allocatable,dimension(:)      :: obsIn,logObsIn
+  real(dp)                                  :: sumSqrErr,log_sumSqrErr
+  real(dp)                                  :: sumSqrDev,log_sumSqrDev
+  real(dp)                                  :: meanQ,log_meanQ
+  real(dp),               dimension(nbasin) :: basin_score          ! score function  
+  integer(i4b),           dimension(nbasin) :: basin_id
+  real(dp),               dimension(nbasin) :: obj_fun_weight
+  real(dp),               dimension(nbasin) :: basin_objfn          ! nse for individual basin
 
   ! variable allocation
   allocate(simIn(nbasin,sim_len))
   allocate(obsIn(nbasin*sim_len))
   allocate(logSimIn(nbasin,sim_len))
   allocate(logObsIn(nbasin*sim_len))
-  allocate(obj_fun_weight(nbasin))
-  allocate(basin_objfn(nbasin))
-  allocate(basin_id(nbasin))
   ! Read basin weight file
   ! this file determines how much each basin contributes to the total objective function 
   ! weights need to sum to 1 in the file
@@ -405,8 +405,10 @@ subroutine calc_log_nse_region(sim, obs, agg, objfn)
   close(UNIT=58)
   obsIn = obs 
   simIn = sim
-  logObsIn =log(obs)
-  logSimIn = log(sim)
+  where(obsIn<verySmall) obsIn=verySmall
+  where(simIn<verySmall) simIn=verySmall
+  logObsIn =log(obsIn)
+  logSimIn =log(simIn)
   do ibasin = 0,nbasin-1
     !offset places me at the start of each basin
     offset = ibasin*sim_len
@@ -431,6 +433,11 @@ subroutine calc_log_nse_region(sim, obs, agg, objfn)
   select case( agg )
   case(1); objfn = sum(basin_objfn*obj_fun_weight)
   case(2); objfn = (sum((basin_objfn*obj_fun_weight)**6.0_dp))**(1.0_dp/6.0_dp)
+  case(3); 
+    where(basin_objfn<=Smin) basin_score=1.0_dp
+    where(basin_objfn>Smax)  basin_score=0.0_dp
+    where(basin_objfn>Smin .and. basin_objfn<=Smax) basin_score=(Smax-basin_objfn)/(Smax-Smin)
+    objfn=sum(basin_score)
   end select
   return
 end subroutine
@@ -529,15 +536,15 @@ subroutine calc_kge_region( sim, obs, agg, objfn)
   real(dp),                 intent(out) :: objfn 
 !local variables
   integer(i4b)                          :: ibasin       ! loop index
-  integer(i4b),allocatable,dimension(:) :: basin_id
-  real(dp),    allocatable,dimension(:) :: obj_fun_weight
-  real(dp),    allocatable,dimension(:) :: basin_kge
+  integer(i4b),dimension(nbasin)        :: basin_id
+  real(dp)                              :: Smax=0.6_dp        ! upper threshold for score function 
+  real(dp)                              :: Smin=0.3_dp        ! lower threshold for score function 
+  real(dp),    dimension(nbasin)        :: basin_score        ! score function  
+  real(dp),    dimension(nbasin)        :: obj_fun_weight
+  real(dp),    dimension(nbasin)        :: basin_kge
   real(dp)                              :: cc,alpha,betha,mu_s,mu_o,sigma_s,sigma_o
   integer(i4b)                          :: offset
 
-  allocate(obj_fun_weight(nbasin))
-  allocate(basin_kge(nbasin))
-  allocate(basin_id(nbasin))
   open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
   read (UNIT=58,fmt=*) ( basin_id(ibasin),obj_fun_weight(ibasin), ibasin=1,nbasin)
   close(UNIT=58)
@@ -560,6 +567,11 @@ subroutine calc_kge_region( sim, obs, agg, objfn)
   select case( agg )
   case(1); objfn = sum(basin_kge*obj_fun_weight)
   case(2); objfn = (sum((basin_kge*obj_fun_weight)**6.0_dp))**(1.0_dp/6.0_dp)
+  case(3); 
+    where(basin_kge<=Smin) basin_score=1.0_dp
+    where(basin_kge>Smax)  basin_score=0.0_dp
+    where(basin_kge>Smin .and. basin_kge<=Smax) basin_score=(Smax-basin_kge)/(Smax-Smin)
+    objfn=sum(basin_score)
   end select
   return
 end subroutine
@@ -570,35 +582,37 @@ end subroutine
 subroutine calc_log_kge_region( sim, obs, agg, objfn)
   implicit none
 !input variables 
-  real(dp), dimension(:,:), intent(in)    :: sim 
-  real(dp), dimension(:),   intent(in)    :: obs 
-  integer(i4b),             intent(in)    :: agg          ! basin aggregation method
+  real(dp), dimension(:,:), intent(in)       :: sim 
+  real(dp), dimension(:),   intent(in)       :: obs 
+  integer(i4b),             intent(in)       :: agg          ! basin aggregation method
 !output variables
-  real(dp),                 intent(out)   :: objfn 
+  real(dp),                 intent(out)      :: objfn 
 !local variables
-  integer(i4b)                            :: ibasin       ! loop index
-  integer(i4b)                            :: offset
-  real(dp),    allocatable,dimension(:,:) :: simIn,logSimIn
-  real(dp),    allocatable,dimension(:)   :: obsIn,logObsIn
-  integer(i4b),allocatable,dimension(:)   :: basin_id
-  real(dp),    allocatable,dimension(:)   :: obj_fun_weight
-  real(dp),    allocatable,dimension(:)   :: basin_objfn
-  real(dp)                                :: cc,alpha,betha,mu_s,mu_o,sigma_s,sigma_o
-  real(dp)                                :: log_cc,log_alpha,log_betha,log_mu_s,log_mu_o,log_sigma_s,log_sigma_o
+  integer(i4b)                               :: ibasin       ! loop index
+  integer(i4b)                               :: offset
+  integer(i4b),            dimension(nbasin) :: basin_id
+  real(dp)                                   :: Smax=0.6_dp        ! upper threshold for score function 
+  real(dp)                                   :: Smin=0.3_dp        ! lower threshold for score function 
+  real(dp),    allocatable,dimension(:,:)    :: simIn,logSimIn
+  real(dp),    allocatable,dimension(:)      :: obsIn,logObsIn
+  real(dp),                dimension(nbasin) :: obj_fun_weight
+  real(dp),                dimension(nbasin) :: basin_objfn
+  real(dp),                dimension(nbasin) :: basin_score        ! score function  
+  real(dp)                                   :: cc,alpha,betha,mu_s,mu_o,sigma_s,sigma_o
+  real(dp)                                   :: log_cc,log_alpha,log_betha,log_mu_s,log_mu_o,log_sigma_s,log_sigma_o
 
   allocate(simIn(nbasin,sim_len))
   allocate(obsIn(nbasin*sim_len))
   allocate(logSimIn(nbasin,sim_len))
   allocate(logObsIn(nbasin*sim_len))
-  allocate(obj_fun_weight(nbasin))
-  allocate(basin_objfn(nbasin))
-  allocate(basin_id(nbasin))
   open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
   read (UNIT=58,fmt=*) ( basin_id(ibasin),obj_fun_weight(ibasin), ibasin=1,nbasin)
   close(UNIT=58)
   obsIn = obs 
   simIn = sim
-  logObsIn =log(obs)
+  where(obsIn<verySmall) obsIn=verySmall
+  where(simIn<verySmall) simIn=verySmall
+  logObsIn = log(obs)
   logSimIn = log(sim)
   do ibasin = 0,nbasin-1
     !offset places me at the start of each basin
@@ -627,6 +641,11 @@ subroutine calc_log_kge_region( sim, obs, agg, objfn)
   select case( agg )
   case(1); objfn = sum(basin_objfn*obj_fun_weight)
   case(2); objfn = (sum((basin_objfn*obj_fun_weight)**6.0_dp))**(1.0_dp/6.0_dp)
+  case(3); 
+    where(basin_objfn<=Smin) basin_score=1.0_dp
+    where(basin_objfn>Smax)  basin_score=0.0_dp
+    where(basin_objfn>Smin .and. basin_objfn<=Smax) basin_score=(Smax-basin_objfn)/(Smax-Smin)
+    objfn=sum(basin_score)
   end select
   return
 end subroutine
@@ -687,13 +706,10 @@ subroutine calc_sigBias_region(sim, obs, agg, objfn)
   real(dp),    allocatable             :: p(:)            ! probability
   real(dp),    allocatable             :: simBasin(:)
   real(dp),    allocatable             :: obsBasin(:)
-  integer(i4b),allocatable             :: basin_id(:)
-  real(dp),    allocatable             :: obj_fun_weight(:)
-  real(dp),    allocatable             :: basin_sigBias(:)
+  integer(i4b),dimension(nbasin)       :: basin_id
+  real(dp),    dimension(nbasin)       :: obj_fun_weight
+  real(dp),    dimension(nbasin)       :: basin_sigBias
   
-  allocate(obj_fun_weight(nbasin))
-  allocate(basin_sigBias(nbasin))
-  allocate(basin_id(nbasin))
   open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
   read (UNIT=58,fmt=*) ( basin_id(ibasin),obj_fun_weight(ibasin), ibasin=1,nbasin)
   close(UNIT=58)
