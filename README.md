@@ -1,7 +1,7 @@
 # Hydropt (to be MPR-flex)
 Flexible hydrologic model parameter estimation driver. This program includes two main routines: 1) optimization and 2) mpr
 
-# General overview
+## General overview
 Three options to run this program (opt in namelist):
 * 0-> Perform only MPR to estimate parameters listed in calPar.txt and restart file (for gamma parameter values), and output them in NetCDF.
 * 1-> Perform model simulation (specified in idModel in namelist) with parameters listed in calPar.txt and restart file (for gamma parameter values) and default for the rest of parameters.
@@ -29,7 +29,7 @@ Name convention of gamma parameters.
 
 e.g.,ks1gamma1 is 1st gamma parameter for ks (saturated hydraulic conductivity) transfer function type 1 (cosby equation) 
 
-# Model specific I/O implementation
+## Model specific I/O implementation
 For run option 2 and 3, VIC and SAC are now implemented (as of 10/26/2016).
 
 To use other model 
@@ -44,9 +44,9 @@ Using this template, you need to write several subrutines
 5. soil parameter writing routine
 6. Other parameter adjustment routine e.g., snow, vege (for now, no MPR for this)
 
-# Compiling the program
+## Compiling the program
 Compiled with pgi/15.7 and ifort/2015.2.164 (15.0.1)
 
-# Terminologies
+## Terminologies
 * gamma parameter: parameter of transfer functions used in MPR
 * beta parameters: model parameters
