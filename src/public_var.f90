@@ -16,7 +16,6 @@ module public_var
 
   ! Namelist variables
   ! runconfig 
-  integer(i4b),public             :: mprOnly 
   integer(i4b),public             :: opt
   ! mprconfig
   character(len=strLen),public    :: mpr_input_dir 
@@ -54,11 +53,11 @@ module public_var
   integer(i4b),public             :: end_cal 
   integer(i4b),public             :: nHru
   integer(i4b),public             :: nbasin
-  character(len=strLen),public    :: calpar 
   ! modelconfig
   integer(i4b),public             :: idModel 
   integer(i4b),public             :: TotNpar  != 54(VIC)
   integer(i4b),public             :: nLyr     != 3 (VIC)
+  character(len=strLen),public    :: calpar 
   !
   !DDS 
   !input parameters

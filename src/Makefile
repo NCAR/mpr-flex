@@ -73,6 +73,8 @@ IO = \
     read_soildata.f90 \
     read_vegdata.f90 \
     read_mapdata.f90 \
+    read_ncdata.f90 \
+    write_param_nc.f90 \
 
 CORE = \
     get_ixname.f90 \

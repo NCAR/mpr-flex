@@ -8,6 +8,7 @@ program main_calibration
   use mo_dds,               only: dds
   use mo_opt_run,           only: opt_run
   use eval_model,           only: objfn
+  use mpr_routine,          only: run_mpr
 
   implicit none
  
@@ -17,7 +18,7 @@ program main_calibration
   integer(i4b)                      :: ierr            ! error code 
   character(len=strLen)             :: cmessage        ! error message from suroutine
 
-  ! read calibration namelists and save variables 
+  ! read configuration namelists and save variables 
   nmlfile='namelist.dds.local'
   call read_nml( trim(nmlfile), ierr, cmessage ); call handle_err(ierr,cmessage)
   ! Populate master parameter meta - "parMaster" structure
@@ -32,11 +33,11 @@ program main_calibration
   allocate(param(nParCalSum,3))
   allocate(parMask(nParCalSum))
   call param_setup(param, parMask)
-  ! optimization starts
+  ! main routine starts depending on option
   select case (opt)
-    case (0)     ! just output ascii of sim and obs series
+    case (0)     ! just run model and output ascii of sim and obs series (parameter values use default or ones specified in restart file)
       call opt_run(objfn, restrt_file)
-    case (1)     ! DDS
+    case (1)     ! perform calibration with DDS
       call dds(objfn,                   & ! function to get object function
                param(:,1),              & ! initial parameter values
                param(:,2:3),            & ! lower and upper bounds of each parameters
@@ -48,6 +49,8 @@ program main_calibration
                maxiter=maxn,            & ! maximum iteration
                maxit=isMax,             & ! minimzation (0) or maximization (1)
                tmp_file=state_file)       !
+    case (2)     ! just perform MPR only and output parameters in netCDF
+      call run_mpr( param(:,1) )
     case default
       print*, 'integer to specify optimization scheme is not valid' 
   end select 

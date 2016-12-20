@@ -2,13 +2,10 @@
 ! General run configuration
 !---------------------------------------
 &runconfig
-!> Option to run only MPR to compute parameter values
-!> 0 = run model calibration or model run with given parameter
-!> 1 = run only MPR and skip model calibration or run
-mprOnly                = 0
-!> Option to run only MPR to compute parameter values 
-!> 0 = only run model with parameter
-!> 1 = calibrate with DDS
+!> Option to run the program 
+!> 0 = only run model with parameters given by restart file or default in param metafile
+!> 1 = calibrate parameters specifided in input with DDS
+!> 2 = estimate parameter with MPR (this option neglect calconfig and dds nml group) 
 opt                    = 1
 /
 
@@ -49,7 +46,6 @@ executable               = "EXE"              ! name of model executable
 basin_objfun_weight_file = "OBJWEIGHT"        ! name of ascii listing weight of each basin that is appplied to basin objective function   
 objfntype                = "OBJFNCNAME"       ! name of objective function to be minimized- "nse", "rmse", "kge", "month-nse", "month-rmse", "sigBias"
 agg                      =  1                 ! method for aggregaion of basin objective function
-calpar                   = "calBeta.txt"      ! name of ascii file listing calibrating parameters
 dt                       = 86400              ! simulation time step [sec]
 sim_len                  = 6940               ! number of simulation time step 
 start_cal                = 3652               ! time step when calibration starts
@@ -65,6 +61,7 @@ nHru                     = 1                  ! sum of hrus consisting of each b
 idModel                  = IDMODEL            ! id of model
 TotNpar                  = NUMPAR             ! total number of soil parameter
 nLyr                     = NUMLYR             ! number of soil layers
+calpar                   = "calBeta.txt"      ! name of ascii file listing calibrating parameters
 /
 
 !---------------------------------------

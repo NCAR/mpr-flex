@@ -8,10 +8,91 @@ module mpr_routine
 
   private
 
+  public:: run_mpr
   public:: mpr
 
 contains
 
+subroutine run_mpr( calParam ) 
+  use globalData,    only: parSubset, betaInGamma, gammaSubset
+  use model_wrapper, only: read_hru_id
+  use write_param_nc,only: defSoilNetCDF, write_vec_ivar, write_array2_dvar
+  implicit none
+  ! input variables
+  real(dp),             intent(in)  :: calParam(:)               ! parameter in namelist, not necessarily all parameters are calibrated
+  ! output variables
+  ! local
+  type(var_d)                       :: calParStr(nParCal)     ! parameter storage including perLayr values converted from parameter array 
+  type(var_d),          allocatable :: paramGammaStr(:)       ! calibratin gamma parameter storage extracted from calParStr
+  integer(i4b)                      :: idx                    ! counter 
+  integer(i4b)                      :: iLyr                   ! loop index for model layer 
+  integer(i4b)                      :: iPar                   ! loop index for parameter 
+  integer(i4b)                      :: nVegParModel           ! Number of model vege parameters associated with calibrating gamma parameter 
+  integer(i4b)                      :: nSoilParModel          ! Number of model soil parameters associated with calibrating gamma parameter 
+  logical(lgc),         allocatable :: mask(:)                ! 1D mask
+  integer(i4b)                      :: hruID(nHru)            ! Hru ID
+  real(dp),             allocatable :: hModel(:,:)            ! storage of model layer thickness at model layer x model hru 
+  type(namedvar2),      allocatable :: parMxyMz(:)            ! storage of model soil parameter at model layer x model hru 
+  type(namedvar),       allocatable :: vegParMxy(:)           ! storage of model vege parameter at model hru
+  integer(i4b)                      :: err                    ! error id 
+  character(len=strLen)             :: message                ! error message
+  character(len=strLen)             :: cmessage               ! error message from subroutine
+
+  err=0; message='run_mpr/' ! to initialize error control
+  if ( idModel/=0 )then;;print*,trim(message)//'idModel should be zero if you want to output mpr derived parameter';stop;endif
+  idx=1
+  do iPar=1,nParCal
+    if (parSubset(iPar)%perLyr)then
+      allocate(calParStr(iPar)%var(nLyr))
+      calParStr(iPar)%var=calParam(idx:idx+nLyr-1)
+      idx=idx+nLyr
+    else
+      allocate(calParStr(iPar)%var(1))
+      calParStr(iPar)%var=calParam(idx)
+      idx=idx+1
+    endif
+  end do
+  call read_hru_id(idModel, hruID, err, cmessage)    ! to get hruID
+  if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
+  if ( any(parSubset(:)%beta /= "beta") )then ! calPar includes gamma parameters to be used for MPR 
+    nSoilParModel=size(betaInGamma)           ! number of soil parameters associated with gamma parameters
+    nVegParModel=1                            ! number of vege parameters associated with gamma parameters (now 1 temporarily)
+    allocate(hModel(nLyr,nHru),stat=err);      if(err/=0)then;print*,trim(message)//'error allocating hModel';stop;endif
+    allocate(parMxyMz(nSoilParModel),stat=err);if(err/=0)then;print*,trim(message)//'error allocating parMxyMz';stop;endif
+    allocate(vegParMxy(nVegParModel),stat=err);if(err/=0)then;print*,trim(message)//'error allocating vegParMxy';stop;endif
+    do iPar=1,nSoilParModel
+      allocate(parMxyMz(iPar)%varData(nLyr,nHru),stat=err)
+    enddo
+    do iPar=1,nVegParModel
+      allocate(vegParMxy(iPar)%varData(nHru),stat=err)
+    enddo
+    allocate(mask(nParCal))
+    mask=parSubset(:)%beta/="beta"
+    allocate(paramGammaStr(count(mask)))
+    paramGammaStr=pack(calParStr,mask)
+    do iPar=1,size(paramGammaStr)
+      if (size(paramGammaStr(iPar)%var)>1)then;;print*,trim(message)//'gammaParameter should not have perLayer value';stop;endif
+    enddo
+    call mpr(idModel, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
+    if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+    !! put below in module!!
+    call defSoilNetCDF(trim(mpr_output_dir)//"soil_temp.nc",nHru,nLyr,err,cmessage)
+    if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+    call write_vec_ivar(trim(mpr_output_dir)//"soil_temp.nc","hruid",hruID,1,err,cmessage) 
+    if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+    call write_vec_ivar(trim(mpr_output_dir)//"soil_temp.nc","lyr",(/(iLyr,iLyr=1,nLyr)/),1,err,cmessage) 
+    if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+    do iPar=1,size(betaInGamma)
+      call write_array2_dvar(trim(mpr_output_dir)//"soil_temp.nc",trim(betaInGamma(iPar)),parMxyMz(iPar)%varData,(/1,1/),(/nLyr,nHru/),err,cmessage)
+      if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+    enddo
+    !!-----------!!
+  else  
+    print*,trim(message)//'there is no gamma pamameters in parameter input file to perform MPR';stop
+  endif
+  return
+end subroutine
+! public subroutine: mpr 
 subroutine mpr(idModel,           &     ! input: model ID
                gammaParStr,       &     ! input: array of gamma parameter 
                gammaParMeta,      &     ! input: array of gamma parameter metadata
@@ -38,7 +119,9 @@ subroutine mpr(idModel,           &     ! input: model ID
   USE var_lookup,           only:ixVarVegData,nVarVegData      ! index of vege data variables and number of variables
   USE var_lookup,           only:ixVarMapData,nVarMapData      ! index of map data variables and number of variables
 !  USE var_lookup,             only:ixPrpVeg,nPrpVeg             ! index of veg properties and number of properties
+
    implicit none
+
   ! input
   integer(i4b),         intent(in)   :: idModel 
   type(var_d),          intent(in)   :: gammaParStr(:)           ! data structure of gamma parameter value adjusted with calibration
@@ -51,7 +134,7 @@ subroutine mpr(idModel,           &     ! input: model ID
   character(len=strLen),intent(out)  :: message                  ! error message 
   ! local
   character(len=strLen)              :: cmessage                 ! error message from downward subroutine
-  integer,     parameter             :: iHruPrint = 2            ! model hru id for which everything is printed for checking
+  integer,     parameter             :: iHruPrint = 1            ! model hru id for which everything is printed for checking
   integer(i4b),parameter             :: nSub=11                  ! max. number of Soil layer within Model layer
   integer(i4b)                       :: iLocal                   ! index of hru array in mapping file that match hru id of interest 
   integer(i4b)                       :: iDummy(1)                ! 1D integer array for temporal storage 
