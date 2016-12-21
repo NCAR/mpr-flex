@@ -612,8 +612,8 @@ subroutine calc_log_kge_region( sim, obs, agg, objfn)
   simIn = sim
   where(obsIn<verySmall) obsIn=verySmall
   where(simIn<verySmall) simIn=verySmall
-  logObsIn = log(obs)
-  logSimIn = log(sim)
+  logObsIn = log(obsIn)
+  logSimIn = log(simIn)
   do ibasin = 0,nbasin-1
     !offset places me at the start of each basin
     offset = ibasin*sim_len

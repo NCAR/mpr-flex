@@ -88,7 +88,7 @@ subroutine run_mpr( calParam, restartFile )
     enddo
     call mpr(idModel, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-    !! Write parameter derived from MPR in netCDF put below in module!!
+    !! Write parameter derived from MPR in netCDF 
     call defSoilNetCDF(trim(mpr_output_dir)//"soil_temp.nc",nHru,nLyr,err,cmessage)
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
     call write_vec_ivar(trim(mpr_output_dir)//"soil_temp.nc","hruid",hruID,1,err,cmessage) 
@@ -99,7 +99,6 @@ subroutine run_mpr( calParam, restartFile )
       call write_array2_dvar(trim(mpr_output_dir)//"soil_temp.nc",trim(betaInGamma(iPar)),parMxyMz(iPar)%varData,(/1,1/),(/nLyr,nHru/),err,cmessage)
       if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
     enddo
-    !!-----------!!
   else  
     print*,trim(message)//'there is no gamma pamameters in parameter input file to perform MPR';stop
   endif
