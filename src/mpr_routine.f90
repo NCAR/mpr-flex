@@ -336,6 +336,7 @@ subroutine mpr(idModel,           &     ! input: model ID
     ! (3.1) Extract soil poly ID, weight polygon , and soil properties for current model hru 
     ! *********************************************************************
       call subSoilData(sdata, polySub, sdataLocal, err, cmessage)
+      if(err/=0)then; message=trim(message)//cmessage; return; endif
       if ( iHru == iHruPrint ) then
         print*,' '
         print*,'****************************************************'
@@ -582,7 +583,6 @@ subroutine subSoilData(soilData, subPolyID, soilDataLocal, err, message)
   integer(i4b)                        :: iDummy(1)     ! 1D integer array for temporal storage 
 
   err=0; message='subSoilData/'
-  !associate( polyID => soilData(ixVarSoilData%polyid)%ivar1 )
   allocate(polyID(size(soilData(ixVarSoilData%polyid)%ivar1)))
   polyID = soilData(ixVarSoilData%polyid)%ivar1 
   nPoly=size(subPolyID)
@@ -593,9 +593,11 @@ subroutine subSoilData(soilData, subPolyID, soilDataLocal, err, message)
         select case(trim(sdata_meta(iVar)%vardims))
           case('2D')
             nSlyrs=size(soilData(ivar)%ivar2,1) 
+            if ( allocated(soilDataLocal(ivar)%ivar2) ) deallocate(soilDataLocal(ivar)%ivar2)
             allocate(soilDataLocal(ivar)%ivar2(nSlyrs,nPoly),stat=err)
             if(err/=0)then; message=trim(message)//'problem allocating 2D int space for soilDataLocal data structure'; return; endif
           case('1D')
+            if ( allocated(soilDataLocal(ivar)%ivar1) ) deallocate(soilDataLocal(ivar)%ivar1)
             allocate(soilDataLocal(ivar)%ivar1(nPoly),stat=err)
             if(err/=0)then; message=trim(message)//'problem allocating 1D int space for soilDataLocal data structure'; return; endif
           end select
@@ -603,9 +605,11 @@ subroutine subSoilData(soilData, subPolyID, soilDataLocal, err, message)
         select case(trim(sdata_meta(iVar)%vardims))
           case('2D')
             nSlyrs=size(soilData(ivar)%dvar2,1) 
+            if ( allocated(soilDataLocal(ivar)%dvar2) ) deallocate(soilDataLocal(ivar)%dvar2)
             allocate(soilDataLocal(ivar)%dvar2(nSlyrs,nPoly),stat=err)
             if(err/=0)then; message=trim(message)//'problem allocating 2D real space for soilDataLocal data structure'; return; endif
           case('1D')
+            if ( allocated(soilDataLocal(ivar)%dvar1) ) deallocate(soilDataLocal(ivar)%dvar1)
             allocate(soilDataLocal(ivar)%dvar1(nPoly),stat=err)
             if(err/=0)then; message=trim(message)//'problem allocating 1D real space for soilDataLocal data structure'; return; endif
         end select
@@ -628,7 +632,6 @@ subroutine subSoilData(soilData, subPolyID, soilDataLocal, err, message)
       end select 
     end do
   end do 
-  !end associate
   return 
 end subroutine 
 
