@@ -2,7 +2,6 @@ module sac_routines
 ! Routines specific to sac model
   use nrtype 
   use public_var
-  use strings
   use data_type 
 
   implicit none

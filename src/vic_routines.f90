@@ -2,7 +2,6 @@ module vic_routines
 ! Routines specific to VIC model
   use nrtype 
   use public_var
-  use strings
   use data_type 
 
   implicit none

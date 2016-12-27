@@ -48,15 +48,20 @@ contains
 !**********************************************************************
 
 subroutine parse(str,delims,args,nargs)
-
 ! Parses the string 'str' into arguments args(1), ..., args(nargs) based on
 ! the delimiters contained in the string 'delims'. Preceding a delimiter in
 ! 'str' by a backslash (\) makes this particular instance not a delimiter.
 ! The integer output variable nargs contains the number of arguments found.
-
-character(len=*) :: str,delims
-character(len=len_trim(str)) :: strsav
+implicit none
+character(len=*)              :: str,delims
+character(len=len_trim(str))  :: strsav
 character(len=*),dimension(:) :: args
+integer                       :: nargs 
+!locat variables
+integer                       :: na
+integer                       :: i 
+integer                       :: lenstr
+integer                       :: k 
 
 strsav=str
 call compact(str)
@@ -82,13 +87,18 @@ end subroutine parse
 !**********************************************************************
 
 subroutine compact(str)
-
 ! Converts multiple spaces and tabs to single spaces; deletes control characters;
 ! removes initial spaces.
-
-character(len=*):: str
-character(len=1):: ch
-character(len=len_trim(str)):: outstr
+implicit none
+character(len=*)             :: str
+!locat variable
+character(len=1)             :: ch
+character(len=len_trim(str)) :: outstr
+integer                      :: lenstr
+integer                      :: isp 
+integer                      :: k
+integer                      :: i 
+integer                      :: ich
 
 str=adjustl(str)
 lenstr=len_trim(str)
@@ -125,12 +135,16 @@ end subroutine compact
 !**********************************************************************
 
 subroutine removesp(str)
-
 ! Removes spaces, tabs, and control characters in string str
-
-character(len=*):: str
-character(len=1):: ch
-character(len=len_trim(str))::outstr
+implicit none
+character(len=*)             :: str
+!local variables
+integer                      :: lenstr 
+integer                      :: k 
+integer                      :: i
+integer                      :: ich
+character(len=1)             :: ch
+character(len=len_trim(str)) :: outstr
 
 str=adjustl(str)
 lenstr=len_trim(str)
@@ -156,13 +170,13 @@ end subroutine removesp
 !**********************************************************************
 
 subroutine value_dr(str,rnum,ios)
-
 ! Converts number string to a double precision real number
-
-character(len=*)::str
-real(kr8)::rnum
-integer :: ios
-integer :: tlen 
+implicit none
+character(len=*) :: str
+real(kr8)        :: rnum
+integer          :: ios
+integer          :: tlen 
+integer          :: ipos 
 
 tlen=len_trim(str)
 ipos=scan(str,'Ee')
@@ -177,12 +191,12 @@ end subroutine value_dr
 !**********************************************************************
 
 subroutine value_sr(str,rnum,ios)
-
 ! Converts number string to a single precision real number
-
-character(len=*)::str
-real(kr4) :: rnum
-real(kr8) :: rnumd 
+implicit none
+character(len=*) :: str
+real(kr4)        :: rnum
+integer          :: ios
+real(kr8)        :: rnumd 
 
 call value_dr(str,rnumd,ios)
 if( abs(rnumd) > huge(rnum) ) then
@@ -197,12 +211,12 @@ end subroutine value_sr
 !**********************************************************************
 
 subroutine value_di(str,inum,ios)
-
 ! Converts number string to a double precision integer value
-
-character(len=*)::str
-integer(ki8) :: inum
-real(kr8) :: rnum
+implicit none
+character(len=*)  :: str
+integer(ki8)      :: inum
+integer           :: ios
+real(kr8)         :: rnum
 
 call value_dr(str,rnum,ios)
 if(abs(rnum)>huge(inum)) then
@@ -216,12 +230,12 @@ end subroutine value_di
 !**********************************************************************
 
 subroutine value_si(str,inum,ios)
-
 ! Converts number string to a single precision integer value
-
-character(len=*)::str
-integer(ki4) :: inum
-real(kr8) :: rnum
+implicit none
+character(len=*) :: str
+integer(ki4)     :: inum
+integer          :: ios
+real(kr8)        :: rnum
 
 call value_dr(str,rnum,ios)
 if(abs(rnum)>huge(inum)) then
@@ -235,13 +249,15 @@ end subroutine value_si
 !**********************************************************************
 
 subroutine shiftstr(str,n)
- 
 ! Shifts characters in in the string 'str' n positions (positive values
 ! denote a right shift and negative values denote a left shift). Characters
 ! that are shifted off the end are lost. Positions opened up by the shift 
 ! are replaced by spaces.
-
-character(len=*):: str
+implicit none
+character(len=*)  :: str
+integer           :: n 
+integer           :: nabs
+integer           :: lenstr 
 
 lenstr=len(str)
 nabs=iabs(n)
@@ -258,14 +274,15 @@ end subroutine shiftstr
 !**********************************************************************
 
 subroutine insertstr(str,strins,idx)
-
 ! Inserts the string 'strins' into the string 'str' at position 'idx'. 
 ! Characters in 'str' starting at position 'idx' are shifted right to
 ! make room for the inserted string. Trailing spaces of 'strins' are 
 ! removed prior to insertion
-
-character(len=*):: str,strins
-character(len=len(str))::tempstr
+implicit none
+character(len=*)        :: str,strins
+integer                 :: idx 
+integer                 :: lenstrins
+character(len=len(str)) :: tempstr
 
 lenstrins=len_trim(strins)
 tempstr=str(idx:)
@@ -279,12 +296,13 @@ end subroutine insertstr
 !**********************************************************************
 
 subroutine delsubstr(str,substr)
-
 ! Deletes first occurrence of substring 'substr' from string 'str' and
 ! shifts characters left to fill hole. Trailing spaces or blanks are
 ! not considered part of 'substr'.
-
+implicit none
 character(len=*):: str,substr
+integer          :: lensubstr
+integer          :: ipos 
 
 lensubstr=len_trim(substr)
 ipos=index(str,substr)
@@ -301,11 +319,12 @@ end subroutine delsubstr
 !**********************************************************************
 
 subroutine delall(str,substr)
-
 ! Deletes all occurrences of substring 'substr' from string 'str' and
 ! shifts characters left to fill holes.
-
-character(len=*):: str,substr
+implicit none
+character(len=*) :: str,substr
+integer          :: lensubstr
+integer          :: ipos 
 
 lensubstr=len_trim(substr)
 do
@@ -324,11 +343,17 @@ end subroutine delall
 !**********************************************************************
 
 function uppercase(str) result(ucstr)
-
 ! convert string to upper case
-
-character (len=*):: str
-character (len=len_trim(str)):: ucstr
+implicit none
+character (len=*)             :: str
+character (len=len_trim(str)) :: ucstr
+!local variables
+integer                       :: tlen
+integer                       :: ioffset 
+integer                       :: iquote
+integer                       :: i
+integer                       :: iav
+integer                       :: iqc 
 
 tlen=len_trim(str)
 ioffset=iachar('A')-iachar('a')     
@@ -359,11 +384,16 @@ end function uppercase
 !**********************************************************************
 
 function lowercase(str) result(lcstr)
-
 ! convert string to lower case
-
-character (len=*):: str
-character (len=len_trim(str)):: lcstr
+implicit none
+character (len=*)             :: str
+character (len=len_trim(str)) :: lcstr
+!local variables
+integer                       :: tlen
+integer                       :: ioffset 
+integer                       :: iquote 
+integer                       :: i 
+integer                       :: iav,iqc 
 
 tlen=len_trim(str)
 ioffset=iachar('A')-iachar('a')
@@ -394,11 +424,13 @@ end function lowercase
 !**********************************************************************
 
 subroutine readline(nunitr,line,ios)
-
 ! Reads line from unit=nunitr, ignoring blank lines
 ! and deleting comments beginning with an exclamation point(!)
-
-character (len=*):: line
+implicit none
+integer             :: nunitr
+integer             :: ios
+character (len=*)   :: line
+integer             :: ipos
 
 do  
   read(nunitr,'(a)', iostat=ios) line      ! read input line
@@ -416,12 +448,17 @@ end subroutine readline
 !**********************************************************************
 
 subroutine match(str,ipos,imatch)
-
 ! Sets imatch to the position in string of the delimiter matching the delimiter
 ! in position ipos. Allowable delimiters are (), [], {}, <>.
-
+implicit none
 character(len=*) :: str
-character :: delim1,delim2,ch
+integer          :: ipos
+integer          :: imatch
+character        :: delim1,delim2,ch
+integer          :: idelim2
+integer          :: i,istart,iend,inc
+integer          :: lenstr
+integer          :: isum 
 
 lenstr=len_trim(str)
 delim1=str(ipos:ipos)
@@ -477,11 +514,10 @@ end subroutine match
 !**********************************************************************
 
 subroutine write_dr(rnum,str,fmt)
-
 ! Writes double precision real number rnum to string str using format fmt
-
-real(kr8) :: rnum
-character(len=*) :: str,fmt
+implicit none
+real(kr8)         :: rnum
+character(len=*)  :: str,fmt
 character(len=80) :: formt
 
 formt='('//trim(fmt)//')'
@@ -493,11 +529,10 @@ end subroutine write_dr
 !***********************************************************************
 
 subroutine write_sr(rnum,str,fmt)
-
 ! Writes single precision real number rnum to string str using format fmt
-
-real(kr4) :: rnum
-character(len=*) :: str,fmt
+implicit none
+real(kr4)         :: rnum
+character(len=*)  :: str,fmt
 character(len=80) :: formt
 
 formt='('//trim(fmt)//')'
@@ -509,11 +544,10 @@ end subroutine write_sr
 !***********************************************************************
 
 subroutine write_di(inum,str,fmt)
-
 ! Writes double precision integer inum to string str using format fmt
-
-integer(ki8) :: inum
-character(len=*) :: str,fmt
+implicit none
+integer(ki8)      :: inum
+character(len=*)  :: str,fmt
 character(len=80) :: formt
 
 formt='('//trim(fmt)//')'
@@ -525,11 +559,10 @@ end subroutine write_di
 !***********************************************************************
 
 subroutine write_si(inum,str,fmt)
-
 ! Writes single precision integer inum to string str using format fmt
-
-integer(ki4) :: inum
-character(len=*) :: str,fmt
+implicit none
+integer(ki4)      :: inum
+character(len=*)  :: str,fmt
 character(len=80) :: formt
 
 formt='('//trim(fmt)//')'
@@ -541,13 +574,16 @@ end subroutine write_si
 !***********************************************************************
 
 subroutine trimzero(str)
-
 ! Deletes nonsignificant trailing zeroes from number string str. If number
 ! string ends in a decimal point, one trailing zero is added.
-
-character(len=*) :: str
-character :: ch
+implicit none
+character(len=*)  :: str
+!local variable
+character         :: ch
 character(len=10) :: exprs
+integer           :: ipos
+integer           :: lstr
+integer           :: i 
 
 ipos=scan(str,'eE')
 if(ipos>0) then
@@ -658,9 +694,8 @@ end function is_letter
 !**********************************************************************
 
 function is_digit(ch) result(res)
-
 ! Returns .true. if ch is a digit (0,1,...,9) and .false. otherwise
-
+implicit none
 character :: ch
 logical :: res
 
@@ -677,7 +712,6 @@ end function is_digit
 !**********************************************************************
 
 subroutine split(str,delims,before,sep)
-
 ! Routine finds the first instance of a character from 'delims' in the
 ! the string 'str'. The characters before the found delimiter are
 ! output in 'before'. The characters after the found delimiter are
@@ -685,11 +719,16 @@ subroutine split(str,delims,before,sep)
 ! found delimiter. A delimiter in 'str' is treated like an ordinary 
 ! character if it is preceded by a backslash (\). If the backslash 
 ! character is desired in 'str', then precede it with another backslash.
-
-character(len=*) :: str,delims,before
+implicit none
+character(len=*)   :: str,delims,before
 character,optional :: sep
-logical :: pres
-character :: ch,cha
+!local variables
+logical            :: pres
+character          :: ch,cha
+integer            :: lenstr
+integer            :: k,ibsl 
+integer            :: i 
+integer            :: ipos,iposa
 
 pres=present(sep)
 str=adjustl(str)
@@ -745,13 +784,16 @@ end subroutine split
 !**********************************************************************
 
 subroutine removebksl(str)
-
 ! Removes backslash (\) characters. Double backslashes (\\) are replaced
 ! by a single backslash.
-
-character(len=*):: str
-character(len=1):: ch
-character(len=len_trim(str))::outstr
+implicit none
+character(len=*)             :: str
+!local variables
+integer                      :: lenstr
+integer                      :: k,ibsl 
+integer                      :: i 
+character(len=1)             :: ch
+character(len=len_trim(str)) :: outstr
 
 str=adjustl(str)
 lenstr=len_trim(str)
@@ -782,5 +824,3 @@ end subroutine removebksl
 !**********************************************************************
 
 end module strings  
-
-
