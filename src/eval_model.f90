@@ -686,30 +686,36 @@ subroutine calc_sigBias_region(sim, obs, agg, objfn)
   ! Water Resour. Res., 44, W09417, doi:10.1029/2007WR006716.
   implicit none
   !input variables 
-  real(dp),                intent(in)  :: sim(:,:)
-  real(dp),                intent(in)  :: obs(:) 
-  integer(i4b),            intent(in)  :: agg          ! basin aggregation method
+  real(dp),                intent(in)     :: sim(:,:)
+  real(dp),                intent(in)     :: obs(:) 
+  integer(i4b),            intent(in)     :: agg          ! basin aggregation method
   !output variables
-  real(dp),                intent(out) :: objfn 
+  real(dp),                intent(out)    :: objfn 
   ! local variables
-  integer(i4b)                         :: ibasin,iTime ! loop index
-  integer(i4b)                         :: i30,i50,i80
-  integer(i4b)                         :: idx(1)
-  integer(i4b)                         :: nTime            
-  integer(i4b)                         :: offset
-  real(dp)                             :: pBias
-  real(dp)                             :: pBiasFHV
-  real(dp)                             :: pBiasFLV
-  real(dp)                             :: pBiasFMS
-  real(dp)                             :: pBiasFMM
-  real(dp)                             :: cc              ! correlation
-  real(dp),    allocatable             :: p(:)            ! probability
-  real(dp),    allocatable             :: simBasin(:)
-  real(dp),    allocatable             :: obsBasin(:)
-  integer(i4b),dimension(nbasin)       :: basin_id
-  real(dp),    dimension(nbasin)       :: obj_fun_weight
-  real(dp),    dimension(nbasin)       :: basin_sigBias
+  integer(i4b)                            :: ibasin,iTime ! loop index
+  integer(i4b)                            :: i30,i50,i80
+  integer(i4b)                            :: idx(1)
+  integer(i4b)                            :: nTime            
+  integer(i4b)                            :: offset
+  real(dp)                                :: pBias
+  real(dp)                                :: pBiasFHV
+  real(dp)                                :: pBiasFLV
+  real(dp)                                :: pBiasFMS
+  real(dp)                                :: pBiasFMM
+  real(dp)                                :: cc              ! correlation
+  real(dp),    allocatable                :: p(:)            ! probability
+  real(dp),    allocatable,dimension(:,:) :: simIn
+  real(dp),    allocatable,dimension(:)   :: obsIn
+  real(dp),    allocatable                :: simBasin(:)
+  real(dp),    allocatable                :: obsBasin(:)
+  integer(i4b),dimension(nbasin)          :: basin_id
+  real(dp),    dimension(nbasin)          :: obj_fun_weight
+  real(dp),    dimension(nbasin)          :: basin_sigBias
   
+  allocate(simIn,source=sim)
+  allocate(obsIn,source=obs)
+  where(obsIn<verySmall) obsIn=verySmall
+  where(simIn<verySmall) simIn=verySmall
   open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
   read (UNIT=58,fmt=*) ( basin_id(ibasin),obj_fun_weight(ibasin), ibasin=1,nbasin)
   close(UNIT=58)
@@ -726,17 +732,17 @@ subroutine calc_sigBias_region(sim, obs, agg, objfn)
   i50=idx(1)
   do ibasin = 0,nbasin-1
     offset = ibasin*sim_len
-    simBasin=sim(ibasin+1,start_cal:end_cal)+valMin
-    obsBasin=obs(offset+start_cal:offset+end_cal)+valMin
+    simBasin=simIn(ibasin+1,start_cal:end_cal)
+    obsBasin=obsIn(offset+start_cal:offset+end_cal)
     call sort(simBasin)
     call sort(obsBasin)
     ! compute signature
-    pBias=sum( sim(ibasin+1,start_cal:end_cal)-obs(offset+start_cal:offset+end_cal) )/sum(obs(offset+start_cal:offset+end_cal))
+    pBias=sum( simIn(ibasin+1,start_cal:end_cal)-obsIn(offset+start_cal:offset+end_cal) )/sum(obsBasin)
     pBiasFMS=(( log(simBasin(i80))-log(simBasin(i30)) )-(log(obsBasin(i80))-log(obsBasin(i30))))/( log(obsBasin(i80))-log(obsBasin(i30)) )
     pBiasFHV=sum(simBasin(i80:nTime)-obsBasin(i80:nTime))/sum(obsBasin(i80:nTime))
-    pBiasFLV=(sum(log(simBasin(1:i30))-log(simBasin(1)) )-sum(log(obsBasin(1:i30))-log(obsBasin(1))))/sum( log(obsBasin(1:i30))-log(obsBasin(1)) )
+    pBiasFLV=(sum(log(simBasin(1:i30))-log(simBasin(1)) )-sum(log(obsBasin(1:i30))-log(obsBasin(1))+verySmall))/sum( log(obsBasin(1:i30))-log(obsBasin(1))+verySmall )
     pBiasFMM= (log(simBasin(i50))-log(obsBasin(i50))) /( log(obsBasin(i50)) )
-    call pearsn(sim(ibasin+1,start_cal:end_cal), obs(offset+start_cal:offset+end_cal), cc)
+    call pearsn(simIn(ibasin+1,start_cal:end_cal),obsIn(offset+start_cal:offset+end_cal), cc)
     basin_sigBias(iBasin+1) = ( (1.0_dp-cc)+abs(pBias)+abs(pBiasFHV)+abs(pBiasFLV)+abs(pBiasFMS)+abs(pBiasFMM) )/6.0_dp
   enddo
   print*,'Signature-Objectiver-function components'
