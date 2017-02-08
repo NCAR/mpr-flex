@@ -29,6 +29,7 @@
 *.app
 
 # personal
+test*
 tmp
 *.local
 *.bak
