@@ -7,6 +7,8 @@
 !> 1 = calibrate parameters specifided in input with DDS
 !> 2 = estimate parameter with MPR (this option neglect calconfig and dds nml group) 
 opt                    = 1
+!> metadata for all gamma and beta parameters 
+param_master_meta      = "/home/mizukami/hydropt/meta/ParamMeta.txt"
 /
 
 !---------------------------------------

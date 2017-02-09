@@ -9,7 +9,8 @@ module mo_nml
   public :: read_nml
 
 ! Main configuration 
-  namelist / runconfig /  opt
+  namelist / runconfig /  opt,                     &
+                          param_master_meta
 ! MPR configuration
   namelist / mprconfig /  mpr_input_dir,           &
                           mpr_output_dir,          &

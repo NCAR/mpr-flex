@@ -7,6 +7,7 @@ module subset_meta
 
   private
 
+  public::get_parm_master_meta
   public::get_parm_meta
   public::total_calParam
   public::param_setup 
@@ -14,6 +15,89 @@ module subset_meta
   public::check_gammaH
 
 contains
+
+! ************************************************************************************************
+! Subroutine: read soil parameter metadata from a meta file 
+! ************************************************************************************************
+subroutine get_parm_master_meta(infile, err, message)
+  ! used to read metadata from an input file and populate the appropriate metadata structure
+  use data_type,  only:par_meta            ! metadata structure
+  use ascii_util, only:file_open
+  use get_ixname, only:get_ixPar
+  use globalData, only:parMaster
+
+  implicit none
+
+  ! define input
+  character(*),intent(in)              :: infile         ! input filename
+  ! define output
+  integer(i4b),intent(out)             :: err            ! error code
+  character(*),intent(out)             :: message        ! error message
+  ! define local variables
+  character(len=256)                   :: cmessage       ! error message for downwind routine
+  integer(i4b)                         :: unt            ! DK: need to either define units globally, or use getSpareUnit
+  integer(i4b)                         :: iline          ! loop through lines in the file 
+  integer(i4b),parameter               :: maxLines=1000  ! maximum lines in the file 
+  character(LEN=256)                   :: temp           ! single lime of information
+  integer(i4b)                         :: iend           ! check for the end of the file
+  character(LEN=256)                   :: ffmt           ! file format
+  type(par_meta)                       :: parmdTemp      ! temporary metadata structure
+  character(len=1)                     :: dLim(9)        ! column delimiter
+  integer(i4b)                         :: ivar           ! index of model variable
+  ! Start procedure here
+  err=0; message="read_param_meta/"
+  ! open file
+  call file_open(trim(infile),unt,err,cmessage)
+  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+  ! get to the start of the variable descriptions 
+  do iline=1,maxLines
+    read(unt,'(a)',iostat=iend)temp; if (iend/=0)exit    ! read line of data
+    if (temp(1:1)/='!') exit  ! assume first line not comment is format code
+  end do ! looping through file to find the format code
+  ! read in format string
+  read(temp,*)ffmt
+  ! loop through the lines in the file
+  do iline=1,maxLines
+    ! read a line of data and exit iif an error code (character read, so only possible error is end of file)
+    read(unt,'(a)',iostat=iend)temp; if (iend/=0)exit
+    ! check that the line is not a comment
+    if (temp(1:1)=='!')cycle
+    ! save data into a temporary structure
+    read(temp,trim(ffmt),iostat=err) parmdTemp%pname,  dLim(1),&
+                                     parmdTemp%val,    dLim(2),&
+                                     parmdTemp%lwr,    dLim(3),&
+                                     parmdTemp%upr,    dLim(4),& 
+                                     parmdTemp%beta,   dLim(5),& 
+                                     parmdTemp%ptype,  dLim(6),&
+                                     parmdTemp%flag,   dLim(7),&
+                                     parmdTemp%hups,   dLim(8),&
+                                     parmdTemp%vups,   dLim(9),&
+                                     parmdTemp%perLyr
+    if (err/=0) then; err=30; message=trim(message)//"errorReadLine"; return; endif
+    ! check that the delimiters are in the correct place
+    if(any(dLim /= '|'))then
+     message=trim(message)//'delimiter is not in the correct place; line = ['//trim(temp)//']; filename = '//trim(infile)
+     err=32; return
+    endif
+    ! identify the index of the named variable
+    ivar = get_ixPar(parmdTemp%pname)
+    if(ivar<=0)then; err=40; message=trim(message)//"variableNotFound[var="//trim(parmdTemp%pname)//"]"; return; endif
+    ! check if index is within range
+    if(ivar>size(parMaster))then; err=50; message=trim(message)//"variableExceedsVectorSize[par="//trim(parmdTemp%pname)//"]"; return; endif
+    ! put data into the metadata vector
+    parMaster(ivar) = parmdTemp 
+  enddo  ! looping through lines in the file
+
+  ! check that all elements are populated
+  if(any(parMaster(:)%pname==''))then
+   do iline=1,size(parMaster)
+    print*,iline,' -> ',trim(parMaster(iline)%pname)
+   end do
+   err=40; message=trim(message)//"someVariablesNotPopulated"; return
+  endif
+  ! close file unit
+  close(unt)
+ end subroutine 
 
 ! ************************************************************************************************
 ! Subroutine: read calibrating parameter metadata from a meta file 

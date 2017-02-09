@@ -142,7 +142,7 @@ subroutine paramMaster(err,message)
 
 end subroutine 
 
-subroutine popMprmeta(err,message)
+subroutine popMprMeta(err,message)
   use nrtype
   use data_type,  only:var_meta
   use var_lookup, only:ixVarMapData

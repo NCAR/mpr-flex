@@ -1,0 +1,140 @@
+! ***************************************************************************************************************************
+! ***************************************************************************************************************************
+! ***** METADATA OF PARAMETER ***********************************************************************************************
+! ***************************************************************************************************************************
+! ***************************************************************************************************************************
+! NOTES:
+! (1) lines starting with "!" are treated as comment lines -- there is no limit on the number of comment lines
+! (2) the format definition defines the format of the file, which can be changed
+! (3) the format definition must be the first non-comment line
+! (4) the delimiters "| " must be present (format a2), as these are used to check the integrety of the file
+! columns are:
+! 1:  gamma or beta parameter name 
+! 2:  default value 
+! 3:  lwr boundary 
+! 4:  upr boundary 
+! 5:  associated beta parameter 
+! 6:  type (soil, vege, route)
+! 7:  vertically aggregate
+! 8:  horizontally aggregate
+! 9:  logical parameter value per layer? only soil parameter 
+! ******************************************************************************************************************************************
+! format of the descriptions that follow (must be in single quotes)
+! ******************************************************************************************************************************************
+'(a16,(1x,a1,1x),ES12.5,(1x,a1,1x),ES12.5,(1x,a1,1x),ES12.5,(1x,a1,1x),a7,(1x,a1,1x),a5,(1x,a1,1x),l1,(1x,a1,1x),a7,(1x,a1,1x),a7,(1x,a1,1x),l1)' 
+! ******************************************************************************************************************************************
+! gamma parameter meta data
+! -----------------------
+!ks transfer function
+ks1gamma1        | -0.60000E+00 | -0.66000E+00 | -0.54000E+00 | ks      | soil  | F | na      | na      | F
+ks1gamma2        |  0.01260E+00 |  0.01130E+00 |  0.01390E+00 | ks      | soil  | F | na      | na      | F
+ks1gamma3        | -0.00640E+00 | -0.00580E+00 | -0.00700E+00 | ks      | soil  | F | na      | na      | F
+ks2gamma1        |  5.40000E+01 |  4.86000E+01 |  5.94000E+01 | ks      | soil  | F | na      | na      | F
+ks2gamma2        | -0.07000E+00 | -0.07700E+00 | -0.06300E+00 | ks      | soil  | F | na      | na      | F
+ks2gamma3        | -0.16700E+00 | -0.80000E+00 | -0.40000E+00 | ks      | soil  | F | na      | na      | F
+!pororsity transfer function
+phi1gamma1       |  5.05000E+01 |  4.55000E+01 |  5.55000E+01 | phi     | soil  | F | na      | na      | F
+phi1gamma2       | -0.14200E+00 | -0.80000E+00 | -0.40000E+00 | phi     | soil  | F | na      | na      | F
+phi1gamma3       | -0.03700E+00 | -0.80000E+00 | -0.40000E+00 | phi     | soil  | F | na      | na      | F
+phi2gamma1       |  0.76000E+00 | -0.80000E+00 | -0.40000E+00 | phi     | soil  | F | na      | na      | F
+phi2gamma2       |  0.00090E+00 | -0.80000E+00 | -0.40000E+00 | phi     | soil  | F | na      | na      | F
+phi2gamma3       | -0.26400E+00 | -0.80000E+00 | -0.40000E+00 | phi     | soil  | F | na      | na      | F
+phi2gamma4       |  0.89000E+00 | -0.80000E+00 | -0.40000E+00 | phi     | soil  | F | na      | na      | F
+phi2gamma5       | -0.00100E+00 | -0.80000E+00 | -0.40000E+00 | phi     | soil  | F | na      | na      | F
+phi2gamma6       | -0.32400E+00 | -0.80000E+00 | -0.40000E+00 | phi     | soil  | F | na      | na      | F
+!field capacity transfer function
+fc1gamma1        |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | fc      | soil  | F | na      | na      | F
+!wilting point transfer function
+wp1gamma1        |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | wp      | soil  | F | na      | na      | F
+!b transfer function
+b1gamma1         |  3.10000E+00 | -0.80000E+00 | -0.40000E+00 | b       | soil  | F | na      | na      | F
+b1gamma2         |  0.15700E+00 | -0.80000E+00 | -0.40000E+00 | b       | soil  | F | na      | na      | F
+b1gamma3         | -0.00300E+00 | -0.80000E+00 | -0.40000E+00 | b       | soil  | F | na      | na      | F
+!saturation matric potential transfer function
+psis1gamma1      |  1.54000E+00 |  0.80000E+00 |  0.40000E+00 | psis    | soil  | F | na      | na      | F
+psis1gamma2      | -0.00950E+00 | -0.80000E+00 | -0.40000E+00 | psis    | soil  | F | na      | na      | F
+psis1gamma3      |  0.00630E+00 |  0.80000E+00 |  0.40000E+00 | psis    | soil  | F | na      | na      | F
+!specific yield transfer function
+myu1gamma1       |  3.50000E+00 |  3.85000E+00 |  3.15000E+00 | myu     | soil  | F | na      | na      | F
+myu1gamma2       |  1.66000E+00 |  1.83000E+00 |  1.50000E+00 | myu     | soil  | F | na      | na      | F
+! total depth multiplier
+z1gamma1         |  1.00000E+00 |  0.10000E+00 |  4.00000E+00 | z       | soil  | F | na      | na      | F
+! layer fractions
+h1gamma1         |  0.05000E+00 |  0.01000E+00 |  0.10000E+00 | h       | soil  | F | na      | na      | F
+h1gamma2         |  0.30000E+00 |  0.12000E+00 |  0.50000E+00 | h       | soil  | F | na      | na      | F
+! Model specific transfer function
+binfilt1gamma1   |  0.00000E+00 | -2.00000E+00 |  1.00000E+00 | binfilt | soil  | F | na      | na      | F
+binfilt1gamma2   |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | binfilt | soil  | F | na      | na      | F
+D11gamma1        |  2.00000E+00 |  1.75000E+00 |  3.50000E+00 | D1      | soil  | F | na      | na      | F
+D21gamma1        |  2.00000E+00 |  1.75000E+00 |  3.50000E+00 | D2      | soil  | F | na      | na      | F
+D31gamma1        |  1.00000E+00 |  0.00100E+00 |  2.00000E+00 | D3      | soil  | F | na      | na      | F
+D41gamma1        |  2.00000E+00 |  1.20000E+00 |  2.50000E+00 | D4      | soil  | F | na      | na      | F
+exp1gamma1       |  3.00000E+00 |  0.80000E+00 |  1.20000E+00 | exp     | soil  | F | na      | na      | F
+exp1gamma2       |  2.00000E+00 |  0.80000E+00 |  1.20000E+00 | exp     | soil  | F | na      | na      | F
+bbl1gamma1       |  0.32000E+00 |  0.80000E+00 |  1.20000E+00 | bbl     | soil  | F | na      | na      | F
+bbl1gamma2       |  4.20000E+00 |  0.80000E+00 |  1.20000E+00 | bbl     | soil  | F | na      | na      | F
+bd1gamma1        |  1.00000E+00 |  0.90000E+00 |  1.10000E+00 | bd      | soil  | F | na      | na      | F
+sd1gamma1        |  1.00000E+00 |  0.90000E+00 |  1.10000E+00 | sd      | soil  | F | na      | na      | F
+WcrFrac1gamma1   |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | WcrFrac | soil  | F | na      | na      | F
+WpwpFrac1gamma1  |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | WcrFrac | soil  | F | na      | na      | F
+fsm1gamma1       |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | fwm     | soil  | F | na      | na      | F
+zk1gamma1        |  1.60000E+00 |  1.40000E+00 |  1.80000E+00 | zk      | soil  | F | na      | na      | F
+zsk1gamma1       |  1.60000E+00 |  1.40000E+00 |  1.80000E+00 | zsk     | soil  | F | na      | na      | F
+zsk1gamma2       |  2.00000E+00 |  1.80000E+00 |  2.20000E+00 | zsk     | soil  | F | na      | na      | F
+zpk1gamma1       |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | zpk     | soil  | F | na      | na      | F
+pfree1gamma1     |  1.60000E+00 |  1.40000E+00 |  1.80000E+00 | pfree   | soil  | F | na      | na      | F
+rexp1gamma1      |  0.03000E+00 |  0.02000E+00 |  0.04000E+00 | rexp    | soil  | F | na      | na      | F
+! -----
+!  Master list of beta parameters  
+! -----------------------
+uhshape          |  1.00000E+00 |  0.10000E+00 |  3.00000E+00 | beta    | route | F | na      | na      | F
+uhscale          |  1.00000E+00 |  0.50000E+00 |  3.00000E+00 | beta    | route | F | na      | na      | F
+ks               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | whmean  | whmean  | T
+bd               |  1.00000E+00 |  0.90000E+00 |  1.10000E+00 | beta    |  soil | F | wamean  | wamean  | T
+sd               |  1.00000E+00 |  0.90000E+00 |  1.10000E+00 | beta    |  soil | F | wamean  | wamean  | T
+psis             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+b                |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+phi              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+fc               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+wp               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+myu              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+binfilt          |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | F
+D1               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | whmean  | whmean  | F
+D2               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | whmean  | whmean  | F
+D3               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | F
+D4               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | F
+c                |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | F
+Dsmax            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | whmean  | whmean  | F
+Ds               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | whmean  | whmean  | F
+Ws               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | whmean  | whmean  | F
+expt             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+bbl              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+h1               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+h2               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+h3               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+h4               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+h5               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+WcrFrac          |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+WpwpFrac         |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+twm              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+fwm              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+fsm              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+fpm              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+zk               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+zsk              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | whmean  | whmean  | T
+zpk              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | whmean  | whmean  | T
+pfree            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+zperc            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+rexp             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  soil | F | wamean  | wamean  | T
+rmin             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  vege | F | wamean  | na      | F
+lai              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  vege | F | wamean  | na      | F
+scf              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  snow | F | wamean  | na      | F
+mfmax            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  snow | F | wamean  | na      | F
+mfmin            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  snow | F | wamean  | na      | F
+uadj             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  snow | F | wamean  | na      | F
+si               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  snow | F | wamean  | na      | F
+pxtemp           |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  snow | F | wamean  | na      | F
+nmf              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  snow | F | wamean  | na      | F
+tipm             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  snow | F | wamean  | na      | F
+plwhc            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  snow | F | wamean  | na      | F
+daygm            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    |  snow | F | wamean  | na      | F
