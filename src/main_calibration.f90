@@ -3,7 +3,6 @@ program main_calibration
   use nrtype 
   use public_var
   use mo_nml,               only: read_nml 
-!  use popMeta,              only: paramMaster
   use subset_meta,          only: get_parm_master_meta, get_parm_meta, total_calParam, param_setup, check_gammaZ, check_gammaH
   use mo_dds,               only: dds
   use mo_opt_run,           only: opt_run
@@ -23,7 +22,6 @@ program main_calibration
   call read_nml( trim(nmlfile), ierr, cmessage ); call handle_err(ierr,cmessage)
   ! Read parameter master metadata and populate "parMaster" structure
   call get_parm_master_meta(trim(param_master_meta), ierr, cmessage); call handle_err(ierr,cmessage)
-!  call paramMaster( ierr, cmessage ); call handle_err(ierr,cmessage)
   ! read calibrating parameter list (multiplier or gamma parameter), subset parameter meta from master- "parSubset","gammaSubset"
   call get_parm_meta( trim(calpar), ierr,cmessage); call handle_err(ierr,cmessage)
   ! check if gamma parameter is in list, z and h gamma parameters are required
