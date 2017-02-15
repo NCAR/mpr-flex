@@ -3,9 +3,9 @@ Flexible hydrologic model parameter estimation driver. This program includes two
 
 ## General overview
 Three options to run this program (opt in namelist):
-* 0-> Perform model simulation (specified in idModel in namelist) with parameters listed in calPar.txt and restart file (for gamma parameter values) and default for the rest of parameters.
+* 0-> Perform model simulation (specified in idModel in namelist) with parameters listed in calPar.txt and restart file (beta multipliers and gamma parameter values) and default for the rest of parameters.
 * 1-> Perform DDS calibration to estimate optimized parameters listed in calPar.txt. 
-* 2-> Perform only MPR to estimate parameters listed in calPar.txt and restart file (for gamma parameter values), and output them in NetCDF.
+* 2-> Perform only MPR to estimate parameters listed in calPar.txt and restart file, and output them in NetCDF.
 
 For opt=1, two options to calibrate 1) multiplier based calibration, 2) MPR calibration.
 if model use spatially lumped mode, option 1) is equivalent to direct parameter adjustment 
@@ -43,6 +43,11 @@ Using this template, you need to write several subrutines
 4. soil parameter replacement routine (used to replace a priori parameter with MPR derived parameter )
 5. soil parameter writing routine
 6. Other parameter adjustment routine e.g., snow, vege (for now, no MPR for this)
+
+## Model options
+0. No model (used for parameter estimation with gamma parameters specified in restart file)
+1. VIC
+2. SAC/SNOW17
 
 ## Compiling the program
 Compiled with pgi/15.7 and ifort/2015.2.164 (15.0.1)
