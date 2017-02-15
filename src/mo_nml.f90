@@ -12,8 +12,9 @@ module mo_nml
   namelist / runconfig /  opt,                     &
                           param_master_meta
 ! MPR configuration
-  namelist / mprconfig /  mpr_input_dir,           &
+  namelist / mprconfig /  mpr_input_dir,           & 
                           mpr_output_dir,          &
+                          param_nc,                &
                           fname_soil,              &
                           fname_veg,               &
                           fname_smapping,          &

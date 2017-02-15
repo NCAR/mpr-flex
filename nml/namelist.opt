@@ -17,6 +17,7 @@ param_master_meta      = "/home/mizukami/hydropt/meta/ParamMeta.txt"
 &mprconfig
 mpr_input_dir          = "/home/mizukami/MPR/input/hcdn/"
 mpr_output_dir         = "/d3/mizukami/hydro_params/vic_regionalization/upscale_hcdn/test/01022500/params/" 
+param_nc               = "soil_temp.nc"            ! name of soil parameter output netCDF
 fname_soil             = "statsgo_v4.nc"           ! name soil netCDF
 fname_veg              = "modis.vege.noahmp.nc"    ! name vege netCDF
 fname_smapping         = "statsgo_HCDN.sub.nc"     ! name of mapping netCDF (soil polygon to model hru)
@@ -61,7 +62,7 @@ nHru                     = 1                  ! sum of hrus consisting of each b
 !---------------------------------------
 &modelconfig
 idModel                  = IDMODEL            ! id of model
-TotNpar                  = NUMPAR             ! total number of soil parameter
+TotNpar                  = NUMPAR             ! total number of soil parameters
 nLyr                     = NUMLYR             ! number of soil layers
 calpar                   = "calBeta.txt"      ! name of ascii file listing calibrating parameters
 /

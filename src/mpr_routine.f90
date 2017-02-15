@@ -13,6 +13,7 @@ module mpr_routine
 
 contains
 
+! this subroutine is used for opt = 2 (run only mpr and output parameters)
 subroutine run_mpr( calParam, restartFile ) 
   use globalData,    only: parSubset, betaInGamma, gammaSubset
   use model_wrapper, only: read_hru_id
@@ -43,7 +44,7 @@ subroutine run_mpr( calParam, restartFile )
   character(len=strLen)             :: cmessage               ! error message from subroutine
 
   err=0; message='run_mpr/' ! to initialize error control
-  if ( idModel/=0 )then;;print*,trim(message)//'idModel should be zero if you want to output mpr derived parameter';stop;endif
+  if ( idModel/=0 )then;idModel=0;print*,trim(message)//'idModel is set to zero - model inepenedent';endif
   allocate(params, source=calParam) ! copy calParameter default 
   inquire(file=trim(adjustl(restartFile)), exist=isExistFile)
   if ( isExistFile ) then !  if state file exists, update calParam, otherwise use default value
@@ -89,14 +90,14 @@ subroutine run_mpr( calParam, restartFile )
     call mpr(idModel, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
     !! Write parameter derived from MPR in netCDF 
-    call defSoilNetCDF(trim(mpr_output_dir)//"soil_temp.nc",nHru,nLyr,err,cmessage)
+    call defSoilNetCDF(trim(mpr_output_dir)//trim(param_nc),nHru,nLyr,err,cmessage)
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-    call write_vec_ivar(trim(mpr_output_dir)//"soil_temp.nc","hruid",hruID,1,err,cmessage) 
+    call write_vec_ivar(trim(mpr_output_dir)//trim(param_nc),"hruid",hruID,1,err,cmessage) 
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-    call write_vec_ivar(trim(mpr_output_dir)//"soil_temp.nc","lyr",(/(iLyr,iLyr=1,nLyr)/),1,err,cmessage) 
+    call write_vec_ivar(trim(mpr_output_dir)//trim(param_nc),"lyr",(/(iLyr,iLyr=1,nLyr)/),1,err,cmessage) 
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
     do iPar=1,size(betaInGamma)
-      call write_array2_dvar(trim(mpr_output_dir)//"soil_temp.nc",trim(betaInGamma(iPar)),parMxyMz(iPar)%varData,(/1,1/),(/nLyr,nHru/),err,cmessage)
+      call write_array2_dvar(trim(mpr_output_dir)//trim(param_nc),trim(betaInGamma(iPar)),parMxyMz(iPar)%varData,(/1,1/),(/nLyr,nHru/),err,cmessage)
       if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
     enddo
   else  
@@ -296,10 +297,11 @@ subroutine mpr(idModel,           &     ! input: model ID
                   err,cmessage)                                  ! output: error control
   if (err/=0)then; message=message//cmessage; return; endif
   if ( nShru /= nVhru )then;err=10;message=trim(message)//'Different number of hru in vege and soil mapping file';return;endif  
-    associate( hruMap      => mapdata(1)%var(ixVarMapData%hru_id)%ivar1,  &
-               hruMapVege  => mapdata(2)%var(ixVarMapData%hru_id)%ivar1,  &
-               swgt        => mapdata(1)%var(ixVarMapData%weight)%dvar2,  &
-               overSpolyID => mapdata(1)%var(ixVarMapData%overlapPolyId)%ivar2 )
+  if ( opt==2 .and. nHru /= nShru )then;err=10;message=trim(message)//'nHru= '//trim(int2str(nShru))//' NOT '//trim(int2str(nHru));return;endif
+  associate( hruMap      => mapdata(1)%var(ixVarMapData%hru_id)%ivar1,  &
+             hruMapVege  => mapdata(2)%var(ixVarMapData%hru_id)%ivar1,  &
+             swgt        => mapdata(1)%var(ixVarMapData%weight)%dvar2,  &
+             overSpolyID => mapdata(1)%var(ixVarMapData%overlapPolyId)%ivar2 )
   if ( minval(abs(hruMap-hruMapVege)) /= 0 )then;err=11;message=trim(message)//'different hru id in vege and soil mapping file';return;endif
     !!! ---------------------------------------------
     !!! Start of model hru loop (from mapping file) !!!
@@ -666,5 +668,12 @@ subroutine pop_hfrac(gammaParStr, gammaParMeta,hfrac, err, message)
   hfrac=pack(dummy,mask)
   return
 end subroutine 
+
+character(len=20) function int2str(k)
+!   "Convert an integer to string."
+    integer, intent(in) :: k
+    write (int2str, *) k
+    int2str = adjustl(int2str)
+end function
 
 end module mpr_routine

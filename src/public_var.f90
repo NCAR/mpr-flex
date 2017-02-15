@@ -21,6 +21,7 @@ module public_var
   ! mprconfig
   character(len=strLen),public    :: mpr_input_dir 
   character(len=strLen),public    :: mpr_output_dir
+  character(len=strLen),public    :: param_nc 
   character(len=strLen),public    :: fname_soil
   character(len=strLen),public    :: fname_veg
   character(len=strLen),public    :: fname_smapping
