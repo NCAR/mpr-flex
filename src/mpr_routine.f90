@@ -13,7 +13,10 @@ module mpr_routine
 
 contains
 
-! this subroutine is used for opt = 2 (run only mpr and output parameters)
+! ************************************************************************************************
+! Public subroutine: run MPR and save estimated parameters in netCDF
+! ************************************************************************************************
+! this subroutine is used for opt = 2 in namelist (run only mpr and output parameters)
 subroutine run_mpr( calParam, restartFile ) 
   use globalData,    only: parSubset, betaInGamma, gammaSubset
   use model_wrapper, only: read_hru_id
@@ -106,9 +109,9 @@ subroutine run_mpr( calParam, restartFile )
   return
 end subroutine
 
-! -------------------------
+! ************************************************************************************************
 ! public subroutine: mpr 
-! -------------------------
+! ************************************************************************************************
 subroutine mpr(idModel,           &     ! input: model ID
                gammaParStr,       &     ! input: array of gamma parameter 
                gammaParMeta,      &     ! input: array of gamma parameter metadata

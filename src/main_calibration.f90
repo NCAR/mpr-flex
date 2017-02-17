@@ -4,7 +4,7 @@ program main_calibration
   use public_var
   use mo_nml,               only: read_nml 
   use popMeta,              only: paramMaster
-  use subset_meta,          only: get_parm_meta, total_calParam, param_setup, check_gammaZ, check_gammaH
+  use subset_meta,          only: get_parm_meta, betaCollection, total_calParam, param_setup, check_gammaZ, check_gammaH
   use mo_dds,               only: dds
   use mo_opt_run,           only: opt_run
   use eval_model,           only: objfn
@@ -21,13 +21,16 @@ program main_calibration
   ! read configuration namelists and save variables 
   nmlfile='namelist.dds.local'
   call read_nml( trim(nmlfile), ierr, cmessage ); call handle_err(ierr,cmessage)
-  ! Populate master parameter meta - "parMaster" structure
+  ! Populate master parameter meta - "parMaster" 
   call paramMaster( ierr, cmessage ); call handle_err(ierr,cmessage)
-  ! read calibrating parameter list (multiplier or gamma parameter), subset parameter meta from master- "parSubset","gammaSubset"
+  ! Read 'CalPar' input listing calibrating parameters (beta or gamma), save subset of parameter meta from master- 'parSubset','gammaSubset'
+  ! Identify beta parameter to be estimated - 'betaInGamma'
   call get_parm_meta( trim(calpar), ierr,cmessage); call handle_err(ierr,cmessage)
-  ! check if gamma parameter is in list, z and h gamma parameters are required
-  call check_gammaZ( ierr, cmessage)
-  call check_gammaH( ierr, cmessage)
+  ! check if gamma parameter is in list, !!z and h gamma parameters are required!!
+  call check_gammaZ( ierr, cmessage); call handle_err(ierr,cmessage)
+  call check_gammaH( ierr, cmessage); call handle_err(ierr,cmessage)
+  ! Identify all the beta parameters to be estimated - 'betaNeeded' incluging betaInGamma
+  call betaCollection( ierr, cmessage); call handle_err(ierr,cmessage)
   ! initialize parameter and mask arrays 
   call total_calParam()
   allocate(param(nParCalSum,3))
