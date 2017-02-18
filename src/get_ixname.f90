@@ -1,8 +1,5 @@
 module get_ixname
-
-! Purpose
 ! Define functions to get the index of a named variable
-
 use nrtype                  ! variable types, etc.
 use public_var
 
@@ -19,7 +16,7 @@ public::get_ixPrpVeg
 contains
 
 ! *******************************************************************************************************************
-! function: get the index of the named variables for gamma parameters 
+! function: get the index of the named variables for parameters 
 ! *******************************************************************************************************************
  function get_ixPar(varName)
   use var_lookup,only:ixPar             ! indices of the named variables
@@ -28,8 +25,8 @@ contains
   character(*), intent(in) :: varName     ! variable name
   integer(i4b)             :: get_ixPar   ! index of the named variable
 
-  ! get the index of the named variables
   select case(trim(varName))
+    ! Gamma parameters 
     case('ks1gamma1');        get_ixPar = ixPar%ks1gamma1       ! 
     case('ks1gamma2');        get_ixPar = ixPar%ks1gamma2       ! 
     case('ks1gamma3');        get_ixPar = ixPar%ks1gamma3       ! 
@@ -79,7 +76,7 @@ contains
     case('zpk1gamma1');       get_ixPar = ixPar%zpk1gamma1      ! 
     case('pfree1gamma1');     get_ixPar = ixPar%pfree1gamma1    ! 
     case('rexp1gamma1');      get_ixPar = ixPar%rexp1gamma1     ! 
-
+    ! Beta parameters
     case('uhshape');          get_ixPar = ixPar%uhshape           ! gamma pdf uh shape parameter [-]
     case('uhscale');          get_ixPar = ixPar%uhscale           ! gamma pdf uh scale parameter [-] 
     case('ks');               get_ixPar = ixPar%ks                ! saturated hydrologic conductivity [mm/day]
@@ -134,7 +131,7 @@ contains
     ! get to here if cannot find the variable
     case default;             get_ixPar = imiss
   endselect
- end function get_ixPar
+ end function
 
 ! *******************************************************************************************************************
 ! function: get the index of the named variables for mapping data 
@@ -153,7 +150,7 @@ contains
      ! get to here if cannot find the variable
      case default;           get_ixDataMap = imiss
    end select
- end function get_ixDataMap
+ end function
 
 ! *******************************************************************************************************************
 ! function: get the index of the named variables for veg data 
@@ -173,7 +170,7 @@ contains
      ! get to here if cannot find the variable
      case default;     get_ixDataVeg = imiss
    endselect
- end function get_ixDataVeg
+ end function
 
 ! *******************************************************************************************************************
 ! function: get the index of the named variables for soil data 
@@ -199,7 +196,7 @@ contains
    ! get to here if cannot find the variable
    case default;     get_ixdataSoil = imiss
   endselect
- end function get_ixDataSoil
+ end function
 
 ! *******************************************************************************************************************
 ! function: get the index of the named variables for vegetation properties 
@@ -237,6 +234,6 @@ contains
    ! get to here if cannot find the variable
    case default;         get_ixPrpVeg = imiss
   endselect
- end function get_ixPrpVeg
+ end function
 
 end module get_ixname

@@ -22,7 +22,7 @@ subroutine paramMaster(err,message)
   ! initialize error control
   err=0; message='popMeta/'
   ! -----
-  !  Master list of gamma parameters  
+  !  Public subroutine: Master list of gamma parameters  
   ! -----------------------
   !                                                        name,    default, lwr bound, upr bound,parent beta,   type,    mask, h-upscale, v upscale, perLyr
   !ks transfer function
@@ -142,7 +142,10 @@ subroutine paramMaster(err,message)
 
 end subroutine 
 
-subroutine popMprmeta(err,message)
+! -----
+!  Public subroutine: Populate metadata for MPR infor 
+! -----------------------
+subroutine popMprMeta(err,message)
   use nrtype
   use data_type,  only:var_meta
   use var_lookup, only:ixVarMapData

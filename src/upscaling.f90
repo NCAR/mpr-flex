@@ -25,7 +25,7 @@ contains
 ! *********************************************************************
 ! subroutine: Spatical aggregation with selected method 
 ! *********************************************************************
-subroutine aggreg(wgtval, wgtvec, datvec, method, ierr, message )
+subroutine aggreg(wgtval, wgtvec, datvec, method, err, message )
   implicit none
   ! input
   real(dp),              intent(in)      :: wgtvec(:)        ! weight vector
@@ -33,37 +33,37 @@ subroutine aggreg(wgtval, wgtvec, datvec, method, ierr, message )
   character(*),          intent(in)      :: method
   ! output 
   real(dp),              intent(out)     :: wgtval           ! weighted value
-  integer(i4b),          intent(out)     :: ierr              ! error code
+  integer(i4b),          intent(out)     :: err              ! error code
   character(len=strLen), intent(out)     :: message          ! error message for current routine
   ! local 
   character(len=strLen)                  :: cmessage         ! error message from subroutine
 
-  ierr=0; message="aggreg/"
+  err=0; message="aggreg/"
   select case(trim(method))
-    case('wamean');call wamean(wgtval, wgtvec, datvec, ierr, cmessage)
-    case('wgmean');call wgmean(wgtval, wgtvec, datvec, ierr, cmessage)
-    case('whmean');call whmean(wgtval, wgtvec, datvec, ierr, cmessage)
-    case('wmedi'); call wmedi (wgtval, wgtvec, datvec, ierr, cmessage)
-    case('wmode'); call wmode (wgtval, wgtvec, datvec, ierr, cmessage)
-    case('asum');  call asum  (wgtval, wgtvec, datvec, ierr, cmessage)
-    case default;  ierr=10; message=trim(message)//'aggre method not avaiable'; return
+    case('wamean');call wamean(wgtval, wgtvec, datvec, err, cmessage)
+    case('wgmean');call wgmean(wgtval, wgtvec, datvec, err, cmessage)
+    case('whmean');call whmean(wgtval, wgtvec, datvec, err, cmessage)
+    case('wmedi'); call wmedi (wgtval, wgtvec, datvec, err, cmessage)
+    case('wmode'); call wmode (wgtval, wgtvec, datvec, err, cmessage)
+    case('asum');  call asum  (wgtval, wgtvec, datvec, err, cmessage)
+    case default;  err=10; message=trim(message)//'aggre method not avaiable'; return
   end select
-  if(ierr/=0)then; message=trim(message)//trim(cmessage);return;endif
+  if(err/=0)then; message=trim(message)//trim(cmessage);return;endif
   return
 end subroutine
 
 ! *********************************************************************
 ! subroutine: computing unweighted sum 
 ! *********************************************************************
-subroutine asum(wgtval, wgtvec, datvec, ierr, message )
+subroutine asum(wgtval, wgtvec, datvec, err, message )
   implicit none
   ! input
-  real(dp),               intent(in)      :: wgtvec(:)        ! weight vector
-  real(dp),               intent(in)      :: datvec(:)        ! data value vector
+  real(dp),               intent(in)      :: wgtvec(:)           ! weight vector
+  real(dp),               intent(in)      :: datvec(:)           ! data value vector
   ! output 
-  real(dp),               intent(out)     :: wgtval           ! weighted (scaled) value
-  integer(i4b),           intent(out)     :: ierr             ! error code
-  character(len=strLen),  intent(out)     :: message          ! error message for current routine
+  real(dp),               intent(out)     :: wgtval              ! weighted (scaled) value
+  integer(i4b),           intent(out)     :: err                 ! error code
+  character(len=strLen),  intent(out)     :: message             ! error message for current routine
   ! local 
   real(dp),parameter                      :: wgtMin=1.e-50_dp    ! minimum value for weight 
   real(dp),parameter                      :: paramMin=1.e-50_dp  ! minimum value for parameters (for now exclued missing value, -999) 
@@ -73,21 +73,21 @@ subroutine asum(wgtval, wgtvec, datvec, ierr, message )
   integer(i4b)                            :: nElm_org            ! number of vector elements -original vector
   integer(i4b)                            :: nElm                ! number of vector elements -packed vector 
 
-  ierr=0; message="asum/"
+  err=0; message="asum/"
   ! check : sum of weight should be one
   nElm_org=size(wgtvec)
-  if (nElm_org /= size(datvec))then; ierr=20;message=trim(message)//'data and wgtvec vector:different size';return;endif
+  if (nElm_org /= size(datvec))then; err=20;message=trim(message)//'data and wgtvec vector:different size';return;endif
   ! Create mask 
-  allocate(mask(nElm_org),stat=ierr); if(ierr/=0)then;message=trim(message)//'problem allocating mask';return;endif
+  allocate(mask(nElm_org),stat=err); if(err/=0)then;message=trim(message)//'problem allocating mask';return;endif
   mask=(wgtvec > wgtMin .and. datvec > paramMin)
   ! Pack vector
-  allocate(wgtvec_packed(count(mask)),stat=ierr); if(ierr/=0)then;message=trim(message)//'problem allocating wgtvec_packed';return;endif
-  allocate(datvec_packed(count(mask)),stat=ierr); if(ierr/=0)then;message=trim(message)//'problem allocating datvec_packed';return;endif
+  allocate(wgtvec_packed(count(mask)),stat=err); if(err/=0)then;message=trim(message)//'problem allocating wgtvec_packed';return;endif
+  allocate(datvec_packed(count(mask)),stat=err); if(err/=0)then;message=trim(message)//'problem allocating datvec_packed';return;endif
   wgtvec_packed=pack(wgtvec,mask)
   datvec_packed=pack(datvec,mask)
   ! Re-check size of packed vector
   nElm=size(wgtvec_packed)
-  if (nElm /= size(datvec_packed))then;ierr=20;message=trim(message)//'data and wgtvec vectors: different size';return;endif
+  if (nElm /= size(datvec_packed))then;err=20;message=trim(message)//'data and wgtvec vectors: different size';return;endif
   if (nElm > 0) then
     wgtval=sum(datvec_packed)
   else
@@ -99,15 +99,15 @@ end subroutine
 ! *********************************************************************
 ! subroutine: computing weighted arithmetic mean 
 ! *********************************************************************
-subroutine wamean(wgtval, wgtvec, datvec, ierr, message )
+subroutine wamean(wgtval, wgtvec, datvec, err, message )
   implicit none
   ! input
   real(dp),intent(in)                    :: wgtvec(:)           ! weight vector
   real(dp),intent(in)                    :: datvec(:)           ! data value vector
   ! output 
   real(dp), intent(out)                  :: wgtval              ! weighted (scaled) value
-  integer(i4b),           intent(out)    :: ierr             ! error code
-  character(len=strLen),  intent(out)    :: message          ! error message for current routine
+  integer(i4b),           intent(out)    :: err                 ! error code
+  character(len=strLen),  intent(out)    :: message             ! error message for current routine
   ! local 
   real(dp),parameter                     :: wgtMin=1.e-50_dp    ! minimum value for weight 
   real(dp)                               :: wgtval_sum          ! Sum of weight (should be one)
@@ -119,21 +119,21 @@ subroutine wamean(wgtval, wgtvec, datvec, ierr, message )
   integer(i4b)                           :: nElm                ! number of vector elements -packed vector 
   integer(i4b)                           :: iElm                ! index of vector 
 
-  ierr=0; message="wamean/"
+  err=0; message="wamean/"
   ! check : sum of weight should be one
   nElm_org=size(wgtvec)
-  if (nElm_org /= size(datvec))then; ierr=20;message=trim(message)//'data and wgtvec vector:different size';return;endif
+  if (nElm_org /= size(datvec))then; err=20;message=trim(message)//'data and wgtvec vector:different size';return;endif
   ! Create mask 
-  allocate(mask(nElm_org),stat=ierr); if(ierr/=0)then;message=trim(message)//'problem allocating mask';return;endif
+  allocate(mask(nElm_org),stat=err); if(err/=0)then;message=trim(message)//'problem allocating mask';return;endif
   mask = (wgtvec > wgtMin .and. (datvec > dmiss .or. datvec < dmiss))
   ! Pack vector
-  allocate(wgtvec_packed(count(mask)),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating wgtvec_packed';return;endif
-  allocate(datvec_packed(count(mask)),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating datvec_packed';return;endif
+  allocate(wgtvec_packed(count(mask)),stat=err); if(err/=0)then;message=trim(message)//'error allocating wgtvec_packed';return;endif
+  allocate(datvec_packed(count(mask)),stat=err); if(err/=0)then;message=trim(message)//'error allocating datvec_packed';return;endif
   wgtvec_packed = pack(wgtvec,mask)
   datvec_packed = pack(datvec,mask)
   ! Re-check size of packed vector
   nElm=size(wgtvec_packed)
-  if (nElm /= size(datvec_packed))then;ierr=20;message=trim(message)//'data and wgtvec: different size';return;endif
+  if (nElm /= size(datvec_packed))then;err=20;message=trim(message)//'data and wgtvec: different size';return;endif
   !print*,'Before wgtvec_packed =' 
   !write(*,'(14f10.4)') (wgtvec_packed(iElm), iElm=1,nElm)
   if (nElm > 0) then
@@ -157,14 +157,14 @@ end subroutine
 ! *********************************************************************
 ! subroutine: computing weighted geometric mean 
 ! *********************************************************************
-subroutine wgmean(wgtval, wgtvec, datvec, ierr, message )
+subroutine wgmean(wgtval, wgtvec, datvec, err, message )
   implicit none
   ! input
   real(dp),intent(in)                    :: wgtvec(:)           ! original weight vector
   real(dp),intent(in)                    :: datvec(:)           ! original data value vector
   ! output 
   real(dp), intent(out)                  :: wgtval              ! weighted (scaled) value
-  integer(i4b),           intent(out)    :: ierr             ! error code
+  integer(i4b),           intent(out)    :: err             ! error code
   character(len=strLen),  intent(out)    :: message          ! error message for current routine
   ! local 
   real(dp),parameter                     :: wgtMin=1.e-50_dp    ! minimum value for weight 
@@ -177,21 +177,21 @@ subroutine wgmean(wgtval, wgtvec, datvec, ierr, message )
   integer(i4b)                           :: nElm                ! Number of vector elements 
   integer(i4b)                           :: iElm                ! Index of vector 
 
-  ierr=0; message="wgmean/"
+  err=0; message="wgmean/"
   ! check : sum of weight should be one
   nElm_org =size(wgtvec)
-  if (nElm_org /= size(datvec))then; ierr=20;message=trim(message)//'data and wgtvec vector:different size';return;endif
+  if (nElm_org /= size(datvec))then; err=20;message=trim(message)//'data and wgtvec vector:different size';return;endif
   ! Create mask 
-  allocate(mask(nElm_org),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating mask';return;endif
+  allocate(mask(nElm_org),stat=err); if(err/=0)then;message=trim(message)//'error allocating mask';return;endif
   mask = (wgtvec > wgtMin .and. (datvec > dmiss .or. datvec < dmiss) )
   ! Pack vector
-  allocate(wgtvec_packed(count(mask)),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating wgtvec_packed';return;endif
-  allocate(datvec_packed(count(mask)),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating datvec_packed';return;endif
+  allocate(wgtvec_packed(count(mask)),stat=err); if(err/=0)then;message=trim(message)//'error allocating wgtvec_packed';return;endif
+  allocate(datvec_packed(count(mask)),stat=err); if(err/=0)then;message=trim(message)//'error allocating datvec_packed';return;endif
   wgtvec_packed = pack(wgtvec,mask)
   datvec_packed = pack(datvec,mask)
   ! Re-check size of packed vector
   nElm=size(wgtvec_packed)
-  if (nElm /= size(datvec_packed))then;ierr=20;message=trim(message)//'data and wgtvec: different size';return;endif
+  if (nElm /= size(datvec_packed))then;err=20;message=trim(message)//'data and wgtvec: different size';return;endif
 
   if (nElm > 0) then
     ! Recompute weight
@@ -213,14 +213,14 @@ end subroutine
 ! *********************************************************************
 ! subroutine: computing weighted harmonic mean 
 ! *********************************************************************
-subroutine whmean(wgtval, wgtvec, datvec, ierr, message )
+subroutine whmean(wgtval, wgtvec, datvec, err, message )
   implicit none
   ! input
   real(dp),               intent(in)     :: wgtvec(:)           ! Original weight vector
   real(dp),               intent(in)     :: datvec(:)           ! Original data value vector
   ! output 
   real(dp),               intent(out)    :: wgtval              ! weighted (scaled) value
-  integer(i4b),           intent(out)    :: ierr             ! error code
+  integer(i4b),           intent(out)    :: err             ! error code
   character(len=strLen),  intent(out)    :: message          ! error message for current routine
   ! local 
   real(dp),parameter                     :: wgtMin=1.e-50_dp    ! minimum value for weight 
@@ -233,22 +233,22 @@ subroutine whmean(wgtval, wgtvec, datvec, ierr, message )
   integer(i4b)                           :: nElm                ! Number of vector elements 
   integer(i4b)                           :: iElm                ! Index of vector 
 
-  ierr=0; message="whmean/"
+  err=0; message="whmean/"
   ! check : sum of weight should be one
   ! check : sum of datvec is positive real 
   nElm_org =size(wgtvec)
-  if (nElm_org /= size(datvec))then; ierr=20;message=trim(message)//'data and wgtvec vector:different size';return;endif
+  if (nElm_org /= size(datvec))then; err=20;message=trim(message)//'data and wgtvec vector:different size';return;endif
   ! Create mask 
-  allocate(mask(nElm_org),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating mask';return;endif
+  allocate(mask(nElm_org),stat=err); if(err/=0)then;message=trim(message)//'error allocating mask';return;endif
   mask = (wgtvec > wgtMin .and. (datvec > dmiss .or. datvec < dmiss))
   ! Pack vector
-  allocate(wgtvec_packed(count(mask)),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating wgtvec_packed';return;endif
-  allocate(datvec_packed(count(mask)),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating datvec_packed';return;endif
+  allocate(wgtvec_packed(count(mask)),stat=err); if(err/=0)then;message=trim(message)//'error allocating wgtvec_packed';return;endif
+  allocate(datvec_packed(count(mask)),stat=err); if(err/=0)then;message=trim(message)//'error allocating datvec_packed';return;endif
   wgtvec_packed = pack(wgtvec,mask)
   datvec_packed = pack(datvec,mask)
   ! Re-check size of packed vector
   nElm=size(wgtvec_packed)
-  if (nElm /= size(datvec_packed))then;ierr=20;message=trim(message)//'data and wgtvec: different size';return;endif
+  if (nElm /= size(datvec_packed))then;err=20;message=trim(message)//'data and wgtvec: different size';return;endif
 
   if (nElm > 0) then
     ! Recompute weight
@@ -273,14 +273,14 @@ end subroutine
 ! *********************************************************************
 ! subroutine: computing weighted median  
 ! *********************************************************************
-subroutine wmedi(wgtval, wgtvec, datvec, ierr, message )
+subroutine wmedi(wgtval, wgtvec, datvec, err, message )
   implicit none
   ! input
   real(dp),dimension(:), intent(in)    :: wgtvec             ! original weight vector
   real(dp),dimension(:), intent(in)    :: datvec             ! original data vector 
   ! output 
   real(dp),              intent(out)   :: wgtval             ! weighted (scaled) value
-  integer(i4b),          intent(out)   :: ierr             ! error code
+  integer(i4b),          intent(out)   :: err             ! error code
   character(len=strLen), intent(out)   :: message          ! error message for current routine
   ! local 
   real(dp),parameter                   :: wgtMin=1.e-50_dp   ! minimum value for weight 
@@ -297,20 +297,20 @@ subroutine wmedi(wgtval, wgtvec, datvec, ierr, message )
   integer(i4b)                         :: iElm 
   integer(i4b)                         :: jElm 
 
-  ierr=0; message="whmean/"
+  err=0; message="whmean/"
   nElm_org =size(wgtvec)
-  if (nElm_org /= size(datvec))then; ierr=20;message=trim(message)//'data and wgtvec vector:different size';return;endif
+  if (nElm_org /= size(datvec))then; err=20;message=trim(message)//'data and wgtvec vector:different size';return;endif
   ! Create mask 
-  allocate(mask(nElm_org),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating mask';return;endif
+  allocate(mask(nElm_org),stat=err); if(err/=0)then;message=trim(message)//'error allocating mask';return;endif
   mask = (wgtvec > wgtMin .and. (datvec > dmiss .or. datvec < dmiss) )
   ! Pack vector
-  allocate(wgtvec_packed(count(mask)),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating wgtvec_packed';return;endif
-  allocate(datvec_packed(count(mask)),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating datvec_packed';return;endif
+  allocate(wgtvec_packed(count(mask)),stat=err); if(err/=0)then;message=trim(message)//'error allocating wgtvec_packed';return;endif
+  allocate(datvec_packed(count(mask)),stat=err); if(err/=0)then;message=trim(message)//'error allocating datvec_packed';return;endif
   wgtvec_packed = pack(wgtvec,mask)
   datvec_packed = pack(datvec,mask)
   ! Re-check size of packed vector
   nElm=size(wgtvec_packed)
-  if (nElm /= size(datvec_packed))then;ierr=20;message=trim(message)//'data and wgtvec: different size';return;endif
+  if (nElm /= size(datvec_packed))then;err=20;message=trim(message)//'data and wgtvec: different size';return;endif
   
   if (nElm > 0) then
     ! Recompute weight
@@ -350,7 +350,7 @@ end subroutine
 ! *********************************************************************
 ! subroutine: computing weighted mode 
 ! *********************************************************************
-subroutine wmode(wgtval, wgtvec, datvec, ierr, message )
+subroutine wmode(wgtval, wgtvec, datvec, err, message )
   ! Define variables
   implicit none
   ! input
@@ -358,7 +358,7 @@ subroutine wmode(wgtval, wgtvec, datvec, ierr, message )
   real(dp),              intent(in)    :: datvec(:)             ! original data vector 
   ! output 
   real(dp),              intent(out)   :: wgtval             ! weighted (scaled) value
-  integer(i4b),          intent(out)   :: ierr             ! error code
+  integer(i4b),          intent(out)   :: err             ! error code
   character(len=strLen), intent(out)   :: message          ! error message for current routine
   ! local 
   real(dp),parameter                   :: wgtMin=1.e-50_dp   ! minimum value for weight 
@@ -376,21 +376,21 @@ subroutine wmode(wgtval, wgtvec, datvec, ierr, message )
   integer(i4b)                         :: jElm               ! loop index of vector element
   integer(i4b)                         :: iMax(1)            ! index where element is max in vector
 
-  ierr=0; message="wmode/"
+  err=0; message="wmode/"
   nElm_org =size(wgtvec)
-  if (nElm_org /= size(datvec))then;ierr=20;message=trim(message)//'data and wgtvec vectors: different size';return;endif
+  if (nElm_org /= size(datvec))then;err=20;message=trim(message)//'data and wgtvec vectors: different size';return;endif
   ! Create mask to eliminate element with no weight values
-  allocate(mask(nElm_org),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating mask';return;endif
+  allocate(mask(nElm_org),stat=err); if(err/=0)then;message=trim(message)//'error allocating mask';return;endif
   !mask = (wgtvec > wgtMin .and. datvec > paramMin )
   mask = (wgtvec > wgtMin )
   ! Pack vector
-  allocate(wgtvec_packed(count(mask)),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating wgtvec_packed';return;endif
-  allocate(datvec_packed(count(mask)),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating datvec_packed';return;endif
+  allocate(wgtvec_packed(count(mask)),stat=err); if(err/=0)then;message=trim(message)//'error allocating wgtvec_packed';return;endif
+  allocate(datvec_packed(count(mask)),stat=err); if(err/=0)then;message=trim(message)//'error allocating datvec_packed';return;endif
   wgtvec_packed = pack(wgtvec,mask)
   datvec_packed = pack(datvec,mask)
   ! Re-check size of packed vector
   nElm=size(wgtvec_packed)
-  if (nElm /= size(datvec_packed))then;ierr=20;message=trim(message)//'data and wgtvec: different size';return;endif
+  if (nElm /= size(datvec_packed))then;err=20;message=trim(message)//'data and wgtvec: different size';return;endif
     
   if (nElm > 0) then
     ! Recompute weight
@@ -399,7 +399,7 @@ subroutine wmode(wgtval, wgtvec, datvec, ierr, message )
       wgtvec_packed = wgtvec_packed/wgtvec_sum
 
     ! Find unique element in data vector
-    allocate(maskunq(nElm),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating maskunq';return;endif
+    allocate(maskunq(nElm),stat=err); if(err/=0)then;message=trim(message)//'error allocating maskunq';return;endif
     maskunq = .true.
     do iElm = nElm,2,-1
       maskunq(iElm) = .not.(any(int(datvec_packed(1:iElm-1))==int(datvec_packed(iElm))))
@@ -408,7 +408,7 @@ subroutine wmode(wgtval, wgtvec, datvec, ierr, message )
     allocate(idxdat, source=pack([(iElm,iElm=1,nElm)],maskunq))
     ! copy the unique element in datvec_unq
     allocate(datvec_unq, source=datvec_packed(idxdat))
-    allocate(wsum(size(datvec_unq)),stat=ierr);if(ierr/=0)then;message=trim(message)//'error allocating wsum';return;endif
+    allocate(wsum(size(datvec_unq)),stat=err);if(err/=0)then;message=trim(message)//'error allocating wsum';return;endif
     wsum = 0._dp
     do iElm=1,size(datvec_unq)
       do jElm=1,nElm

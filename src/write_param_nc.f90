@@ -29,7 +29,7 @@ contains
   subroutine defSoilNetCDF(fname,           &  ! input: output nc filename
                            nHru,            &  ! input: number of model hrus 
                            nLyr,            &  ! input: number of model soil layer 
-                           ierr, message)      ! output: error control
+                           err, message)      ! output: error control
     use globalData,    only: betaInGamma, parMaster 
     implicit none
     ! input variables
@@ -37,7 +37,7 @@ contains
     integer(i4b), intent(in)          :: nHru         ! number of hru polygon 
     integer(i4b), intent(in)          :: nLyr         ! number of soil layer 
     ! output variables
-    integer(i4b), intent(out)         :: ierr         ! error code
+    integer(i4b), intent(out)         :: err         ! error code
     character(*), intent(out)         :: message      ! error message
     ! local variables
     type(par_meta),  allocatable      :: betaMeta(:)  ! meta data for beta parameter estimated via MPR 
@@ -50,19 +50,19 @@ contains
     character(len=strLen)             :: cmessage     ! error message of downwind routine
     
     ! initialize error control
-    ierr=0; message='defSoilNetCDF/'
+    err=0; message='defSoilNetCDF/'
     ! define file
-    ierr = nf90_create(trim(fname),nf90_classic_model,ncid)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_create(trim(fname),nf90_classic_model,ncid)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     ! define dimension (unlimited)
-    !ierr = nf90_def_dim(ncid, trim(sHru_DimName), nf90_unlimited, idimId)
-    ierr = nf90_def_dim(ncid, trim(sHru_DimName), nHru, hrudimId)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
-    ierr = nf90_def_dim(ncid, trim(sLyr_DimName), nLyr, lyrdimId)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    !err = nf90_def_dim(ncid, trim(sHru_DimName), nf90_unlimited, idimId)
+    err = nf90_def_dim(ncid, trim(sHru_DimName), nHru, hrudimId)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
+    err = nf90_def_dim(ncid, trim(sLyr_DimName), nLyr, lyrdimId)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     ! define coordinate variable - variable name is the same as dimension 
-    call defvar(sHru_DimName,'Model HRU ID','-',  (/sHru_DimName/),nf90_int, ierr,cmessage)
-    call defvar(sLyr_DimName,'Soil Layer ID','-', (/sLyr_DimName/),nf90_int, ierr,cmessage)
+    call defvar(sHru_DimName,'Model HRU ID','-',  (/sHru_DimName/),nf90_int, err,cmessage)
+    call defvar(sLyr_DimName,'Soil Layer ID','-', (/sLyr_DimName/),nf90_int, err,cmessage)
     nBeta=size(betaInGamma)
     allocate(betaMeta(nBeta)) 
     do iBeta=1,nBeta
@@ -72,19 +72,19 @@ contains
         endif
       enddo
       ! define parameter values 
-      call defvar(trim(betaMeta(iBeta)%pname),trim(betaMeta(iBeta)%pname),"-",(/sLyr_DimName,sHru_DimName/),nf90_double,ierr,cmessage)
-      if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+      call defvar(trim(betaMeta(iBeta)%pname),trim(betaMeta(iBeta)%pname),"-",(/sLyr_DimName,sHru_DimName/),nf90_double,err,cmessage)
+      if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     end do
     ! end definitions
-    ierr = nf90_enddef(ncid)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_enddef(ncid)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     ! close NetCDF file
-    ierr = nf90_close(ncid)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_close(ncid)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     
     contains
 
-    subroutine defvar(vname,vdesc,vunit,dimNames,ivtype,ierr,message)
+    subroutine defvar(vname,vdesc,vunit,dimNames,ivtype,err,message)
       ! input
       character(*), intent(in)  :: vname                      ! variable name
       character(*), intent(in)  :: vdesc                      ! variable description
@@ -92,7 +92,7 @@ contains
       character(*), intent(in)  :: dimNames(:)                ! variable dimension names
       integer(i4b), intent(in)  :: ivtype                     ! variable type
       ! output
-      integer(i4b), intent(out) :: ierr                       ! error code
+      integer(i4b), intent(out) :: err                       ! error code
       character(*), intent(out) :: message                    ! error message
       ! local
       integer(i4b)              :: id                         ! index of dimension loop
@@ -103,29 +103,29 @@ contains
      
       ! define dimension IDs
       do id=1,size(dimNames)
-       ierr=nf90_inq_dimid(ncid,trim(dimNames(id)),dimIDs(id))
-       if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+       err=nf90_inq_dimid(ncid,trim(dimNames(id)),dimIDs(id))
+       if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
       end do
       ! define variable
-      ierr = nf90_def_var(ncid,trim(vname),ivtype,dimIds,iVarId)
-      if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+      err = nf90_def_var(ncid,trim(vname),ivtype,dimIds,iVarId)
+      if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
       ! add variable description
-      ierr = nf90_put_att(ncid,iVarId,'long_name',trim(vdesc))
-      if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+      err = nf90_put_att(ncid,iVarId,'long_name',trim(vdesc))
+      if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
       ! add variable units
-      ierr = nf90_put_att(ncid,iVarId,'units',trim(vunit))
-      if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+      err = nf90_put_att(ncid,iVarId,'units',trim(vunit))
+      if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
       ! add variable fillvalue 
       if (ivtype == nf90_double) then
-        ierr = nf90_put_att(ncid, iVarId, '_FillValue', nf90_fill_double)
-        if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+        err = nf90_put_att(ncid, iVarId, '_FillValue', nf90_fill_double)
+        if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
       else if (ivtype == nf90_int) then
-        ierr = nf90_put_att(ncid, iVarId, '_FillValue', nf90_fill_int)
-        if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+        err = nf90_put_att(ncid, iVarId, '_FillValue', nf90_fill_int)
+        if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
       endif
       return
     end subroutine defvar
-  end subroutine defSoilNetCDF
+  end subroutine
 
   ! *********************************************************************
   ! public subroutine: write an integer vector
@@ -134,7 +134,7 @@ contains
                             vname,           &  ! input: variable name
                             iVec,            &  ! input: variable data
                             iStart,          &  ! input: start index
-                            ierr, message)      ! output: error control
+                            err, message)      ! output: error control
     implicit none
     ! input variables
     character(*), intent(in)        :: fname        ! filename
@@ -142,28 +142,28 @@ contains
     integer(i4b), intent(in)        :: iVec(:)      ! variable data
     integer(i4b), intent(in)        :: iStart       ! start index
     ! output variables
-    integer(i4b), intent(out)       :: ierr         ! error code
+    integer(i4b), intent(out)       :: err         ! error code
     character(*), intent(out)       :: message      ! error message
     ! local variables
     integer(i4b)                    :: ncid         ! NetCDF file ID
     integer(i4b)                    :: iVarId       ! NetCDF variable ID
 
     ! initialize error control
-    ierr=0; message='write_vec_ivar/'
+    err=0; message='write_vec_ivar/'
     ! open NetCDF file
-    ierr = nf90_open(trim(fname),nf90_write,ncid)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_open(trim(fname),nf90_write,ncid)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     ! assign variable ID
-    ierr = nf90_inq_varid(ncid,trim(vname),iVarId)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_inq_varid(ncid,trim(vname),iVarId)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     ! write data
-    ierr = nf90_put_var(ncid,iVarId,iVec,start=(/iStart/),count=(/size(iVec)/))
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_put_var(ncid,iVarId,iVec,start=(/iStart/),count=(/size(iVec)/))
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     ! close output file
-    ierr = nf90_close(ncid)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_close(ncid)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     return 
-  end subroutine write_vec_ivar
+  end subroutine
 
   ! *********************************************************************
   ! public subroutine: write a double precision vector
@@ -173,7 +173,7 @@ contains
                             dVec,            &  ! input: variable data
                             iStart,          &  ! input: start index
                             iCount,          &  ! input: length of vector
-                            ierr, message)      ! output: error control
+                            err, message)      ! output: error control
     implicit none
     ! input variables
     character(*), intent(in)        :: fname        ! filename
@@ -182,27 +182,27 @@ contains
     integer(i4b), intent(in)        :: iStart       ! start indices
     integer(i4b), intent(in)        :: iCount       ! length of vector
     ! output variables
-    integer(i4b), intent(out)       :: ierr         ! error code
+    integer(i4b), intent(out)       :: err         ! error code
     character(*), intent(out)       :: message      ! error message
     ! local variables
     integer(i4b)                    :: ncid         ! NetCDF file ID
     integer(i4b)                    :: iVarId       ! NetCDF variable ID
     ! initialize error control
-    ierr=0; message='write_vec_dvar/'
+    err=0; message='write_vec_dvar/'
     ! open NetCDF file
-    ierr = nf90_open(trim(fname),nf90_write,ncid)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_open(trim(fname),nf90_write,ncid)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     ! get variable ID
-    ierr = nf90_inq_varid(ncid,trim(vname),iVarId)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_inq_varid(ncid,trim(vname),iVarId)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     ! write data
-    ierr = nf90_put_var(ncid,iVarId,dVec,start=(/iStart/),count=(/iCount/))
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_put_var(ncid,iVarId,dVec,start=(/iStart/),count=(/iCount/))
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     ! close output file
-    ierr = nf90_close(ncid)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_close(ncid)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     return 
-  end subroutine write_vec_dvar
+  end subroutine
 
   ! *********************************************************************
   ! public subroutine: write a double precision 2d array 
@@ -212,7 +212,7 @@ contains
                                dvar,         &  ! input: variable data
                                iStart,       &  ! input: start index
                                iCount,       &  ! input: length of vector
-                               ierr, message)   ! output: error control
+                               err, message)   ! output: error control
     implicit none
     ! input variables
     character(*), intent(in)       :: fname        ! filename
@@ -221,27 +221,27 @@ contains
     integer(i4b), intent(in)       :: iStart(:)    ! start indices
     integer(i4b), intent(in)       :: iCount(:)    ! length of vector
     ! output variables
-    integer(i4b), intent(out)      :: ierr         ! error code
+    integer(i4b), intent(out)      :: err         ! error code
     character(*), intent(out)      :: message      ! error message
     ! local variables
     integer(i4b)                   :: ncid         ! NetCDF file ID
     integer(i4b)                   :: VarId        ! NetCDF variable ID
     ! initialize error control
-    ierr=0; message='write_array2_dvar/'
+    err=0; message='write_array2_dvar/'
     ! open NetCDF file
-    ierr = nf90_open(trim(fname),nf90_write,ncid)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_open(trim(fname),nf90_write,ncid)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     ! get variable ID
-    ierr = nf90_inq_varid(ncid,trim(vname),VarId)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_inq_varid(ncid,trim(vname),VarId)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     ! write data
-    ierr = nf90_put_var(ncid,VarId,dvar,start=iStart,count=iCount)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_put_var(ncid,VarId,dvar,start=iStart,count=iCount)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     ! close output file
-    ierr = nf90_close(ncid)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_close(ncid)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     return 
-  end subroutine write_array2_dvar
+  end subroutine
 
   ! *********************************************************************
   ! public subroutine: write an integer 2d array 
@@ -251,7 +251,7 @@ contains
                                ivar,         &  ! input: variable data
                                iStart,       &  ! input: start index
                                iCount,       &  ! input: length of vector
-                               ierr, message)   ! output: error control
+                               err, message)   ! output: error control
     implicit none
     ! input variables
     character(*), intent(in)       :: fname        ! filename
@@ -260,26 +260,26 @@ contains
     integer(i4b), intent(in)       :: iStart(:)    ! start indices
     integer(i4b), intent(in)       :: iCount(:)    ! length of vector
     ! output variables
-    integer(i4b), intent(out)      :: ierr         ! error code
+    integer(i4b), intent(out)      :: err         ! error code
     character(*), intent(out)      :: message      ! error message
     ! local variables
     integer(i4b)                   :: ncid         ! NetCDF file ID
     integer(i4b)                   :: VarId        ! NetCDF variable ID
     ! initialize error control
-    ierr=0; message='write_array2_dvar/'
+    err=0; message='write_array2_dvar/'
     ! open NetCDF file
-    ierr = nf90_open(trim(fname),nf90_write,ncid)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_open(trim(fname),nf90_write,ncid)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     ! get variable ID
-    ierr = nf90_inq_varid(ncid,trim(vname),VarId)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_inq_varid(ncid,trim(vname),VarId)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     ! write data
-    ierr = nf90_put_var(ncid,VarId,ivar,start=iStart,count=iCount)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_put_var(ncid,VarId,ivar,start=iStart,count=iCount)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     ! close output file
-    ierr = nf90_close(ncid)
-    if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr)); return; endif
+    err = nf90_close(ncid)
+    if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     return 
-  end subroutine write_array2_ivar
+  end subroutine
 
 end module write_param_nc 

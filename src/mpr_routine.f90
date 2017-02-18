@@ -17,7 +17,7 @@ contains
 ! Public subroutine: run MPR and save estimated parameters in netCDF
 ! ************************************************************************************************
 ! this subroutine is used for opt = 2 in namelist (run only mpr and output parameters)
-subroutine run_mpr( calParam, restartFile ) 
+subroutine run_mpr( calParam, restartFile, err, message ) 
   use globalData,    only: parSubset, betaInGamma, gammaSubset
   use model_wrapper, only: read_hru_id
   use write_param_nc,only: defSoilNetCDF, write_vec_ivar, write_array2_dvar
@@ -26,6 +26,8 @@ subroutine run_mpr( calParam, restartFile )
   real(dp),             intent(in)  :: calParam(:)            ! parameter in namelist, not necessarily all parameters are calibrated
   character(len=strLen),intent(in)  :: restartFile            ! name of restart file including iteration, the most recent parameter values 
   ! output variables
+  integer(i4b),         intent(out) :: err                    ! error id 
+  character(len=strLen),intent(out) :: message                ! error message
   ! local
   type(var_d)                       :: calParStr(nParCal)     ! parameter storage including perLayr values converted from parameter array 
   type(var_d),          allocatable :: paramGammaStr(:)       ! calibratin gamma parameter storage extracted from calParStr
@@ -42,8 +44,6 @@ subroutine run_mpr( calParam, restartFile )
   type(namedvar2),      allocatable :: parMxyMz(:)            ! storage of model soil parameter at model layer x model hru 
   type(namedvar),       allocatable :: vegParMxy(:)           ! storage of model vege parameter at model hru
   logical                           :: isExistFile            ! logical to check if the file exist or not
-  integer(i4b)                      :: err                    ! error id 
-  character(len=strLen)             :: message                ! error message
   character(len=strLen)             :: cmessage               ! error message from subroutine
 
   err=0; message='run_mpr/' ! to initialize error control
@@ -70,13 +70,13 @@ subroutine run_mpr( calParam, restartFile )
     endif
   end do
   call read_hru_id(idModel, hruID, err, cmessage)    ! to get hruID
-  if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
+  if (err/=0)then;message=trim(message)//trim(cmessage);return;endif
   if ( any(parSubset(:)%beta /= "beta") )then ! calPar includes gamma parameters to be used for MPR 
     nSoilParModel=size(betaInGamma)           ! number of soil parameters associated with gamma parameters
     nVegParModel=1                            ! number of vege parameters associated with gamma parameters (now 1 temporarily)
-    allocate(hModel(nLyr,nHru),stat=err);      if(err/=0)then;print*,trim(message)//'error allocating hModel';stop;endif
-    allocate(parMxyMz(nSoilParModel),stat=err);if(err/=0)then;print*,trim(message)//'error allocating parMxyMz';stop;endif
-    allocate(vegParMxy(nVegParModel),stat=err);if(err/=0)then;print*,trim(message)//'error allocating vegParMxy';stop;endif
+    allocate(hModel(nLyr,nHru),stat=err);      if(err/=0)then;message=trim(message)//'error allocating hModel';return;endif
+    allocate(parMxyMz(nSoilParModel),stat=err);if(err/=0)then;message=trim(message)//'error allocating parMxyMz';return;endif
+    allocate(vegParMxy(nVegParModel),stat=err);if(err/=0)then;message=trim(message)//'error allocating vegParMxy';return;endif
     do iPar=1,nSoilParModel
       allocate(parMxyMz(iPar)%varData(nLyr,nHru),stat=err)
     enddo
@@ -88,20 +88,20 @@ subroutine run_mpr( calParam, restartFile )
     allocate(paramGammaStr(count(mask)))
     paramGammaStr=pack(calParStr,mask)
     do iPar=1,size(paramGammaStr)
-      if (size(paramGammaStr(iPar)%var)>1)then;;print*,trim(message)//'gammaParameter should not have perLayer value';stop;endif
+      if (size(paramGammaStr(iPar)%var)>1)then;message=trim(message)//'gammaParameter should not have perLayer value';return;endif
     enddo
     call mpr(idModel, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
-    if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+    if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     !! Write parameter derived from MPR in netCDF 
     call defSoilNetCDF(trim(mpr_output_dir)//trim(param_nc),nHru,nLyr,err,cmessage)
-    if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+    if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     call write_vec_ivar(trim(mpr_output_dir)//trim(param_nc),"hruid",hruID,1,err,cmessage) 
-    if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+    if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     call write_vec_ivar(trim(mpr_output_dir)//trim(param_nc),"lyr",(/(iLyr,iLyr=1,nLyr)/),1,err,cmessage) 
-    if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+    if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     do iPar=1,size(betaInGamma)
       call write_array2_dvar(trim(mpr_output_dir)//trim(param_nc),trim(betaInGamma(iPar)),parMxyMz(iPar)%varData,(/1,1/),(/nLyr,nHru/),err,cmessage)
-      if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+      if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     enddo
   else  
     print*,trim(message)//'there is no gamma pamameters in parameter input file to perform MPR';stop
@@ -207,11 +207,6 @@ subroutine mpr(idModel,           &     ! input: model ID
   
   ! initialize error control
   err=0; message='mpr/'
-  ! print out list of gamma/beta parameters
-  print*,"--list of gamma parameters"
-  print*,gammaParMeta(:)%pname
-  print*,"--beta in gamma"
-  print*,betaInGamma
   !(0) Preparation
   allocate(gammaParMasterMeta, source=parMaster) ! copy master parameter metadata
   nSoilParModel=size(betaInGamma)                ! number of soil and vege parameters associated with gamma parameter
@@ -407,7 +402,8 @@ subroutine mpr(idModel,           &     ! input: model ID
     ! (3.4) Compute model soil parameters using transfer function
     ! *********************************************************
       ! compute model soil parameters
-      call comp_soil_model_param(parSxySz, sdataLocal, gammaParMasterMeta, nSlyrs, nSpolyLocal, err, message)
+      call comp_soil_model_param(parSxySz, sdataLocal, gammaParMasterMeta, nSlyrs, nSpolyLocal, err, cmessage)
+      if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
       if ( iHru == iHruPrint ) then
         print*,'(2) Print Model parameter for polygon and layer'
         write(*,"(' Layer       =',20I9)") (iSLyr, iSlyr=1,nSlyrs)
