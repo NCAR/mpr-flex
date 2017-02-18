@@ -1,4 +1,4 @@
-module mo_nml 
+module read_config 
   use nrtype
   use public_var
 
@@ -98,4 +98,4 @@ subroutine read_nml(nmlfile, err, message)
   return
 end subroutine
 
-end module mo_nml 
+end module read_config

@@ -69,7 +69,7 @@ UTILS = \
 IO = \
     globalData.f90 \
     popMeta.f90 \
-    mo_nml.f90 \
+    read_config.f90 \
     read_soildata.f90 \
     read_vegdata.f90 \
     read_mapdata.f90 \

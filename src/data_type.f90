@@ -16,10 +16,10 @@ type,public  :: par_meta
   real(dp)                     :: lwr    =-999.0_dp ! lower and upper bounds
   real(dp)                     :: upr    =-999.0_dp ! lower and upper bounds
   character(len=strLen)        :: beta   =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
-  character(len=strLen)        :: ptype  =''
+  character(len=strLen)        :: ptype  =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
   logical(lgc)                 :: flag   =.False.   ! flag to calibrate or not 
-  character(len=strLen)        :: hups   =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
-  character(len=strLen)        :: vups   =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
+  character(len=strLen)        :: hups   =''        ! scaling operator for horizontal direction 
+  character(len=strLen)        :: vups   =''        ! scaling operator for vertical direction 
   logical(lgc)                 :: perLyr =.False.   ! calibrate per layer (only applicable to multiplier method)
 endtype par_meta
 

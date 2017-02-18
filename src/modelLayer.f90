@@ -19,7 +19,7 @@ contains
                               zModel,   &          ! output: model layer bottom depth [mm]
                               hfrac,    &          ! input : fraction of total soil layer for each model layer
                               soildata, &          ! input : soil data 
-                              ierr, message)       ! output: error id and message 
+                              err, message)        ! output: error id and message 
 
   use var_lookup,  only:ixVarSoilData,nVarSoilData ! index of soil data variables and number of variables 
   implicit none
@@ -29,8 +29,8 @@ contains
   ! output 
   real(dp),     intent(out)   :: hModel(:,:)       ! model layer thickness [mm]
   real(dp),     intent(out)   :: zModel(:,:)       ! depth of model layer bottom [mm]
-  integer(i4b), intent(out)   :: ierr             ! error code
-  character(*), intent(out)   :: message          ! error message
+  integer(i4b), intent(out)   :: err               ! error code
+  character(*), intent(out)   :: message           ! error message
   ! local 
   integer(i4b)                :: iPoly             ! loop index of polygon 
   integer(i4b)                :: iLyr              ! loop index of model layer 
@@ -44,16 +44,16 @@ contains
   integer(i4b)                :: nElm
  
   ! Initialize error control
-  ierr=0; message=trim(message)//'comp_model_depth/'
+  err=0; message=trim(message)//'comp_model_depth/'
   ! Get number of soil layer 
   associate( hslyrs => soilData(ixVarSoilData%hslyrs)%dvar2 )
   nSLyr=size(hslyrs,1) 
   nPoly=size(hslyrs,2) 
   ! Make mask to exclude layers with water/bedrock/other  
-  allocate(mask(nSLyr,nPoly),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating mask';return;endif
+  allocate(mask(nSLyr,nPoly),stat=err); if(err/=0)then;message=trim(message)//'error allocating mask';return;endif
   mask = (soilData(ixVarSoilData%soilclass)%ivar2 < 13) !Exclude 14=water, 15=bedrock, 16=other(??)
   do iPoly=1,nPoly
-    allocate(lyr_packed(count(mask(:,iPoly))),stat=ierr); if(ierr/=0)then;message=trim(message)//'error allocating lyr_packed';return;endif
+    allocate(lyr_packed(count(mask(:,iPoly))),stat=err); if(err/=0)then;message=trim(message)//'error allocating lyr_packed';return;endif
     lyr_packed = pack( hslyrs(:,iPoly), mask(:,iPoly) )
     nElm = size(lyr_packed)      ! number of valid soil layer
     if (nElm > 0) then           ! if actually soil layers exist
@@ -61,13 +61,13 @@ contains
       nFrac=size(hfrac)          ! number of layer fraction that is input
       if (nLyr == 1) then
         if (nFrac /= 1) then
-          ierr=10;message=trim(message)//'if model has single soil layer, nFrac has to be one';return
+          err=10;message=trim(message)//'if model has single soil layer, nFrac has to be one';return
         endif
         hModel(1,iPoly)=Ztot_in
         zModel(1,iPoly)=hModel(1,iPoly)
       else  
         if (nFrac+1 /= nLyr)then
-          ierr=15;message=trim(message)//'number of nFrac does not match with number of model layer';return
+          err=15;message=trim(message)//'number of nFrac does not match with number of model layer';return
         endif
         topZ=0.0_dp ! depth of model layer top (1st model layer = 0 m)
         do iLyr=1,nLyr-1
@@ -91,38 +91,38 @@ end subroutine
 ! *****************************************************************************
 ! Public subroutine: weight of soil layers within each mode layer 
 ! ******************************************************************************
- subroutine map_slyr2mlyr( hSoil, zModel, lyrmap, ierr, message)
+ subroutine map_slyr2mlyr( hSoil, zModel, lyrmap, err, message)
   ! Define variables
   implicit none
   ! input
   real(dp), intent(in)        :: hSoil(:,:)      ! thickness of soil layer [m]
   real(dp), intent(in)        :: zModel(:,:)     ! depth of model layer bottom [m]
   ! output 
-  type(poly),intent(inout)    :: lyrmap(:)        ! data type storing weight and intersecting soil layer index for each model layer
-  integer(i4b),intent(out)    :: ierr             ! error code
-  character(*),intent(out)    :: message          ! error message
+  type(poly),intent(inout)    :: lyrmap(:)       ! data type storing weight and intersecting soil layer index for each model layer
+  integer(i4b),intent(out)    :: err             ! error code
+  character(*),intent(out)    :: message         ! error message
   ! local 
   real(dp),    allocatable    :: zSoil(:,:)      ! thickness of soil layer [m]
-  integer(i4b),parameter      :: nSub=11          ! max. number of Soil layer within Model layer
-  integer(i4b)                :: ctr              ! counter 
-  integer(i4b)                :: iPoly            ! loop index of polygon 
-  integer(i4b)                :: iSlyr            ! loop index of soil layer 
-  integer(i4b)                :: iMlyr            ! loop index of model layer 
-  integer(i4b)                :: nPoly            ! number of polygon 
-  integer(i4b)                :: nSLyr            ! number of Soil layer (to be computed based on input soil data)
-  real(dp),allocatable        :: Zs_top(:)        ! depth to top of ith soil layer (i=1..nSlyr)
-  real(dp),allocatable        :: Zs_bot(:)        ! depth to bottom of ith soil layer (i=1..nSlyr)
-  real(dp),allocatable        :: Zm_top(:)        ! depth to top of ith model layer (i=1..nLyr)
-  real(dp),allocatable        :: Zm_bot(:)        ! depth to bottom of ith model layer (i=1..nLyr)
-  integer(i4b),allocatable    :: idxTop(:)        ! index of soil layer of which top is within ith model layer (i=1..nLyr)
-  integer(i4b),allocatable    :: idxBot(:)        ! index of the lowest soil layer of which bottom is within ith model layer (i=1..nLyr)
+  integer(i4b),parameter      :: nSub=11         ! max. number of Soil layer within Model layer
+  integer(i4b)                :: ctr             ! counter 
+  integer(i4b)                :: iPoly           ! loop index of polygon 
+  integer(i4b)                :: iSlyr           ! loop index of soil layer 
+  integer(i4b)                :: iMlyr           ! loop index of model layer 
+  integer(i4b)                :: nPoly           ! number of polygon 
+  integer(i4b)                :: nSLyr           ! number of Soil layer (to be computed based on input soil data)
+  real(dp),allocatable        :: Zs_top(:)       ! depth to top of ith soil layer (i=1..nSlyr)
+  real(dp),allocatable        :: Zs_bot(:)       ! depth to bottom of ith soil layer (i=1..nSlyr)
+  real(dp),allocatable        :: Zm_top(:)       ! depth to top of ith model layer (i=1..nLyr)
+  real(dp),allocatable        :: Zm_bot(:)       ! depth to bottom of ith model layer (i=1..nLyr)
+  integer(i4b),allocatable    :: idxTop(:)       ! index of soil layer of which top is within ith model layer (i=1..nLyr)
+  integer(i4b),allocatable    :: idxBot(:)       ! index of the lowest soil layer of which bottom is within ith model layer (i=1..nLyr)
   
   ! initialize error control
-  ierr=0; message='map_slyr2mlyr/'
+  err=0; message='map_slyr2mlyr/'
   ! dimensions
   nSLyr=size(hSoil,1)  !get soil layer number
   nPoly=size(hSoil,2)  !get polygon 
-  if (nPoly /= size(zModel,2))then;ierr=30;message=trim(message)//'number of polygon mismatch'; return; endif
+  if (nPoly /= size(zModel,2))then;err=30;message=trim(message)//'number of polygon mismatch'; return; endif
   allocate(zSoil,source=hSoil)
   do iSLyr=2,nSlyr
     zSoil(iSlyr,:)=hSoil(iSlyr,:)+zSoil(iSlyr-1,:)
@@ -138,12 +138,12 @@ end subroutine
         lyrmap(iPoly)%layer(iMLyr)%ixSubLyr= imiss
       enddo
     else
-      allocate(Zs_bot(nSlyr),stat=ierr); if(ierr/=0)then; message=trim(message)//'error allocating Zs_bot'; return; endif
-      allocate(Zs_top(nSlyr),stat=ierr); if(ierr/=0)then; message=trim(message)//'error allocating Zs_top'; return; endif
-      allocate(Zm_top(nLyr),stat=ierr);  if(ierr/=0)then; message=trim(message)//'error allocating Zm_top'; return; endif
-      allocate(Zm_bot(nLyr),stat=ierr);  if(ierr/=0)then; message=trim(message)//'error allocating Zm_bot'; return; endif
-      allocate(idxTop(nLyr),stat=ierr);  if(ierr/=0)then; message=trim(message)//'error allocating idxTop'; return; endif
-      allocate(idxBot(nLyr),stat=ierr);  if(ierr/=0)then; message=trim(message)//'error allocating idxBot'; return; endif
+      allocate(Zs_bot(nSlyr),stat=err); if(err/=0)then; message=trim(message)//'error allocating Zs_bot'; return; endif
+      allocate(Zs_top(nSlyr),stat=err); if(err/=0)then; message=trim(message)//'error allocating Zs_top'; return; endif
+      allocate(Zm_top(nLyr),stat=err);  if(err/=0)then; message=trim(message)//'error allocating Zm_top'; return; endif
+      allocate(Zm_bot(nLyr),stat=err);  if(err/=0)then; message=trim(message)//'error allocating Zm_bot'; return; endif
+      allocate(idxTop(nLyr),stat=err);  if(err/=0)then; message=trim(message)//'error allocating idxTop'; return; endif
+      allocate(idxBot(nLyr),stat=err);  if(err/=0)then; message=trim(message)//'error allocating idxBot'; return; endif
       !-- Compute for depths to 1)top and 2) bottom of soil and model layer 
       Zm_top(1)=0.0_dp
       Zs_top(1)=0.0_dp
@@ -175,9 +175,9 @@ end subroutine
       enddo 
       ! Error check
       do iMLyr=1,nLyr
-        if (idxTop(iMlyr)>11)then;             message=trim(message)//'index of idxTop not assinged'; return; endif 
-        if (idxBot(iMlyr)>11)then;             message=trim(message)//'index of idxBot not assinged'; return; endif
-        if (idxTop(iMlyr)-idxBot(iMlyr)>0)then; message=trim(message)//'index of idxTop lower than idxBot'; return; endif
+        if (idxTop(iMlyr)>11)then;             err=30;message=trim(message)//'index of idxTop not assinged'; return;endif 
+        if (idxBot(iMlyr)>11)then;             err=30;message=trim(message)//'index of idxBot not assinged'; return;endif
+        if (idxTop(iMlyr)-idxBot(iMlyr)>0)then;err=30;message=trim(message)//'index of idxTop lower than idxBot';return;endif
       enddo
       !-- Compute weight of soil layer contributing to each model layer and populate lyrmap variable
       do iMLyr=1,nLyr
@@ -202,12 +202,12 @@ end subroutine
           ctr = ctr+1
         enddo 
       enddo
-      deallocate(Zs_bot,stat=ierr); if(ierr/=0)then; message=trim(message)//'error deallocating Zs_bot'; return; endif
-      deallocate(Zs_top,stat=ierr); if(ierr/=0)then; message=trim(message)//'error deallocating Zs_top'; return; endif
-      deallocate(Zm_top,stat=ierr); if(ierr/=0)then; message=trim(message)//'error deallocating Zm_top'; return; endif
-      deallocate(Zm_bot,stat=ierr); if(ierr/=0)then; message=trim(message)//'error deallocating Zm_bot'; return; endif
-      deallocate(idxTop,stat=ierr); if(ierr/=0)then; message=trim(message)//'error deallocating idxTop'; return; endif
-      deallocate(idxBot,stat=ierr); if(ierr/=0)then; message=trim(message)//'error deallocating idxBot'; return; endif
+      deallocate(Zs_bot,stat=err); if(err/=0)then; message=trim(message)//'error deallocating Zs_bot'; return; endif
+      deallocate(Zs_top,stat=err); if(err/=0)then; message=trim(message)//'error deallocating Zs_top'; return; endif
+      deallocate(Zm_top,stat=err); if(err/=0)then; message=trim(message)//'error deallocating Zm_top'; return; endif
+      deallocate(Zm_bot,stat=err); if(err/=0)then; message=trim(message)//'error deallocating Zm_bot'; return; endif
+      deallocate(idxTop,stat=err); if(err/=0)then; message=trim(message)//'error deallocating idxTop'; return; endif
+      deallocate(idxBot,stat=err); if(err/=0)then; message=trim(message)//'error deallocating idxBot'; return; endif
     endif 
   enddo 
   return

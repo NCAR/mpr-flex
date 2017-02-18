@@ -22,22 +22,22 @@ contains
 !***************************
 ! write VIC soil parameters 
 !***************************
-subroutine write_soil_param_vic(hruid, param, ierr, message)
+subroutine write_soil_param_vic(hruid, param, err, message)
   implicit none
   !input variables
   integer(i4b),intent(in)            :: hruid(:)     ! hru ID
   real(dp),    intent(in)            :: param(:,:)   ! 
   ! output
-  integer(i4b),intent(out)           :: ierr         ! error code
+  integer(i4b),intent(out)           :: err          ! error code
   character(*),intent(out)           :: message      ! error message
   ! local variables
   integer(i4b)                       :: iHru         ! loop index
 
   ! initialize error control
-  ierr=0; message='write_soil_param_vic/'
-  if(size(param,2)/=TotNpar)then;ierr=10;message=trim(message)//"params 2nd dimension size different than TotNpar";return;endif
-  if(size(param,1)/=nHru)then;ierr=11;message=trim(message)//'params 1st dimension size different than nHru';return;endif
-  if(size(hruid)/=nHru)then;ierr=12;message=trim(message)//'hruid size different than nHru';return;endif
+  err=0; message='write_soil_param_vic/'
+  if(size(param,2)/=TotNpar)then;err=10;message=trim(message)//"params 2nd dimension size different than TotNpar";return;endif
+  if(size(param,1)/=nHru)then;err=11;message=trim(message)//'params 1st dimension size different than nHru';return;endif
+  if(size(hruid)/=nHru)then;err=12;message=trim(message)//'hruid size different than nHru';return;endif
   open(UNIT=51,file=trim(calibparam_name),action='write',status='unknown' )
   hru:do iHru = 1,nHru
     write(51,'(I1,2X)',advance='no') 1
@@ -138,7 +138,7 @@ end subroutine
 !***************************
 ! replace VIC soil parameters 
 !***************************
-subroutine replace_soil_param_vic(param, hModel, parMxyMz, adjParam, ierr, message)
+subroutine replace_soil_param_vic(param, hModel, parMxyMz, adjParam, err, message)
   use globalData, only: parMaster, betaInGamma 
   use get_ixname, only: get_ixPar
   implicit none
@@ -148,14 +148,14 @@ subroutine replace_soil_param_vic(param, hModel, parMxyMz, adjParam, ierr, messa
   type(namedvar2),  intent(in)   :: parMxyMz(:)   ! soil model parameter at model layer x model hrus
   ! output
   real(dp),         intent(out)  :: adjParam(:,:) ! adjusted soil parameter
-  integer(i4b),     intent(out)  :: ierr          ! error code
+  integer(i4b),     intent(out)  :: err          ! error code
   character(*),     intent(out)  :: message       ! error message
   ! local variables
   integer(i4b)                   :: ipar,iHru     ! loop index
   integer(i4b)                   :: nSoilParModel ! number of parameters 
 
   ! initialize error control
-  ierr=0; message='replace_soil_param_vic/'
+  err=0; message='replace_soil_param_vic/'
   nSoilParModel=size(parMxyMz)
   adjParam=param
   hru: do iHru = 1,nHru

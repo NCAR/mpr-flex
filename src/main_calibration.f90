@@ -2,8 +2,9 @@ program main_calibration
 
   use nrtype 
   use public_var
-  use mo_nml,               only: read_nml 
-  use subset_meta,          only: get_parm_master_meta, get_parm_meta, total_calParam, param_setup, check_gammaZ, check_gammaH
+  use read_config,          only: read_nml 
+  use globaldata,           only: betaInGamma,gammaSubset,betaNeeded
+  use subset_meta,          only: get_parm_master_meta, get_parm_meta, betaCollection, total_calParam, param_setup, check_gammaZ, check_gammaH
   use mo_dds,               only: dds
   use mo_opt_run,           only: opt_run
   use eval_model,           only: objfn
@@ -22,11 +23,21 @@ program main_calibration
   call read_nml( trim(nmlfile), ierr, cmessage ); call handle_err(ierr,cmessage)
   ! Read parameter master metadata and populate "parMaster" structure
   call get_parm_master_meta(trim(param_master_meta), ierr, cmessage); call handle_err(ierr,cmessage)
-  ! read calibrating parameter list (multiplier or gamma parameter), subset parameter meta from master- "parSubset","gammaSubset"
+  ! Read 'CalPar' input listing calibrating parameters (beta or gamma), save subset of parameter meta from master- 'parSubset','gammaSubset'
+  ! Identify beta parameter to be estimated - 'betaInGamma'
   call get_parm_meta( trim(calpar), ierr,cmessage); call handle_err(ierr,cmessage)
-  ! check if gamma parameter is in list, z and h gamma parameters are required
-  call check_gammaZ( ierr, cmessage)
-  call check_gammaH( ierr, cmessage)
+  ! check if gamma parameter is in list, !!z and h gamma parameters are required!!
+  call check_gammaZ( ierr, cmessage); call handle_err(ierr,cmessage)
+  call check_gammaH( ierr, cmessage); call handle_err(ierr,cmessage)
+  ! Identify all the beta parameters to be estimated - 'betaNeeded' incluging betaInGamma
+  call betaCollection( ierr, cmessage); call handle_err(ierr,cmessage)
+  ! print out list of gamma/beta parameters
+  print*,"-- Beta parameters to be estimated with MPR ----"
+  print*,betaInGamma
+  print*,"-- List of gamma parameters ----"
+  print*,gammaSubset(:)%pname
+  print*,"-- All beta parameters to be computed with MPR including dependent beta parameters ----"
+  print*,betaNeeded
   ! initialize parameter and mask arrays 
   call total_calParam()
   allocate(param(nParCalSum,3))
@@ -49,7 +60,7 @@ program main_calibration
                maxit=isMax,             & ! minimzation (0) or maximization (1)
                tmp_file=state_file)       !
     case (2)     ! just perform MPR only and output parameters in netCDF
-      call run_mpr( param(:,1), restrt_file )
+      call run_mpr( param(:,1), restrt_file, ierr, cmessage ); call handle_err(ierr,cmessage)
     case default
       print*, 'integer to specify optimization scheme is not valid' 
   end select 
