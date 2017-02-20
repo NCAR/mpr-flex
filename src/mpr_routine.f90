@@ -483,6 +483,7 @@ subroutine mpr(idModel,           &     ! input: model ID
                           soil2model_map(iPoly)%layer(iMLyr)%weight(:), &
                           paramvec(iParm)%layer(:),                     &
                           parMaster(ix)%vups,                           &
+                          parMaster(ix)%vpnorm,                          &
                           err, cmessage)
                if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
             endif
@@ -506,7 +507,7 @@ subroutine mpr(idModel,           &     ! input: model ID
               paramvec(iParm)%layer(iPoly) = parSxyMz(iparm)%varData(iMLyr,iPoly)
           enddo
         enddo
-        call aggreg(hModel(iMLyr,iHru), swgtsub(:), hModelLocal(iMLyr,:), 'wamean', err, cmessage)
+        call aggreg(hModel(iMLyr,iHru), swgtsub(:), hModelLocal(iMLyr,:),'pnorm', 1.0_dp, err, cmessage)
         do iParm = 1,nSoilParModel
           fifth: associate( ix=>get_ixPar(trim(betaInGamma(iParm))) )
           if ( trim(parMaster(ix)%hups)/='na' )then
@@ -514,6 +515,7 @@ subroutine mpr(idModel,           &     ! input: model ID
                         swgtsub(:),                          &
                         paramvec(iparm)%layer(:),            &
                         parMaster(ix)%hups,                  &
+                        parMaster(ix)%hpnorm,                &
                         err, cmessage)
             if ( iHru == iHruPrint ) then
               print*,'-----------------------------------'

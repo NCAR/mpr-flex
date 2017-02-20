@@ -19,7 +19,9 @@ type,public  :: par_meta
   character(len=strLen)        :: ptype  =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
   logical(lgc)                 :: flag   =.False.   ! flag to calibrate or not 
   character(len=strLen)        :: hups   =''        ! scaling operator for horizontal direction 
+  real(dp)                     :: hpnorm =-999.0_dp ! scaling operator for horizontal direction 
   character(len=strLen)        :: vups   =''        ! scaling operator for vertical direction 
+  real(dp)                     :: vpnorm =-999.0_dp ! scaling operator for horizontal direction 
   logical(lgc)                 :: perLyr =.False.   ! calibrate per layer (only applicable to multiplier method)
 endtype par_meta
 
