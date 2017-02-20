@@ -1,4 +1,4 @@
-module subset_meta 
+module process_meta 
 
   use nrtype
   use public_var
@@ -398,4 +398,4 @@ subroutine param_setup( param, mask )
   return
 end subroutine
 
-end module subset_meta 
+end module process_meta 

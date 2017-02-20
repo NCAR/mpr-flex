@@ -78,7 +78,7 @@ IO = \
 
 CORE = \
     get_ixname.f90 \
-    subset_meta.f90 \
+    process_meta.f90 \
     mo_xor4096.f90 \
     mo_opt_run.f90 \
     mo_dds.f90 \
