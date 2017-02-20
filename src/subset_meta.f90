@@ -282,7 +282,7 @@ subroutine betaCollection(ierr,message)
 end subroutine
 
 !**********************************
-! public subroutine: check if z parameters exist in gamma parameter
+! Public subroutine: check if z parameters exist in gamma parameter
 !**********************************
 subroutine check_gammaZ( err, message)
   use globalData,   only: gammaSubset
@@ -310,7 +310,7 @@ subroutine check_gammaZ( err, message)
 end subroutine
 
 !**********************************
-! public subroutine: check if h parameters exist in gamma parameter
+! Public subroutine: check if h parameters exist in gamma parameter
 !**********************************
 subroutine check_gammaH( err, message)
   use globalData,   only: gammaSubset
@@ -346,7 +346,7 @@ subroutine check_gammaH( err, message)
 end subroutine
 
 ! ************************************************************************************************
-! public subroutine: Count total number of calibrating parameter including each layer parameters 
+! Public subroutine: Count total number of calibrating parameter including each layer parameters 
 ! ************************************************************************************************
 subroutine total_calParam( )
   ! save nParCalSum in public_var
@@ -367,7 +367,7 @@ subroutine total_calParam( )
 end subroutine
 
 ! ************************************************************************************************
-! public subroutine: convert parameter data structure to simple arrays 
+! Public subroutine: convert parameter data structure to simple arrays 
 ! ************************************************************************************************
 subroutine param_setup( param, mask )
   use globalData,  only:parSubset
