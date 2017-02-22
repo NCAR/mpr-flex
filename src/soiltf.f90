@@ -57,44 +57,46 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
   do iParm = 1,size(betaNeeded)
     ix = get_ixPar(betaNeeded(iParm)) 
     allocate(ParTemp(ix)%varData(nSLyr,nSPoly) ,stat=err); if(err/=0)then;message=trim(message)//'error allocating ParTemp';stop;endif
-    second: associate (xPar => ParTemp(ix)%varData )
+    second: associate (xPar => ParTemp(ix)%varData, &
+                       tfid => gammaParMasterMeta(ix)%tftype)
+    if (tfid==-999_i2b) tfid=1_i2b
     select case(ix)
       case(ixPar%ks)
         checkDone(ix)=.true.
-        xPar = ks( sand, clay, gammaPar, 1_i2b)
+        xPar = ks( sand, clay, gammaPar, tfid)
       case(ixPar%bd)
         checkDone(ix)=.true.
-        xPar  = bd( bulkd, gammaPar )
+        xPar  = bd( bulkd, gammaPar,tfid )
       case(ixPar%phi)
         if(.not.checkDone(ixPar%bd)) then;err=10;message=trim(message)//'need to process bd before phi';return;endif
         checkDone(ix)=.true.
-        xPar = phi( sand, clay, ParTemp(ixPar%bd)%varData,gammaPar, 1_i2b)
+        xPar = phi( sand, clay, ParTemp(ixPar%bd)%varData,gammaPar, tfid)
       case(ixPar%b)
         checkDone(ix)=.true.
-        xPar = ret_curve( sand, clay, gammaPar, 1_i2b)
+        xPar = ret_curve( sand, clay, gammaPar, tfid)
       case(ixPar%psis)
         checkDone(ix)=.true.
-        xPar = psis( sand, silt, gammaPar, 1_i2b)
+        xPar = psis( sand, silt, gammaPar, tfid)
       case(ixPar%fc)
         if(.not.checkDone(ixPar%psis)) then;err=10;message=trim(message)//'need to process psis before fc';return;endif
         if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before fc';return;endif
         if(.not.checkDone(ixPar%b))    then;err=10;message=trim(message)//'need to process b before fc';return;endif
         checkDone(ix)=.true.
-        xPar = fc(sand, ParTemp(ixPar%phi)%varData, ParTemp(ixPar%psis)%varData, ParTemp(ixPar%b)%varData,gammaPar, 1_i2b)
+        xPar = fc(sand, ParTemp(ixPar%phi)%varData, ParTemp(ixPar%psis)%varData, ParTemp(ixPar%b)%varData,gammaPar, tfid)
       case(ixPar%wp)
         if(.not.checkDone(ixPar%psis)) then;err=10;message=trim(message)//'need to process psis before wp';return;endif
         if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before wp';return;endif
         if(.not.checkDone(ixPar%b))    then;err=10;message=trim(message)//'need to process b before wp';return;endif
         checkDone(ix)=.true.
-        xPar = wp( ParTemp(ixPar%phi)%varData, ParTemp(ixPar%psis)%varData, ParTemp(ixPar%b)%varData, gammaPar, 1_i2b) 
+        xPar = wp( ParTemp(ixPar%phi)%varData, ParTemp(ixPar%psis)%varData, ParTemp(ixPar%b)%varData, gammaPar, tfid) 
       case(ixPar%myu)
         if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before myu';return;endif
         if(.not.checkDone(ixPar%fc))   then;err=10;message=trim(message)//'need to process fc before myu';return;endif
         checkDone(ix)=.true.
-        xPar= myu( ParTemp(ixPar%phi)%varData, ParTemp(ixPar%fc)%varData, gammaPar, 1_i2b)
+        xPar= myu( ParTemp(ixPar%phi)%varData, ParTemp(ixPar%fc)%varData, gammaPar, tfid)
       case(ixPar%binfilt)
         checkDone(ix)=.true.
-        xPar=spread( infilt( elestd, gammaPar ), 1, nSLyr)
+        xPar=spread( infilt( elestd, gammaPar, tfid), 1, nSLyr)
       case(ixPar%D1)
         if(.not.checkDone(ixPar%ks))  then;err=10;message=trim(message)//'need to process "ks" before "D1"';return;endif
         if(.not.checkDone(ixPar%phi)) then;err=10;message=trim(message)//'need to process "phi" before "D1"';return;endif
@@ -103,31 +105,32 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
                  ParTemp(ixPar%ks)%varData,  &
                  ParTemp(ixPar%phi)%varData, & 
                  hslyrs,                     &
-                 gammaPar)
+                 gammaPar,                   &
+                 tfid)
       case(ixPar%Ds)
         if(.not.checkDone(ixPar%D1))    then;err=10;message=trim(message)//'need to process "D1" before "Ds"';return;endif
         if(.not.checkDone(ixPar%D3))    then;err=10;message=trim(message)//'need to process "D3" before "Ds"';return;endif
         if(.not.checkDone(ixPar%Dsmax)) then;err=10;message=trim(message)//'need to process "Dsmax" before "Ds"';return;endif
         checkDone(ix)=.true. 
-        xPar=Ds( ParTemp(ixPar%D1)%varData, ParTemp(ixPar%D3)%varData, ParTemp(ixPar%Dsmax)%varData )
+        xPar=Ds( ParTemp(ixPar%D1)%varData, ParTemp(ixPar%D3)%varData, ParTemp(ixPar%Dsmax)%varData, tfid)
       case(ixPar%D4)
         checkDone(ix)=.true.
-        xPar=D4(gammaPar)
+        xPar=D4(gammaPar, tfid)
       case(ixPar%c)
         if(.not.checkDone(ixPar%D4)) then;err=10;message=trim(message)//'need to process "D4" before "c"';return;endif
         checkDone(ix)=.true.
-        xPar=cexpt(ParTemp(ixPar%D4)%varData)
+        xPar=cexpt(ParTemp(ixPar%D4)%varData, tfid)
       case(ixPar%SD)
         checkDone(ix)=.true.
-        xPar=soilDensity(ParTemp(ixPar%sd)%varData, gammaPar)
+        xPar=soilDensity(ParTemp(ixPar%sd)%varData, gammaPar ,tfid)
       case(ixPar%expt)
         checkDone(ix)=.true.
-        xPar=expt( ParTemp(ixPar%b)%varData, gammaPar )
+        xPar=expt( ParTemp(ixPar%b)%varData, gammaPar ,tfid)
       case(ixPar%D2)
         if(.not.checkDone(ixPar%ks)) then;err=10;message=trim(message)//'need to process "ksat" before "D2"';return;endif
         if(.not.checkDone(ixPar%D4)) then;err=10;message=trim(message)//'need to process "D4" before "D2"';return;endif
         checkDone(ix)=.true.
-        xPar=D2( slpmean, ParTemp(ixPar%ks)%varData, ParTemp(ixPar%D4)%varData, gammaPar )
+        xPar=D2( slpmean, ParTemp(ixPar%ks)%varData, ParTemp(ixPar%D4)%varData, gammaPar, tfid )
       case(ixPar%Dsmax)
         if(.not.checkDone(ixPar%D1)) then;err=10;message=trim(message)//'need to process "D1" before "Dsmax"';return;endif
         if(.not.checkDone(ixPar%D2)) then;err=10;message=trim(message)//'need to process "D2" before "Dsmax"';return;endif
@@ -139,52 +142,53 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
                     ParTemp(ixPar%D3)%varData,   & 
                     ParTemp(ixPar%c)%varData,    & 
                     ParTemp(ixPar%phi)%varData,  &
-                    hslyrs )
+                    hslyrs,                      &
+                    tfid)
       case(ixPar%bbl)
         if(.not.checkDone(ixPar%expt)) then;err=10;message=trim(message)//'need to process "expt" before "bubble"';return;endif
         checkDone(ix)=.true.
-        xPar=bubble( ParTemp(ixPar%expt)%varData, gammaPar)
+        xPar=bubble( ParTemp(ixPar%expt)%varData, gammaPar, tfid)
       case(ixPar%WcrFrac)
         checkDone(ix)=.true.
-        xPar=WcrFrac( ParTemp(ixPar%fc)%varData,ParTemp(ixPar%phi)%varData,gammaPar )
+        xPar=WcrFrac( ParTemp(ixPar%fc)%varData,ParTemp(ixPar%phi)%varData,gammaPar , tfid)
       case(ixPar%WpwpFrac)
         checkDone(ix)=.true.
-        xPar=WpwpFrac( ParTemp(ixPar%wp)%varData, ParTemp(ixPar%phi)%varData, gammaPar)
+        xPar=WpwpFrac( ParTemp(ixPar%wp)%varData, ParTemp(ixPar%phi)%varData, gammaPar, tfid)
       case(ixPar%D3)
         if(.not.checkDone(ixPar%fc))   then;err=10;message=trim(message)//'need to process fc before D3';return;endif
         checkDone(ix)=.true.
-        xPar=D3( ParTemp(ixPar%fc)%varData, hslyrs, gammaPar )
+        xPar=D3( ParTemp(ixPar%fc)%varData, hslyrs, gammaPar , tfid)
       case(ixPar%Ws)
         if(.not.checkDone(ixPar%D3))then;err=10;message=trim(message)//'need to process "D3" before "Dsmax"';return;endif 
         checkDone(ix)=.true. 
-        xPar=Ws( ParTemp(ixPar%D3)%varData, ParTemp(ixPar%phi)%varData,hslyrs )
+        xPar=Ws( ParTemp(ixPar%D3)%varData, ParTemp(ixPar%phi)%varData,hslyrs , tfid)
       case(ixPar%twm)
         checkDone(ix)=.true. 
-        xPar= twm( ParTemp(ixPar%fc)%varData,ParTemp(ixPar%wp)%varData,hslyrs )
+        xPar= twm( ParTemp(ixPar%fc)%varData,ParTemp(ixPar%wp)%varData,hslyrs , tfid)
       case(ixPar%fwm)
         checkDone(ix)=.true. 
-        xPar= fwm( ParTemp(ixPar%phi)%varData,ParTemp(ixPar%fc)%varData,hslyrs )
+        xPar= fwm( ParTemp(ixPar%phi)%varData,ParTemp(ixPar%fc)%varData,hslyrs, tfid )
       case(ixPar%fsm)
         if(.not.checkDone(ixPar%fwm))then;err=10;message=trim(message)//'need to process "fwm" before "fsm"';return;endif 
         checkDone(ix)=.true. 
-        xPar= fsm( ParTemp(ixPar%fwm)%varData,ParTemp(ixPar%phi)%varData,ParTemp(ixPar%wp)%varData,gammaPar )
+        xPar= fsm( ParTemp(ixPar%fwm)%varData,ParTemp(ixPar%phi)%varData,ParTemp(ixPar%wp)%varData,gammaPar, tfid )
       case(ixPar%fpm)
         if(.not.checkDone(ixPar%fwm))then;err=10;message=trim(message)//'need to process "fwm" before "fpm"';return;endif 
         if(.not.checkDone(ixPar%fsm))then;err=10;message=trim(message)//'need to process "fsm" before "fpm"';return;endif 
         checkDone(ix)=.true. 
-        xPar= fpm( ParTemp(ixPar%fwm)%varData, ParTemp(ixPar%fsm)%varData )
+        xPar= fpm( ParTemp(ixPar%fwm)%varData, ParTemp(ixPar%fsm)%varData, tfid )
       case(ixPar%zk)
         checkDone(ix)=.true. 
-        xPar= zk( ParTemp(ixPar%phi)%varData,ParTemp(ixPar%fc)%varData,gammaPar )
+        xPar= zk( ParTemp(ixPar%phi)%varData,ParTemp(ixPar%fc)%varData,gammaPar, tfid )
       case(ixPar%zsk)
         checkDone(ix)=.true. 
-        xPar= zsk( ParTemp(ixPar%phi)%varData,ParTemp(ixPar%fc)%varData,ParTemp(ixPar%wp)%varData,gammaPar )
+        xPar= zsk( ParTemp(ixPar%phi)%varData,ParTemp(ixPar%fc)%varData,ParTemp(ixPar%wp)%varData,gammaPar, tfid )
       case(ixPar%zpk)
         checkDone(ix)=.true. 
-        xPar= zpk( ParTemp(ixPar%ks)%varData,ParTemp(ixPar%myu)%varData,hslyrs,gammaPar )
+        xPar= zpk( ParTemp(ixPar%ks)%varData,ParTemp(ixPar%myu)%varData,hslyrs,gammaPar, tfid )
       case(ixPar%pfree)
         checkDone(ix)=.true. 
-        xPar= pfree( ParTemp(ixPar%phi)%varData,ParTemp(ixPar%wp)%varData,gammaPar )
+        xPar= pfree( ParTemp(ixPar%phi)%varData,ParTemp(ixPar%wp)%varData,gammaPar, tfid )
       case(ixPar%zperc)
         if(.not.checkDone(ixPar%twm))then;err=10;message=trim(message)//'need to process "twm" before "pfree"';return;endif 
         if(.not.checkDone(ixPar%fsm))then;err=10;message=trim(message)//'need to process "fsm" before "pfree"';return;endif 
@@ -192,10 +196,10 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
         if(.not.checkDone(ixPar%fpm))then;err=10;message=trim(message)//'need to process "fpm" before "pfree"';return;endif 
         if(.not.checkDone(ixPar%zpk))then;err=10;message=trim(message)//'need to process "zpk" before "pfree"';return;endif 
         checkDone(ix)=.true. 
-        xPar= zperc(ParTemp(ixPar%twm)%varData,ParTemp(ixPar%fsm)%varData,ParTemp(ixPar%zsk)%varData,ParTemp(ixPar%fpm)%varData,ParTemp(ixPar%zsk)%varData)
+        xPar= zperc(ParTemp(ixPar%twm)%varData,ParTemp(ixPar%fsm)%varData,ParTemp(ixPar%zsk)%varData,ParTemp(ixPar%fpm)%varData,ParTemp(ixPar%zsk)%varData, tfid)
       case(ixPar%rexp)
         checkDone(ix)=.true. 
-        xPar= rexp( ParTemp(ixPar%wp)%varData,gammaPar )
+        xPar= rexp( ParTemp(ixPar%wp)%varData,gammaPar, tfid )
     end select ! end of parameter case
     end associate second
   end do ! end of parameter loop
@@ -213,7 +217,7 @@ end subroutine
 ! *********************************************************************
 ! infilt parameter 
 ! *********************************************************************
-function infilt(elestd_in, gammaPar)
+function infilt(elestd_in, gammaPar, opt)
   ! Use Arno scheme 
   ! b = (sigma_elev-sigma_min)/(sigma_ele+sigma_max)
   ! where
@@ -231,13 +235,14 @@ function infilt(elestd_in, gammaPar)
 
   implicit none
   ! input
-  real(dp), intent(in)  :: elestd_in(:)
-  real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
+  real(dp), intent(in)    :: elestd_in(:)
+  real(dp), intent(in)    :: gammaPar(:)   ! input: gamma parameter array 
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
   ! local 
-  real(dp)              :: infilt(size(elestd_in)) 
-  real(dp),parameter    :: infilt_min=0.03_dp
-  real(dp),parameter    :: infilt_max=0.50_dp
+  real(dp)                :: infilt(size(elestd_in)) 
+  real(dp),parameter      :: infilt_min=0.03_dp
+  real(dp),parameter      :: infilt_max=0.50_dp
   
   associate(g1=>gammaPar(ixPar%binfilt1gamma1), &
             g2=>gammaPar(ixPar%binfilt1gamma2))
@@ -256,9 +261,10 @@ end function
 ! *********************************************************************
 ! residual_moist parameter 
 ! *********************************************************************
-function residMoist()
+function residMoist(opt)
  implicit none
  ! input
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
  ! output 
  ! local 
  real(dp) :: residMoist
@@ -270,23 +276,24 @@ end function
 ! ***********
 !  Nijssen basiflow D1 parameter
 ! *********************************************************************
-function D1(slope_in, ks_in, phi_in, h_in, gammaPar)
+function D1(slope_in, ks_in, phi_in, h_in, gammaPar, opt)
   implicit none
   ! input
-  real(dp), intent(in)  :: slope_in(:)   ! mean slope [%]
-  real(dp), intent(in)  :: ks_in(:,:)    ! Ksat [mm/s]
-  real(dp), intent(in)  :: phi_in(:,:)   ! porosity [-]
-  real(dp), intent(in)  :: h_in(:,:)     ! layer thickness [m]
-  real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
+  real(dp), intent(in)    :: slope_in(:)   ! mean slope [%]
+  real(dp), intent(in)    :: ks_in(:,:)    ! Ksat [mm/s]
+  real(dp), intent(in)    :: phi_in(:,:)   ! porosity [-]
+  real(dp), intent(in)    :: h_in(:,:)     ! layer thickness [m]
+  real(dp), intent(in)    :: gammaPar(:)   ! input: gamma parameter array 
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
 ! output 
 ! local 
-  real(dp)              :: D1(size(ks_in,1),size(ks_in,2)) !output: [day-1]
-  real(dp),allocatable  :: slope2d(:,:)
-  integer(i4b)          :: n1            ! number of 1st dimension 
-  integer(i4b)          :: n2            ! number of 1st dimension 
-  real(dp), allocatable :: S(:,:)              ! length scaling term [mm]: 1, Max. soil storage etc
-  real(dp), parameter   :: D1_min=0.0001_dp
-  real(dp), parameter   :: D1_max=1.0_dp
+  real(dp)                :: D1(size(ks_in,1),size(ks_in,2)) !output: [day-1]
+  real(dp),allocatable    :: slope2d(:,:)
+  integer(i4b)            :: n1            ! number of 1st dimension 
+  integer(i4b)            :: n2            ! number of 1st dimension 
+  real(dp), allocatable   :: S(:,:)              ! length scaling term [mm]: 1, Max. soil storage etc
+  real(dp), parameter     :: D1_min=0.0001_dp
+  real(dp), parameter     :: D1_max=1.0_dp
   !integer(i4b)          :: err                       ! error code
    
   ! local variable allocation
@@ -314,17 +321,18 @@ end function
 ! ***********
 !  Arno basiflow Ds parameter
 ! *********************************************************************
-function Ds( D1, D3, Dsmax)
+function Ds( D1, D3, Dsmax, opt)
  implicit none
 ! input
- real(dp), intent(in)  :: D1(:,:)       ! nijssen baseflow D1 parameter [day-1]
- real(dp), intent(in)  :: D3(:,:)       ! nijssen baseflow D3 parameter [mm]
- real(dp), intent(in)  :: Dsmax(:,:)    ! ARNO Dsmax parameter [mm/day]
+ real(dp), intent(in)     :: D1(:,:)       ! nijssen baseflow D1 parameter [day-1]
+ real(dp), intent(in)     :: D3(:,:)       ! nijssen baseflow D3 parameter [mm]
+ real(dp), intent(in)     :: Dsmax(:,:)    ! ARNO Dsmax parameter [mm/day]
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
 ! output 
 ! local 
- real(dp)              :: Ds(size(D1,1),size(D1,2)) !output: [-]
- real(dp), parameter   :: Ds_min=0.0001_dp
- real(dp), parameter   :: Ds_max=1.0_dp
+ real(dp)                 :: Ds(size(D1,1),size(D1,2)) !output: [-]
+ real(dp), parameter      :: Ds_min=0.0001_dp
+ real(dp), parameter      :: Ds_max=1.0_dp
 
  where ( D1 /= dmiss .and. D3 /= dmiss .and. Dsmax /= dmiss )
    Ds = D1 * D3 / Dsmax
@@ -340,22 +348,23 @@ end function
 ! ***********
 ! Nijssen baseflow D2 parameter
 ! *********************************************************************
-function D2(slope_in, ks_in, D4_in, gammaPar) 
+function D2(slope_in, ks_in, D4_in, gammaPar, opt) 
   implicit none
   ! input
-  real(dp), intent(in)  :: slope_in(:)   ! slope percent
-  real(dp), intent(in)  :: Ks_in(:,:)    ! ksat [mm/s]
-  real(dp), intent(in)  :: D4_in(:,:)    ! VIC D4 parameter [-]
-  real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
+  real(dp), intent(in)    :: slope_in(:)   ! slope percent
+  real(dp), intent(in)    :: Ks_in(:,:)    ! ksat [mm/s]
+  real(dp), intent(in)    :: D4_in(:,:)    ! VIC D4 parameter [-]
+  real(dp), intent(in)    :: gammaPar(:)   ! input: gamma parameter array 
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
   ! local 
-  real(dp)              :: D2(size(Ks_in,1),size(Ks_in,2)) ! output [day^-D4]
-  real(dp),allocatable  :: slope2d(:,:)
-  integer(i4b)          :: n1           ! number of element for 1st dimension
-  integer(i4b)          :: n2           ! number of element for 2nd dimension
-  real(dp), allocatable :: S(:,:)             ! length scaling term [mm]: 1, Max. soil storage etc
-  real(dp), parameter   :: D2_min=0.0001_dp
-  real(dp), parameter   :: D2_max=1.0_dp
+  real(dp)               :: D2(size(Ks_in,1),size(Ks_in,2)) ! output [day^-D4]
+  real(dp),allocatable   :: slope2d(:,:)
+  integer(i4b)           :: n1           ! number of element for 1st dimension
+  integer(i4b)           :: n2           ! number of element for 2nd dimension
+  real(dp), allocatable  :: S(:,:)             ! length scaling term [mm]: 1, Max. soil storage etc
+  real(dp), parameter    :: D2_min=0.0001_dp
+  real(dp), parameter    :: D2_max=1.0_dp
   !integer(i4b)          :: err                       ! error code
   
  ! local variable allocation
@@ -387,20 +396,22 @@ function Dsmax( D1,           & ! input:  Nijssen baseflow D1 parameter [day^-1]
                 D3,           & ! input:  Nijssen baseflow D3 parameter [mm]
                 c,            & ! input:  c parameter [mm]
                 phi_in,       & ! input:  porosity [cm^3/cm^-3]
-                h_in)          ! input:  Soil layer thickness [m]
+                h_in,         & ! input:  Soil layer thickness [m]
+                opt)          
   implicit none
   ! input
-  real(dp), intent(in)  :: D1(:,:)        ! Nijssen baseflow D1 parameter [day^-1]
-  real(dp), intent(in)  :: D2(:,:)        ! Nijssen baseflow D2 parameter [day^-1 mm^-(c-1)]
-  real(dp), intent(in)  :: D3(:,:)        ! Nijssen baseflow D3 parameter [mm]
-  real(dp), intent(in)  :: c(:,:)         ! c parameter [mm]
-  real(dp), intent(in)  :: phi_in(:,:)    ! porosity [cm^3/cm^-3]
-  real(dp), intent(in)  :: h_in(:,:)      ! Soil layer thickness [m]
+  real(dp), intent(in)    :: D1(:,:)        ! Nijssen baseflow D1 parameter [day^-1]
+  real(dp), intent(in)    :: D2(:,:)        ! Nijssen baseflow D2 parameter [day^-1 mm^-(c-1)]
+  real(dp), intent(in)    :: D3(:,:)        ! Nijssen baseflow D3 parameter [mm]
+  real(dp), intent(in)    :: c(:,:)         ! c parameter [mm]
+  real(dp), intent(in)    :: phi_in(:,:)    ! porosity [cm^3/cm^-3]
+  real(dp), intent(in)    :: h_in(:,:)      ! Soil layer thickness [m]
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
   ! local 
-  real(dp)              :: Dsmax(size(D1,1),size(D1,2))     ! Dsmax parameter for Arno baseflow [mm day-1]
-  real(dp), parameter   :: Dsmax_min=0.1_dp
-  real(dp), parameter   :: Dsmax_max=30.0_dp
+  real(dp)                :: Dsmax(size(D1,1),size(D1,2))     ! Dsmax parameter for Arno baseflow [mm day-1]
+  real(dp), parameter     :: Dsmax_min=0.1_dp
+  real(dp), parameter     :: Dsmax_max=30.0_dp
 
   where ( phi_in /= dmiss .and. h_in /= dmiss )
     Dsmax = D2*(phi_in*h_in*1000-D3)**c+D1*(phi_in*h_in*1000)
@@ -416,12 +427,13 @@ end function
 ! ***********
 !  Nijssen baseflow D3 parameter
 ! *********************************************************************
-function D3( fc_in, h_in, gammaPar ) 
+function D3( fc_in, h_in, gammaPar, opt) 
   implicit none
   ! input
-  real(dp), intent(in)  :: fc_in(:,:)    ! input: field capacity [frac]
-  real(dp), intent(in)  :: h_in(:,:)     ! input: layer thickness [m]
-  real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
+  real(dp), intent(in)    :: fc_in(:,:)    ! input: field capacity [frac]
+  real(dp), intent(in)    :: h_in(:,:)     ! input: layer thickness [m]
+  real(dp), intent(in)    :: gammaPar(:)   ! input: gamma parameter array 
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
   ! local 
   real(dp)              :: D3(size(fc_in,1),size(fc_in,2)) !output: [mm]
@@ -446,17 +458,19 @@ end function
 ! *********************************************************************
 function Ws( D3,         & ! input:  D3 parameter [mm]
              phi_in,     & ! input:  porosity [cm^3/cm^-3]
-             h_in)          ! input:  Soil layer thickness [m]
+             h_in,       & ! input:  Soil layer thickness [m]
+             opt)          
   implicit none
   ! input
-  real(dp), intent(in)  :: D3(:,:)
-  real(dp), intent(in)  :: phi_in(:,:)
-  real(dp), intent(in)  :: h_in(:,:)
+  real(dp),    intent(in) :: D3(:,:)
+  real(dp),    intent(in) :: phi_in(:,:)
+  real(dp),    intent(in) :: h_in(:,:)
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
   ! local 
-  real(dp)              :: Ws(size(D3,1),size(D3,2))   ! output [-]
-  real(dp), parameter   :: Ws_min=0.05_dp
-  real(dp), parameter   :: Ws_max=1.0_dp
+  real(dp)                :: Ws(size(D3,1),size(D3,2))   ! output [-]
+  real(dp), parameter     :: Ws_min=0.05_dp
+  real(dp), parameter     :: Ws_max=1.0_dp
 
   where ( phi_in /= dmiss .and. h_in /= dmiss .and. D3 /= dmiss ) 
     Ws = D3 / phi_in / (h_in*1000)
@@ -472,13 +486,14 @@ end function
 ! ***********
 !  Nijssen baseflow D4 parameter
 ! *********************************************************************
-function D4( gammaPar )
+function D4( gammaPar,opt )
   implicit none
   ! input
-  real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
+  real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
   ! local 
-  real(dp)    :: D4
+  real(dp)                :: D4
   
   associate(g1=>gammaPar(ixPar%D41gamma1))
   D4 = g1 
@@ -489,13 +504,14 @@ end function D4
 ! ***********
 !  c parameter
 ! *********************************************************************
-function cexpt( D4 )
+function cexpt( D4, opt )
   implicit none
   ! input
-  real(dp), intent(in)  :: D4(:,:)
+  real(dp),    intent(in) :: D4(:,:)
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
   ! local 
-  real(dp)              :: cexpt(size(D4,1),size(D4,2))
+  real(dp)                :: cexpt(size(D4,1),size(D4,2))
   
   cexpt = D4 
   return
@@ -504,11 +520,12 @@ end function cexpt
 ! ***********
 ! computing expt parameter 
 ! *********************************************************************
-function expt( b_in, gammaPar )
+function expt( b_in, gammaPar, opt )
   implicit none
   ! input
-  real(dp), intent(in)   :: b_in(:,:)     ! inpuy [-]
-  real(dp), intent(in)   :: gammaPar(:)   ! input: gamma parameter array 
+  real(dp),    intent(in) :: b_in(:,:)     ! inpuy [-]
+  real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
   ! local 
   real(dp)               :: expt(size(b_in,1),size(b_in,2)) ! exponent in campbel equation [-]
@@ -527,14 +544,15 @@ end function expt
 ! ************
 ! computing init_moist parameter  
 ! *********************************************************************
-function initMoist( phi_in, h_in)
+function initMoist( phi_in, h_in, opt)
   implicit none
   ! input
-  real(dp), intent(in)  :: phi_in(:,:)       ! porosity [-]
-  real(dp), intent(in)  :: h_in(:,:)         ! thickness [m]
+  real(dp),    intent(in) :: phi_in(:,:)   ! porosity [-]
+  real(dp),    intent(in) :: h_in(:,:)     ! thickness [m]
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
   ! local  
-  real(dp)              :: initMoist(size(phi_in,1),size(phi_in,2))
+  real(dp)                :: initMoist(size(phi_in,1),size(phi_in,2))
   
   where ( phi_in /= dmiss ) 
     initMoist = phi_in*(h_in*1000.0_dp)
@@ -547,14 +565,15 @@ end function
 ! ***********
 ! bubble parameter 
 ! *********************************************************************
-function bubble( expt_in, gammaPar )
+function bubble( expt_in, gammaPar, opt)
   implicit none
   ! input
-  real(dp), intent(in)  :: expt_in(:,:) 
-  real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
+  real(dp),    intent(in) :: expt_in(:,:) 
+  real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
   ! local 
-  real(dp)              :: bubble(size(expt_in,1),size(expt_in,2))
+  real(dp)                :: bubble(size(expt_in,1),size(expt_in,2))
   
   associate(g1=>gammaPar(ixPar%bbl1gamma1), &
             g2=>gammaPar(ixPar%bbl1gamma2))
@@ -570,14 +589,15 @@ end function
 ! ***********
 ! soil_density parameter 
 ! *********************************************************************
-function soilDensity( srho_in, gammaPar )
+function soilDensity( srho_in, gammaPar, opt )
   implicit none
   ! input
-  real(dp), intent(in)  :: srho_in(:,:)  ! input: kg/m^3]
-  real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
+  real(dp),    intent(in) :: srho_in(:,:)  ! input: kg/m^3]
+  real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
   ! local 
-  real(dp)              :: soilDensity(size(srho_in,1),size(srho_in,2))
+  real(dp)                :: soilDensity(size(srho_in,1),size(srho_in,2))
   
   associate(g1=>gammaPar(ixPar%sd1gamma1))
   where ( srho_in /= dmiss ) 
@@ -592,15 +612,16 @@ end function
 ! ***********
 ! WcrFrac parameter  
 ! *********************************************************************
-function WcrFrac(fc_in, phi_in, gammaPar)
+function WcrFrac(fc_in, phi_in, gammaPar, opt)
   implicit none
   ! input
-  real(dp), intent(in)  :: fc_in(:,:)    ! input: field capacity [frac]
-  real(dp), intent(in)  :: phi_in(:,:)   ! input: porosity [frac]
-  real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
+  real(dp),    intent(in) :: fc_in(:,:)    ! input: field capacity [frac]
+  real(dp),    intent(in) :: phi_in(:,:)   ! input: porosity [frac]
+  real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
   ! local 
-  real(dp)              :: WcrFrac(size(fc_in,1),size(fc_in,2)) !output: [frac]
+  real(dp)                :: WcrFrac(size(fc_in,1),size(fc_in,2)) !output: [frac]
   
   associate(g1=>gammaPar(ixPar%WcrFrac1gamma1))
   where ( fc_in /= dmiss .and. phi_in /= dmiss ) 
@@ -615,14 +636,15 @@ end function
 ! ************
 ! WpwpFrac parameter  
 ! *********************************************************************
-function WpwpFrac( wp_in, phi_in, gammaPar)
+function WpwpFrac( wp_in, phi_in, gammaPar, opt)
   implicit none
   ! input
-  real(dp), intent(in)  :: wp_in(:,:)    ! Wilting point [frac]
-  real(dp), intent(in)  :: phi_in(:,:)   ! Porosity [frac]
-  real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
+  real(dp),    intent(in) :: wp_in(:,:)    ! Wilting point [frac]
+  real(dp),    intent(in) :: phi_in(:,:)   ! Porosity [frac]
+  real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! local 
-  real(dp)              :: WpwpFrac(size(wp_in,1),size(wp_in,2)) !output: [frac] 
+  real(dp)                :: WpwpFrac(size(wp_in,1),size(wp_in,2)) !output: [frac] 
   
   associate(g1=>gammaPar(ixPar%WpwpFrac1gamma1))
   where ( wp_in /= dmiss .and. phi_in /= dmiss ) 
@@ -637,14 +659,15 @@ end function
 ! ************
 ! TWM parameter (UZTWM for top layer and LZTWM for bottom layer)
 ! *********************************************************************
-function twm( fc_in, wp_in, h_in )
+function twm( fc_in, wp_in, h_in, opt)
   implicit none
   ! input
-  real(dp), intent(in) :: fc_in(:,:)                       ! input: field capacity [-]           
-  real(dp), intent(in) :: wp_in(:,:)                       ! input: wilting point [-]
-  real(dp), intent(in) :: h_in(:,:)                        ! input: thickness of layer [mm]
+  real(dp),    intent(in) :: fc_in(:,:)    ! input: field capacity [-]           
+  real(dp),    intent(in) :: wp_in(:,:)    ! input: wilting point [-]
+  real(dp),    intent(in) :: h_in(:,:)     ! input: thickness of layer [mm]
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! local 
-  real(dp)             :: twm(size(wp_in,1),size(wp_in,2)) ! output: tension water maximum [mm]
+  real(dp)                :: twm(size(wp_in,1),size(wp_in,2)) ! output: tension water maximum [mm]
 
   where ( wp_in/=dmiss .and. fc_in/=dmiss ) 
     twm=(fc_in-wp_in)*h_in*1000.0_dp  ! convert m to mm 
@@ -657,14 +680,15 @@ end function
 ! *********************************************************************
 ! FWM parameter (UZFWM for top layer and LZFWM for bottom layer)
 ! *********************************************************************
-function fwm( phi_in, fc_in, h_in )
+function fwm( phi_in, fc_in, h_in, opt)
   implicit none
   ! input
-  real(dp), intent(in) :: phi_in(:,:)                      ! input: porosity [-]
-  real(dp), intent(in) :: fc_in(:,:)                       ! input: field capacity [-]           
-  real(dp), intent(in) :: h_in(:,:)                        ! input: thickness of layer [mm]
+  real(dp),    intent(in) :: phi_in(:,:)   ! input: porosity [-]
+  real(dp),    intent(in) :: fc_in(:,:)    ! input: field capacity [-]           
+  real(dp),    intent(in) :: h_in(:,:)     ! input: thickness of layer [mm]
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! local 
-  real(dp)             :: fwm(size(fc_in,1),size(fc_in,2)) ! output: free water maximum [mm]
+  real(dp)                :: fwm(size(fc_in,1),size(fc_in,2)) ! output: free water maximum [mm]
 
   where ( phi_in/=dmiss .and. fc_in/=dmiss .and. h_in/=dmiss ) 
     fwm=(phi_in-fc_in)*h_in*1000.0_dp ! convert m to mm
@@ -677,15 +701,16 @@ end function
 ! *********************************************************************
 ! FSM parameter (LZFSM for bottom layer)
 ! *********************************************************************
-function fsm( fwm_in, phi_in, wp_in, gammaPar )
+function fsm( fwm_in, phi_in, wp_in, gammaPar ,opt)
   implicit none
   ! input
-  real(dp), intent(in)  :: fwm_in(:,:)   ! Free water maximum 
-  real(dp), intent(in)  :: phi_in(:,:)   ! Porosity
-  real(dp), intent(in)  :: wp_in(:,:)    ! Wilting point
-  real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
+  real(dp),    intent(in) :: fwm_in(:,:)   ! Free water maximum 
+  real(dp),    intent(in) :: phi_in(:,:)   ! Porosity
+  real(dp),    intent(in) :: wp_in(:,:)    ! Wilting point
+  real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! local 
-  real(dp)             :: fsm(size(wp_in,1),size(wp_in,2)) ! output: supplementary free water maximum [mm]
+  real(dp)                :: fsm(size(wp_in,1),size(wp_in,2)) ! output: supplementary free water maximum [mm]
 
   associate(g1=>gammaPar(ixPar%fsm1gamma1))
   where ( phi_in/=dmiss .and. wp_in/=dmiss .and. fwm_in/=dmiss ) 
@@ -700,13 +725,14 @@ end function
 ! *********************************************************************
 ! FPM parameter (LZFPM for bottom layer)
 ! *********************************************************************
-function fpm( fwm_in, fsm_in )
+function fpm( fwm_in, fsm_in, opt )
   implicit none
   ! input
-  real(dp), intent(in)  :: fwm_in(:,:)   ! Free water maximum 
-  real(dp), intent(in)  :: fsm_in(:,:)   ! supplementary Free water maximum 
-  ! local 
-  real(dp)             :: fpm(size(fwm_in,1),size(fwm_in,2)) ! output: primary free water maximum [mm]
+  real(dp),    intent(in) :: fwm_in(:,:)   ! Free water maximum 
+  real(dp),    intent(in) :: fsm_in(:,:)   ! supplementary Free water maximum 
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
+  ! local  
+  real(dp)                :: fpm(size(fwm_in,1),size(fwm_in,2)) ! output: primary free water maximum [mm]
 
   where ( fwm_in/=dmiss .and. fsm_in/=dmiss )
     fpm=fwm_in-fsm_in
@@ -719,14 +745,15 @@ end function
 ! *********************************************************************
 ! ZK parameter (UZK for top layer)
 ! *********************************************************************
-function zk( phi_in, fc_in, gammaPar )
+function zk( phi_in, fc_in, gammaPar,opt)
   implicit none
   ! input
-  real(dp), intent(in) :: phi_in(:,:)   ! Porosity [frac]
-  real(dp), intent(in) :: fc_in(:,:)    ! field capacity [frac]
-  real(dp), intent(in) :: gammaPar(:)   ! input: gamma parameter array 
+  real(dp),    intent(in) :: phi_in(:,:)   ! Porosity [frac]
+  real(dp),    intent(in) :: fc_in(:,:)    ! field capacity [frac]
+  real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! local 
-  real(dp)             :: zk(size(fc_in,1),size(fc_in,2)) ! output: draw coefficient from free water content [/day] 
+  real(dp)                :: zk(size(fc_in,1),size(fc_in,2)) ! output: draw coefficient from free water content [/day] 
 
   associate(g1=>gammaPar(ixPar%zk1gamma1))
   where ( phi_in/=dmiss .and. fc_in/=dmiss ) 
@@ -741,15 +768,16 @@ end function
 ! *********************************************************************
 ! ZSK parameter (LZSK for top layer)
 ! *********************************************************************
-function zsk( phi_in, fc_in, wp_in, gammaPar )
+function zsk( phi_in, fc_in, wp_in, gammaPar, opt)
   implicit none
   ! input
-  real(dp), intent(in) :: phi_in(:,:)   ! Porosity [frac]
-  real(dp), intent(in) :: fc_in(:,:)    ! field capacity [frac]
-  real(dp), intent(in) :: wp_in(:,:)    ! Wilting point [frac]
-  real(dp), intent(in) :: gammaPar(:)   ! input: gamma parameter array 
+  real(dp),    intent(in) :: phi_in(:,:)   ! Porosity [frac]
+  real(dp),    intent(in) :: fc_in(:,:)    ! field capacity [frac]
+  real(dp),    intent(in) :: wp_in(:,:)    ! Wilting point [frac]
+  real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! local 
-  real(dp)             :: zsk(size(fc_in,1),size(fc_in,2)) ! output: draw coefficient from supplementary free water content [/day] 
+  real(dp)                :: zsk(size(fc_in,1),size(fc_in,2)) ! output: draw coefficient from supplementary free water content [/day] 
 
   associate(g1=>gammaPar(ixPar%zsk1gamma1),&
             g2=>gammaPar(ixPar%zsk1gamma2))
@@ -765,16 +793,17 @@ end function
 ! *********************************************************************
 ! ZPK parameter (LZPK for top layer)
 ! *********************************************************************
-function zpk( ks_in, h_in, myu_in, gammaPar )
+function zpk( ks_in, h_in, myu_in, gammaPar,opt)
   implicit none
   ! input
-  real(dp), intent(in) :: ks_in(:,:)                       ! Ksat [mm/s]
-  real(dp), intent(in) :: myu_in(:,:)                      ! specific yield [-]
-  real(dp), intent(in) :: h_in(:,:)                        ! input: thickness of layer [m]
-  real(dp), intent(in) :: gammaPar(:)                      ! input: gamma parameter array 
+  real(dp),    intent(in) :: ks_in(:,:)    ! Ksat [mm/s]
+  real(dp),    intent(in) :: myu_in(:,:)   ! specific yield [-]
+  real(dp),    intent(in) :: h_in(:,:)     ! input: thickness of layer [m]
+  real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! local 
-  real(dp)             :: zpk(size(ks_in,1),size(ks_in,2)) ! output: draw coefficient from primary free water content [/day] 
-  real(dp)             :: dt                               ! time step of the simulation [hr]
+  real(dp)                :: zpk(size(ks_in,1),size(ks_in,2)) ! output: draw coefficient from primary free water content [/day] 
+  real(dp)                :: dt                               ! time step of the simulation [hr]
 
   dt=24.0_dp ! unit: hr
   associate(g1=>gammaPar(ixPar%zpk1gamma1))
@@ -790,14 +819,15 @@ end function
 ! *********************************************************************
 ! PFREE parameter 
 ! *********************************************************************
-function pfree( phi_in, wp_in, gammaPar)
+function pfree( phi_in, wp_in, gammaPar, opt)
   implicit none
   ! input
-  real(dp), intent(in) :: phi_in(:,:)                        ! input: porosity [frac]
-  real(dp), intent(in) :: wp_in(:,:)                         ! input: wilting point [frac]
-  real(dp), intent(in) :: gammaPar(:)                        ! input: gamma parameter array 
+  real(dp),    intent(in) :: phi_in(:,:)   ! input: porosity [frac]
+  real(dp),    intent(in) :: wp_in(:,:)    ! input: wilting point [frac]
+  real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
+  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! local 
-  real(dp)             :: pfree(size(wp_in,1),size(wp_in,2)) ! output: tension water maximum [mm]
+  real(dp)                :: pfree(size(wp_in,1),size(wp_in,2)) ! output: tension water maximum [mm]
 
   associate(g1=>gammaPar(ixPar%pfree1gamma1))
   where ( phi_in/=dmiss .and. wp_in/=dmiss ) 
@@ -812,16 +842,17 @@ end function
 ! *********************************************************************
 ! ZPERC parameter 
 ! *********************************************************************
-function zperc( twm_in, fsm_in, zsk_in, fpm_in, zpk_in )
+function zperc( twm_in, fsm_in, zsk_in, fpm_in, zpk_in, opt)
   implicit none
   ! input
-  real(dp), intent(in) :: twm_in(:,:)   ! input: tension water maximum [mm] 
-  real(dp), intent(in) :: fsm_in(:,:)   ! input: supplemental free water maximum [mm] 
-  real(dp), intent(in) :: zsk_in(:,:)   ! input: flow rate from supplemental free water maximum [day-1] 
-  real(dp), intent(in) :: fpm_in(:,:)   ! input: primary free water maximum [mm] 
-  real(dp), intent(in) :: zpk_in(:,:)   ! input: flow rate from primary free water maximum [day-1] 
+  real(dp),    intent(in)  :: twm_in(:,:)   ! input: tension water maximum [mm] 
+  real(dp),    intent(in)  :: fsm_in(:,:)   ! input: supplemental free water maximum [mm] 
+  real(dp),    intent(in)  :: zsk_in(:,:)   ! input: flow rate from supplemental free water maximum [day-1] 
+  real(dp),    intent(in)  :: fpm_in(:,:)   ! input: primary free water maximum [mm] 
+  real(dp),    intent(in)  :: zpk_in(:,:)   ! input: flow rate from primary free water maximum [day-1] 
+  integer(i2b),intent(in)  :: opt           ! input: option for transfer function form
   ! output 
-  real(dp)             :: zperc(size(twm_in,1),size(twm_in,2))    ! output: ratio of max and min percolation rates [day-1]
+  real(dp)                 :: zperc(size(twm_in,1),size(twm_in,2))    ! output: ratio of max and min percolation rates [day-1]
   ! local 
                        
   where ( twm_in/=dmiss .and. fsm_in/=dmiss ) 
@@ -836,13 +867,14 @@ end function
 ! *********************************************************************
 ! REXP parameter 
 ! *********************************************************************
-function rexp( wp_in, gammaPar)
+function rexp( wp_in, gammaPar, opt)
   implicit none
   ! input
-  real(dp), intent(in) :: wp_in(:,:)                          ! input: wilting point [frac]
-  real(dp), intent(in) :: gammaPar(:)                         ! input: gamma parameter array 
+  real(dp),    intent(in)  :: wp_in(:,:)      ! input: wilting point [frac]
+  real(dp),    intent(in)  :: gammaPar(:)     ! input: gamma parameter array 
+  integer(i2b),intent(in)  :: opt             ! input: option for transfer function form
   ! local 
-  real(dp)             :: rexp(size(wp_in,1),size(wp_in,2)) ! output: tension water maximum [mm]
+  real(dp)                 :: rexp(size(wp_in,1),size(wp_in,2)) ! output: tension water maximum [mm]
   
   associate(g1=>gammaPar(ixPar%rexp1gamma1))
   where ( wp_in/=dmiss ) 
@@ -900,12 +932,13 @@ end function
 ! *********************************************************************
 ! pedo-transfer function for bulk density 
 ! *********************************************************************
-function bd( bd_in, gammaPar )
+function bd( bd_in, gammaPar,opt )
   ! Define variables
   implicit none
   ! input
   real(dp), intent(in)  :: bd_in(:,:)    ! input: bd from dataset [kg/m3]
   real(dp), intent(in)  :: gammaPar(:)   ! input: gamma parameter array 
+  integer(i2b)          :: opt            ! input: option for transfer function form
   ! output 
   ! local 
   real(dp)              :: bd(size(bd_in,1),size(bd_in,2))
@@ -915,7 +948,9 @@ function bd( bd_in, gammaPar )
   real(dp),allocatable  :: bd_temp(:,:)
   integer(i4b)          :: n1                  ! number of 1st dimension 
   integer(i4b)          :: n2                  ! number of 2nd dimension 
+  character(len=strLen) :: message                           
 
+  message="db/"
   n1=size(bd_in,1)
   n2=size(bd_in,2)
   allocate(bdslope(n1,n2))
@@ -923,15 +958,19 @@ function bd( bd_in, gammaPar )
   bdslope=0.0_dp
   bd_temp=0.0_dp
   associate(g1=>gammaPar(ixPar%bd1gamma1))
-  where ( bd_in /= dmiss ) 
-    bd_temp = g1*bd_in
-    bdslope=(bd_temp-bd_min)/(bd_max-bd_min)
-    where ( bdslope > 1.0_dp) bdslope=1.0_dp
-    where ( bdslope < 0.0_dp) bdslope=0.0_dp
-    bd = bdslope*(bd_max-bd_min)+bd_min
-  else where
-    bd = dmiss 
-  end where
+  select case(opt)
+    case(1);  ! 
+      where ( bd_in /= dmiss ) 
+        bd_temp = g1*bd_in
+        bdslope=(bd_temp-bd_min)/(bd_max-bd_min)
+        where ( bdslope > 1.0_dp) bdslope=1.0_dp
+        where ( bdslope < 0.0_dp) bdslope=0.0_dp
+        bd = bdslope*(bd_max-bd_min)+bd_min
+      else where
+        bd = dmiss 
+      end where
+    case default;print*,trim(message)//'opt not recognized';stop
+  end select
   end associate
   return
 end function

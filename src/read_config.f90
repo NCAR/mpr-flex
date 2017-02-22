@@ -52,8 +52,7 @@ module read_config
                            nLyr,                   &
                            calpar
 ! DDS algorithm 
-  namelist / DDS / NparCal,     & 
-                   rpar,        &
+  namelist / DDS / rpar,        &
                    isRestart,   &
                    nseed,       & 
                    maxn,        &

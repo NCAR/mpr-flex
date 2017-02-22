@@ -7,6 +7,7 @@ module process_meta
 
   private
 
+  public::read_calPar
   public::get_parm_meta
   public::betaCollection
   public::total_calParam
@@ -17,47 +18,35 @@ module process_meta
 contains
 
 ! ************************************************************************************************
-! Public subroutine: Prepare calibrating parameter metadata from a meta file 
+! Public subroutine: Read 'calPar' input file 
 ! ************************************************************************************************
-subroutine get_parm_meta(infile, err, message)
-  ! Read ascii 'CalPar' and obtain meta data from master parameter list (popMeta.f90) 
-  ! Save parSubset, gammaSubset, betaInGamma data structure 
-  use data_type,  only:cpar_meta
-  use globalData, only:parMaster,  & ! meta for all gamma and beta parameters
-                       parSubset,  & ! meta for only parameter listed in input
-                       gammaSubset,& ! meta for only gamma parameters listed in input
-                       betaInGamma   ! list of beta parameter associated with gamma parameters in list
+subroutine read_calPar(infile, err, message)
+  use globalData, only:calParMeta      ! meta for calPar input  
+  use data_type,  only:input_meta
   use ascii_util, only:file_open
-  use get_ixname, only:get_ixPar
+  use var_lookup, only:nPar
   implicit none
   ! input
-  character(*),intent(in)              :: infile         ! input filename
+  character(*),intent(in)              :: infile            ! input filename
   ! output
-  integer(i4b),intent(out)             :: err            ! error code
-  character(*),intent(out)             :: message        ! error message
+  integer(i4b),intent(out)             :: err               ! error code
+  character(*),intent(out)             :: message           ! error message
   ! local variables
-  character(len=strLen)                :: cmessage       ! error message subroutine
-  type(cpar_meta),allocatable          :: tempMeta(:)
-  character(len=strLen),allocatable    :: res(:)         ! 
-  character(len=strLen),allocatable    :: allbeta(:)     ! 
-  logical(lgc),allocatable             :: mask(:)
-  integer(i4b)                         :: unt            ! DK: need to either define units globally, or use getSpareUnit
-  integer(i4b)                         :: iline          ! loop through lines in the file 
-  integer(i4b)                         :: ixLocal        ! index for calibrationg parameter list 
-  integer(i4b)                         :: ixGamma        ! index for calibrationg gamma parameter list 
-  integer(i4b)                         :: ivar           ! index of master parameter  
-  integer(i4b),parameter               :: maxLines=1000  ! maximum lines in the file 
-  character(LEN=strLen)                :: temp           ! single lime of information
-  integer(i4b)                         :: iend           ! check for the end of the file
-  character(LEN=strLen)                :: ffmt           ! file format
-  character(len=1)                     :: dLim(1)        ! column delimiter
-  integer(i4b)                         :: i,j,k          ! loop index
- 
-  ! Start procedure here
-  err=0; message="get_param_meta/"
-  allocate(parSubset(nParCal))
-  allocate(tempMeta(nParCal))
-  call file_open(trim(infile),unt,err, cmessage)
+  type(input_meta),allocatable         :: tempCalParMeta(:) ! temp data structure for calPar input meta
+  character(len=strLen)                :: cmessage          ! error message subroutine
+  integer(i4b)                         :: ixLocal           ! index for calibrationg parameter list 
+  integer(i4b),parameter               :: maxLines=1000     ! maximum lines in the file 
+  integer(i4b)                         :: iend              ! check for the end of the file
+  integer(i4b)                         :: unt               ! DK: need to either define units globally, or use getSpareUnit
+  character(LEN=strLen)                :: temp              ! single lime of information
+  character(LEN=strLen)                :: ffmt              ! file format
+  character(len=1)                     :: dLim(3)           ! column delimiter
+  integer(i4b)                         :: iline             ! loop through lines in the file 
+
+  ! initialize error handling 
+  err=0; message="read_calPar/"
+  allocate(tempCalParMeta(nPar))
+  call file_open(trim(infile), unt, err, cmessage)
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
   ! get to the start of the variable descriptions 
   do iline=1,maxLines
@@ -65,63 +54,153 @@ subroutine get_parm_meta(infile, err, message)
     if (temp(1:1)/='!') exit                             ! assume first line not comment is format code
   end do ! looping through file to find the format code
   read(temp,*)ffmt ! to get format 
-  ixLocal=1
-  ixGamma=1
+  ixLocal=0
   line:do iline=1,maxLines
     ! read a line of data and exit iif an error code (character read, so only possible error is end of file)
     read(unt,'(a)',iostat=iend)temp; if (iend/=0)exit
     ! check that the line is not a comment
     if (temp(1:1)=='!')cycle
     ! save data into a temporary structure
-    read(temp,trim(ffmt),iostat=err) parSubset(ixLocal)%pname ,dLim(1),&   ! parameter name
-                                     parSubset(ixLocal)%flag               ! flag
+    ixLocal = ixLocal+1
+    read(temp,trim(ffmt),iostat=err) tempCalParMeta(ixLocal)%betaname,  dLim(1),&    ! beta parameter name
+                                     tempCalParMeta(ixLocal)%calMethod, dLim(2),&    ! Parameter estimation mehtod - 0, skip calibration, 1. MPR or 2. mulitplier,  
+                                     tempCalParMeta(ixLocal)%TF,        dLim(3),&    ! Transfer function type
+                                     tempCalParMeta(ixLocal)%isScaleCal              ! calibrating scaling operator?
     if (err/=0) then; err=30; message=trim(message)//"errorReadLine"; return; endif
     ! check that the delimiters are in the correct place
     if(any(dLim /= '|'))then
       message=trim(message)//'delimiter is not in the correct place; line = ['//trim(temp)//']; filename = '//trim(infile)
       err=32; return
     endif
-    ! identify the index of the named variable from master parameter 
-    ivar = get_ixPar(parSubset(ixLocal)%pname)
-    if(ivar<=0)then; err=40; message=trim(message)//"variableNotFound[var="//trim(parSubset(ixLocal)%pname)//"]"; return; endif
-    ! copy the index of the named variable from master parameter and their info (init.val, lwr, upr)
-    parSubset(ixLocal)%ixMaster = ivar
-    parSubset(ixLocal)%val      = parMaster(ivar)%val
-    parSubset(ixLocal)%lwr      = parMaster(ivar)%lwr
-    parSubset(ixLocal)%upr      = parMaster(ivar)%upr
-    parSubset(ixLocal)%beta     = parMaster(ivar)%beta
-    parSubset(ixLocal)%ptype    = parMaster(ivar)%ptype
-    parSubset(ixLocal)%hups     = parMaster(ivar)%hups
-    parSubset(ixLocal)%hpnorm   = parMaster(ivar)%hpnorm
-    parSubset(ixLocal)%vups     = parMaster(ivar)%vups
-    parSubset(ixLocal)%vpnorm   = parMaster(ivar)%vpnorm
-    parSubset(ixLocal)%perLyr   = parMaster(ivar)%perLyr
-    ixLocal = ixLocal+1
-    ! extract only gamma parameter list (consider putting this structure in private here)
-    associate( parentp => parSubset(ixLocal-1)%beta )
-    if ( trim(parentp)/="beta") then 
-      tempMeta(ixGamma)%ixMaster = ivar
-      tempMeta(ixGamma)%pname    = parMaster(ivar)%pname
-      tempMeta(ixGamma)%val      = parMaster(ivar)%val
-      tempMeta(ixGamma)%lwr      = parMaster(ivar)%lwr
-      tempMeta(ixGamma)%upr      = parMaster(ivar)%upr
-      tempMeta(ixGamma)%beta     = trim(parentp) 
-      tempMeta(ixGamma)%ptype    = parMaster(ivar)%ptype
-      tempMeta(ixGamma)%hups     = parMaster(ivar)%hups
-      tempMeta(ixGamma)%hpnorm   = parMaster(ivar)%hpnorm
-      tempMeta(ixGamma)%vups     = parMaster(ivar)%vups
-      tempMeta(ixGamma)%vpnorm   = parMaster(ivar)%vpnorm
-      tempMeta(ixGamma)%perLyr   = parMaster(ivar)%perLyr
-      ixGamma = ixGamma+1
-    endif
-    end associate
   enddo line
-  if (ixGamma > 1) then
-    allocate(gammaSubset(ixGamma-1))
-    gammaSubset=tempMeta(1:ixGamma) 
+  ! close file unit
+  close(unt)
+  ! save 'calParMeta'
+  if (ixLocal > 0_i2b) then
+    allocate(calParMeta(ixLocal))
+    calParMeta=tempCalParMeta(1:ixLocal) 
   endif
-  ! get beta parameter associated with gamma parameter (excluding soil depth, layer thickness)
-  if ( allocated(gammaSubset) ) then
+  return
+end subroutine
+
+! ************************************************************************************************
+! Public subroutine: Prepare calibrating parameter metadata from a meta file 
+! ************************************************************************************************
+subroutine get_parm_meta( err, message)
+  ! Process calParMeta along with parMaster (popMeta.f90) 
+  ! Save parSubset, gammaSubset, betaInGamma data structure 
+  use data_type,  only:par_meta,cpar_meta
+  use globalData, only:calParMeta, & ! meta for beta parameter listed in 'calPar' input
+                       parMaster,  & ! meta for all gamma and beta parameters
+                       parSubset,  & ! meta for only parameter listed in input
+                       gammaSubset,& ! meta for only gamma parameters listed in input
+                       betaInGamma,& ! list of beta parameter associated with gamma parameters in list
+                       nBetaGamma, & ! sum of beta and gamma parameters to be calibrated 
+                       nBeta,      & ! number of beta parameters to be calibrated directly
+                       nGamma        ! number of gamma parameters to be calibrated 
+  use get_ixname, only:get_ixPar
+  use var_lookup, only:nPar
+  implicit none
+  ! input
+  ! output
+  integer(i4b),intent(out)             :: err              ! error code
+  character(*),intent(out)             :: message          ! error message
+  ! local variables
+  character(len=strLen)                :: cmessage         ! error message subroutine
+  type(par_meta), allocatable          :: gammaMaster(:)
+  type(cpar_meta),allocatable          :: tempGammaMeta(:)
+  type(cpar_meta),allocatable          :: tempParSubset(:)
+  character(len=strLen),allocatable    :: res(:)           ! 
+  character(len=strLen),allocatable    :: allbeta(:)       ! 
+  logical(lgc),allocatable             :: mask(:)
+  integer(i4b)                         :: ixLocal          ! index for calibrationg parameter list 
+  integer(i4b)                         :: ixGamma          ! index for calibrationg gamma parameter list 
+  integer(i4b)                         :: iBeta            ! loop index of lines in calPar input file 
+  integer(i4b)                         :: ivar             ! loop index of master parameter  
+  integer(i4b)                         :: iPar             ! loop index of master parameter  
+  integer(i4b)                         :: iGamma           ! loop index of all the gamma parameters in master 
+  integer(i4b)                         :: i,j,k            ! loop index
+  integer(i4b)                         :: iend             ! check for the end of the file
+ 
+  ! Start procedure here
+  err=0; message="get_param_meta/"
+
+  ! update parMaster(:)%tftype
+  do iBeta=1,size(calParMeta)
+    ivar=get_ixPar(calParMeta(iBeta)%betaname)
+    if(ivar<=0)then; err=40; message=trim(message)//"1.variableNotFound[var="//trim(calParMeta(iBeta)%betaname)//"]"; return; endif
+    parMaster(ivar)%tftype=calParMeta(iBeta)%TF
+  enddo
+  allocate(mask(nPar),stat=err); if(err/=0)then;message=trim(message)//'error allocating mask';return;endif
+  mask=parMaster(:)%beta/='beta'
+  allocate(gammaMaster(count(mask)))
+  gammaMaster=pack(parMaster,mask)
+  deallocate(mask,stat=err); if(err/=0)then;message=trim(message)//'error allocating mask';return;endif
+ 
+  allocate(tempParSubset(nPar))
+  allocate(tempGammaMeta(nPar))
+  ixLocal=0
+  ixGamma=0
+  do iBeta=1,size(calParMeta)
+    ! identify the index of the named variable from master parameter 
+    if(calParMeta(iBeta)%calMethod==1) then
+      do iGamma=1,size(gammaMaster)
+        if (gammaMaster(igamma)%beta==calparmeta(ibeta)%betaname .and. gammaMaster(igamma)%tftype==calparmeta(ibeta)%TF) then
+          ixLocal = ixLocal+1
+          ivar=get_ixPar(gammaMaster(iGamma)%pname)
+          tempParSubset(ixLocal)%ixMaster = ivar
+          tempParSubset(ixLocal)%pname    = gammaMaster(iGamma)%pname
+          tempParSubset(ixLocal)%val      = gammaMaster(iGamma)%val
+          tempParSubset(ixLocal)%lwr      = gammaMaster(iGamma)%lwr
+          tempParSubset(ixLocal)%upr      = gammaMaster(iGamma)%upr
+          tempParSubset(ixLocal)%beta     = gammaMaster(iGamma)%beta
+          tempParSubset(ixLocal)%tftype   = gammaMaster(iGamma)%tftype
+          tempParSubset(ixLocal)%ptype    = gammaMaster(iGamma)%ptype
+          tempParSubset(ixLocal)%flag     = .True. 
+          tempParSubset(ixLocal)%hups     = gammaMaster(iGamma)%hups
+          tempParSubset(ixLocal)%hpnorm   = gammaMaster(iGamma)%hpnorm
+          tempParSubset(ixLocal)%vups     = gammaMaster(iGamma)%vups
+          tempParSubset(ixLocal)%vpnorm   = gammaMaster(iGamma)%vpnorm
+          tempParSubset(ixLocal)%perLyr   = gammaMaster(iGamma)%perLyr
+          ixGamma = ixGamma+1
+          tempGammaMeta(ixGamma) = tempParSubset(ixLocal)
+        endif
+      end do
+    elseif (calParMeta(iBeta)%calMethod==2) then
+      ivar = get_ixPar(calParMeta(iBeta)%betaname)
+      if(ivar<=0)then; err=40; message=trim(message)//"2.variableNotFound[var="//trim(calParMeta(iBeta)%betaname)//"]"; return; endif
+      ! copy the index of the named variable from master parameter and their info (init.val, lwr, upr)
+      ixLocal = ixLocal+1
+      tempParSubset(ixLocal)%ixMaster = ivar
+      tempParSubset(ixLocal)%pname    = parMaster(ivar)%pname
+      tempParSubset(ixLocal)%val      = parMaster(ivar)%val
+      tempParSubset(ixLocal)%lwr      = parMaster(ivar)%lwr
+      tempParSubset(ixLocal)%upr      = parMaster(ivar)%upr
+      tempParSubset(ixLocal)%beta     = parMaster(ivar)%beta
+      tempParSubset(ixLocal)%tftype   = parMaster(ivar)%tftype
+      tempParSubset(ixLocal)%ptype    = parMaster(ivar)%ptype
+      tempParSubset(ixLocal)%flag     = .True. 
+      tempParSubset(ixLocal)%hups     = parMaster(ivar)%hups
+      tempParSubset(ixLocal)%hpnorm   = parMaster(ivar)%hpnorm
+      tempParSubset(ixLocal)%vups     = parMaster(ivar)%vups
+      tempParSubset(ixLocal)%vpnorm   = parMaster(ivar)%vpnorm
+      tempParSubset(ixLocal)%perLyr   = parMaster(ivar)%perLyr
+    endif
+  enddo
+  ! Save number of parameters to be calibrated 
+  nBetaGamma=ixLocal
+  nGamma=ixGamma
+  nBeta=nBetaGamma-nGamma
+  ! Assign and save 'parSubset' and 'gammaSubset' 
+  if (nBetaGamma > 0_i2b) then
+    allocate(parSubset(nBetaGamma))
+    parSubset=tempParSubset(1:nBetaGamma) 
+  endif
+  if (nGamma > 0_i2b) then
+    allocate(gammaSubset(nGamma))
+    gammaSubset=tempGammaMeta(1:nGamma) 
+  endif
+  if ( allocated(gammaSubset) ) then ! get beta parameter associated with gamma parameters (excluding soil depth, layer thickness)
     allocate(res(size(gammaSubset)))
     k = 1
     res(1) = gammaSubset(1)%beta
@@ -140,7 +219,12 @@ subroutine get_parm_meta(infile, err, message)
     allocate(mask(k))
     mask=.true.
     do i=1,k
-      if ( get_ixPar(trim(allbeta(i))) == imiss ) mask(i)=.false. 
+      if ( trim(allbeta(i)) == 'h1' ) mask(i)=.false. 
+      if ( trim(allbeta(i)) == 'h2' ) mask(i)=.false. 
+      if ( trim(allbeta(i)) == 'h3' ) mask(i)=.false. 
+      if ( trim(allbeta(i)) == 'h4' ) mask(i)=.false. 
+      if ( trim(allbeta(i)) == 'h5' ) mask(i)=.false. 
+      if ( trim(allbeta(i)) == 'z' )  mask(i)=.false. 
     end do
     allocate(betaInGamma(count(mask)))
     betaInGamma=pack(allbeta,mask)
@@ -149,13 +233,11 @@ subroutine get_parm_meta(infile, err, message)
   endif
   ! check that all elements are populated
   if(any(parSubset(:)%pname==''))then
-    do iline=1,size(parSubset)
-      print*,iline,' -> ',trim(parSubset(iline)%pname)
+    do iPar=1,size(parSubset)
+      print*,iPar,' -> ',trim(parSubset(iPar)%pname)
     end do
-    err=40; message=trim(message)//"'NparCal' in namelist not equal to # of parameters in 'calpar':Check 'NparCal'in Namelist"; return
+    err=40; message=trim(message)//"parSubset is not filled out completely"; return
   endif
-  ! close file unit
-  close(unt)
   return
 end subroutine
 
@@ -164,26 +246,25 @@ end subroutine
 ! *********************************************************************************************
 ! Giving gamma parameters listed in "calPar" to compute associated beta parameters, figure out dependent parameters and make a list of all the gamma parameters  
 ! cluding gamma parameters in "calPar" and dependent gamma parameters
-subroutine betaCollection(ierr,message)  
+subroutine betaCollection(err,message)  
   use globalData, only:parMaster, betaInGamma, betaNeeded
   use get_ixname, only:get_ixPar
   use var_lookup, only:ixPar, nPar
   implicit none
   ! output
   character(len=strLen),intent(out)   :: message                ! error message for current routine
-  integer(i4b),         intent(out)   :: ierr                   ! error code
+  integer(i4b),         intent(out)   :: err                   ! error code
   ! local variables
   character(len=strLen),allocatable   :: betaTemp(:)            ! temporal holder for name of beta parameters to be estimated and dependent beta parameters
   integer(i4b)                        :: iParm                  ! Loop index of model parameters 
   integer(i4b)                        :: nCheckDone             ! number of checked Beta parameters 
   logical(lgc)                        :: checkDone(nPar)        ! used to check if the parameter is processed
   
-  ierr=0; message="betaCollection/"
+  err=0; message="betaCollection/"
   allocate(betaTemp(nPar))
   allocate(betaNeeded,source=betaInGamma)
   checkDone=.false.
   nCheckDone=count(checkDone)
-  
   do
     do iParm = 1,size(betaNeeded)
       select case(get_ixPar(betaNeeded(iParm)))
@@ -274,7 +355,7 @@ subroutine betaCollection(ierr,message)
     end do ! end of parameter loop
     if (nCheckDone==count(checkDone)) exit
     nCheckDone=count(checkDone)
-    deallocate(betaNeeded,stat=ierr); if(ierr/=0)then;message=trim(message)//'error deallocating betaNeeded';return;endif
+    deallocate(betaNeeded,stat=err); if(err/=0)then;message=trim(message)//'error deallocating betaNeeded';return;endif
     allocate(betaNeeded(nCheckDone))
     betaNeeded=pack(betaTemp,checkDone)
   end do ! end of infinite loop
@@ -332,9 +413,9 @@ subroutine check_gammaH( err, message)
     !check h parameters - now can chcek up to 5 layers
     do i=1,size(gammaSubset)
       if (gammaSubset(i)%pname=="h1gamma1")then;id(1)=1;cycle;endif 
-      if (gammaSubset(i)%pname=="h1gamma2")then;id(2)=1;cycle;endif
-      if (gammaSubset(i)%pname=="h1gamma3")then;id(3)=1;cycle;endif
-      if (gammaSubset(i)%pname=="h1gamma4")then;id(4)=1;cycle;endif
+      if (gammaSubset(i)%pname=="h2gamma1")then;id(2)=1;cycle;endif
+      if (gammaSubset(i)%pname=="h3gamma1")then;id(3)=1;cycle;endif
+      if (gammaSubset(i)%pname=="h4gamma1")then;id(4)=1;cycle;endif
     enddo
     mask=(id>0)
     checkH=mask(1:nLyr-1) 
@@ -350,13 +431,13 @@ end subroutine
 ! ************************************************************************************************
 subroutine total_calParam( )
   ! save nParCalSum in public_var
-  use globalData,  only:parSubset
+  use globalData,  only:parSubset, nBetaGamma
   implicit none
   ! local variables
   integer(i4b)                 :: iPar          ! loop indices
   
   nParCalSum=0_i4b
-  do iPar=1,nParCal
+  do iPar=1,nBetaGamma
     if (parSubset(iPar)%perLyr)then
       nParCalSum=nParCalSum+nLyr
     else
@@ -370,17 +451,17 @@ end subroutine
 ! Public subroutine: convert parameter data structure to simple arrays 
 ! ************************************************************************************************
 subroutine param_setup( param, mask )
-  use globalData,  only:parSubset
+  use globalData,  only:parSubset, nBetaGamma
   implicit none
   ! output variables
   real(dp),dimension(:,:),   intent(out)     :: param 
   logical,dimension(:),      intent(out)     :: mask
   ! local variables
-  integer(i4b)                               :: iPar    ! loop indices
-  integer(i4b)                               :: idx     ! count of calibrating parameter including per layer parameter 
+  integer(i2b)                               :: iPar    ! loop indices
+  integer(i2b)                               :: idx     ! count of calibrating parameter including per layer parameter 
   
-  idx=0_i4b
-  do iPar=1,nParCal
+  idx=0_i2b
+  do iPar=1,nBetaGamma
     if (parSubset(iPar)%perLyr)then
       idx=idx+nLyr
       param(idx-nLyr+1:idx,1) = parSubset(iPar)%val

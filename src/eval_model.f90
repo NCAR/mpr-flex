@@ -18,16 +18,16 @@ contains
 !************************************
 function objfn( calParam )
   use mpr_routine,   only: mpr
-  use globalData,    only: parMaster, parSubset, betaInGamma, gammaSubset
+  use globalData,    only: parMaster, parSubset, betaInGamma, gammaSubset, nBetaGamma, nBeta, nGamma
   use model_wrapper, only: read_hru_id, read_soil_param, adjust_param, replace_param, write_soil_param, read_sim
   implicit none
   !input variables
-  real(dp),             intent(in)  :: calParam(:)              ! parameter in namelist, not necessarily all parameters are calibrated
+  real(dp),             intent(in)  :: calParam(:)            ! parameter in namelist, not necessarily all parameters are calibrated
   !local variables
-  type(var_d)                       :: calParStr(nParCal)     ! parameter storage converted from parameter array 
+  type(var_d)                       :: calParStr(nBetaGamma)  ! parameter storage converted from parameter array 
   real(dp)                          :: objfn                  ! object function value 
-  integer(i4b)                      :: iPar                   ! loop index for parameter 
-  integer(i4b)                      :: idx                    ! 
+  integer(i2b)                      :: iPar                   ! loop index for parameter 
+  integer(i2b)                      :: idx                    ! 
   integer(i4b)                      :: nVegParModel           ! Number of model vege parameters associated with calibrating gamma parameter 
   integer(i4b)                      :: nSoilParModel          ! Number of model soil parameters associated with calibrating gamma parameter 
   logical(lgc),         allocatable :: mask(:)                ! 1D mask
@@ -53,7 +53,7 @@ function objfn( calParam )
   allocate(simBasin(nbasin,sim_len))
   allocate(simBasinRouted(nbasin,sim_len))
   idx=1
-  do iPar=1,nParCal
+  do iPar=1,nBetaGamma
     if (parSubset(iPar)%perLyr)then
       allocate(calParStr(iPar)%var(nLyr))
       calParStr(iPar)%var=calParam(idx:idx+nLyr-1)
@@ -85,7 +85,7 @@ function objfn( calParam )
     do iPar=1,nVegParModel
       allocate(vegParMxy(iPar)%varData(nHru),stat=err)
     enddo
-    allocate(mask(nParCal))
+    allocate(mask(nBetaGamma))
     mask=parSubset(:)%beta/="beta"
     allocate(paramGammaStr(count(mask)))
     paramGammaStr=pack(calParStr,mask)
@@ -109,7 +109,7 @@ function objfn( calParam )
   ! route sim for each basin
   ushape=parMaster(ixPar%uhshape)%val
   uscale=parMaster(ixPar%uhscale)%val
-  do iPar=1,nParCal
+  do iPar=1,nBetaGamma
     select case( parSubset(iPar)%pname )
       case('uhshape');  ushape = calParStr( iPar )%var(1)
       case('uhscale');  uscale = calParStr( iPar )%var(1)

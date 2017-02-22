@@ -223,7 +223,7 @@ subroutine replace_soil_param_sac(param, parMxyMz, adjParam, ierr, message)
 end subroutine
 
 subroutine adj_snow_param_sac(multiplier, err, message)
-  use globalData, only: parSubset
+  use globalData, only: parSubset, nBetaGamma
   implicit none
   !input
   type(var_d), intent(in)    :: multiplier(:)   ! mulitpliers for calibrating soil parameter 
@@ -279,7 +279,7 @@ subroutine adj_snow_param_sac(multiplier, err, message)
       end select
     endif
   enddo
-  do iPar=1,nParCal
+  do iPar=1,nBetaGamma
     select case( parSubset(iPar)%pname )
       case('scf');    param(:,1)=multiplier(iPar)%var(1)*param(:,1) 
       case('mfmax');  param(:,2)=multiplier(iPar)%var(1)*param(:,1) 
@@ -326,7 +326,7 @@ end subroutine
 subroutine adj_soil_param_sac(param, multiplier, adjParam,  err, message)
 !! This routine takes the adjustable parameter set "param" from namelist, reads into "origparam_name",
 !! computes the new parameters, writes them into "calibparam_name" 
-  use globalData, only: parSubset
+  use globalData, only: parSubset, nBetaGamma
   implicit none
   !input variables
   real(dp),    intent(in)    :: param(:,:)    ! original soil parameters matrix (nHru x nParamInModel) 
@@ -343,7 +343,7 @@ subroutine adj_soil_param_sac(param, multiplier, adjParam,  err, message)
   adjParam=param
   do iHru = 1,nHru
     ! Modify parameter values
-    do iPar=1,nParCal
+    do iPar=1,nBetaGamma
       select case( parSubset(iPar)%pname )
         case('twm')
           adjParam(iHru,1) = multiplier( iPar )%var(1)*Param(iHru,1)

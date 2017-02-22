@@ -62,7 +62,6 @@ module public_var
   !
   !DDS 
   !input parameters
-  integer(i4b),public             :: NparCal        ! number of parameters in namelist
   real(dp),public                 :: rpar           ! search  
   integer(i8b),public             :: nseed          ! starting seed for random number generator
   integer(i8b),public             :: maxn           ! maximum number of trials before optimization is terminated

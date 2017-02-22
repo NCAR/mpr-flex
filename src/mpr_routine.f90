@@ -18,7 +18,7 @@ contains
 ! ************************************************************************************************
 ! this subroutine is used for opt = 2 in namelist (run only mpr and output parameters)
 subroutine run_mpr( calParam, restartFile, err, message ) 
-  use globalData,    only: parSubset, betaInGamma, gammaSubset
+  use globalData,    only: parSubset, betaInGamma, gammaSubset, nBetaGamma
   use model_wrapper, only: read_hru_id
   use write_param_nc,only: defSoilNetCDF, write_vec_ivar, write_array2_dvar
   implicit none
@@ -29,7 +29,7 @@ subroutine run_mpr( calParam, restartFile, err, message )
   integer(i4b),         intent(out) :: err                    ! error id 
   character(len=strLen),intent(out) :: message                ! error message
   ! local
-  type(var_d)                       :: calParStr(nParCal)     ! parameter storage including perLayr values converted from parameter array 
+  type(var_d)                       :: calParStr(nBetaGamma)  ! parameter storage including perLayr values converted from parameter array 
   type(var_d),          allocatable :: paramGammaStr(:)       ! calibratin gamma parameter storage extracted from calParStr
   integer(i4b)                      :: idummy                 ! dummy vaiable
   integer(i4b)                      :: idx                    ! counter 
@@ -54,11 +54,11 @@ subroutine run_mpr( calParam, restartFile, err, message )
     print*, 'read restart file'
     open(unit=70,file=trim(adjustl(restartFile)), action='read', status = 'unknown')
     read(70,*) idummy ! restart file include iStart  
-    read(70,*) (params(iPar),iPar=1,nParCal)    
+    read(70,*) (params(iPar),iPar=1,nBetaGamma)    
     close(70)
   endif
   idx=1
-  do iPar=1,nParCal
+  do iPar=1,nBetaGamma
     if (parSubset(iPar)%perLyr)then
       allocate(calParStr(iPar)%var(nLyr))
       calParStr(iPar)%var=params(idx:idx+nLyr-1)
@@ -83,7 +83,7 @@ subroutine run_mpr( calParam, restartFile, err, message )
     do iPar=1,nVegParModel
       allocate(vegParMxy(iPar)%varData(nHru),stat=err)
     enddo
-    allocate(mask(nParCal))
+    allocate(mask(nBetaGamma))
     mask=parSubset(:)%beta/="beta"
     allocate(paramGammaStr(count(mask)))
     paramGammaStr=pack(calParStr,mask)
@@ -660,9 +660,9 @@ subroutine pop_hfrac(gammaParStr, gammaParMeta,hfrac, err, message)
   !check h parameters - now can chcek up to 5 layers
   do i=1,size(gammaSubset)
     if (gammaParMeta(i)%pname=="h1gamma1")then;dummy(1)=gammaParStr(i)%var(1);cycle;endif 
-    if (gammaParMeta(i)%pname=="h1gamma2")then;dummy(2)=gammaParStr(i)%var(1);cycle;endif
-    if (gammaParMeta(i)%pname=="h1gamma3")then;dummy(3)=gammaParStr(i)%var(1);cycle;endif
-    if (gammaParMeta(i)%pname=="h1gamma4")then;dummy(4)=gammaParStr(i)%var(1);cycle;endif
+    if (gammaParMeta(i)%pname=="h2gamma1")then;dummy(2)=gammaParStr(i)%var(1);cycle;endif
+    if (gammaParMeta(i)%pname=="h3gamma1")then;dummy(3)=gammaParStr(i)%var(1);cycle;endif
+    if (gammaParMeta(i)%pname=="h4gamma1")then;dummy(4)=gammaParStr(i)%var(1);cycle;endif
   enddo
   mask=(dummy>0)
   if ( count(mask)/=nLyr-1 ) stop 'number of h1gamma prameters mismatch with nLyr'

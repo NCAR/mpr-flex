@@ -16,6 +16,7 @@ type,public  :: par_meta
   real(dp)                     :: lwr    =-999.0_dp ! lower and upper bounds
   real(dp)                     :: upr    =-999.0_dp ! lower and upper bounds
   character(len=strLen)        :: beta   =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
+  integer(i2b)                 :: tftype =-999_i2b  ! id of transfer function type 
   character(len=strLen)        :: ptype  =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
   logical(lgc)                 :: flag   =.False.   ! flag to calibrate or not 
   character(len=strLen)        :: hups   =''        ! scaling operator for horizontal direction 
@@ -29,6 +30,16 @@ endtype par_meta
 type,extends(par_meta), public  :: cpar_meta
   integer(i4b)        :: ixMaster=-999   ! idex of master parameter list
 endtype cpar_meta
+
+! ***********************************************************************************************************
+! Define data structure of input parameter metadata 
+! ***********************************************************************************************************
+type,public :: input_meta
+  character(len=strLen)            :: betaname=''              ! name
+  integer(i4b)                     :: calMethod=1              ! which calibration methods? 0=skip, 1=MPR, 2=Direct
+  integer(i4b)                     :: TF=1                     ! which Transfer function type?
+  logical(lgc)                     :: isScaleCal =.False.      ! calibrating scaling operators? 
+endtype input_meta 
 
 ! ***********************************************************************************************************
 ! Define data structure of variable metadata - soil propeties, topography, vege propeties, model hru propeties 

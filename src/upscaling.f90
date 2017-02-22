@@ -94,7 +94,6 @@ subroutine wpnorm(wgtval, wgtvec, datvec, err, message, p_exp_in )
   ! initialize p
   p_exp = 1._dp ! Default is weighted arithmetic mean
   if (present(p_exp_in)) p_exp = p_exp_in
-  print *, 'executing p_norm: ', p_exp
   ! Compute size of dimension
   nElm_org=size(wgtvec)
   if (nElm_org /= size(datvec))then; err=20;message=trim(message)//'data and wgtvec vector:different size';return;endif
