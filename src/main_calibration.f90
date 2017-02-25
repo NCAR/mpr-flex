@@ -19,16 +19,16 @@ program main_calibration
   integer(i4b)                      :: ierr            ! error code 
   character(len=strLen)             :: cmessage        ! error message from suroutine
 
-  ! Read configuration namelists and save variables 
   nmlfile='namelist.dds.local'
+  ! Read configuration namelists and save variables 
   call read_nml( trim(nmlfile), ierr, cmessage ); call handle_err(ierr,cmessage)
   ! Populate master parameter meta.  Saved data Structure: 'parMaster' 
   call paramMaster( ierr, cmessage ); call handle_err(ierr,cmessage)
   ! Read 'CalPar' input listing metadata of beta parameters to be estimated.  Saved data structure: 'calParMeta'
-  call read_calPar( trim(calpar), ierr,  cmessage); call handle_err(ierr,cmessage)
+  call read_calPar( trim(calpar), ierr,  cmessage ); call handle_err(ierr,cmessage)
   ! Process 'CalParMeta', save a subset of parameter meta from master. 'betaInGamma', Saved data strucutres: 'parSubset','gammaSubset'  
   call get_parm_meta(ierr,cmessage); call handle_err(ierr,cmessage)
-  ! check if gamma parameter is in list, !!z and h gamma parameters are required!!
+  ! check if MPR is used, z and h gamma parameters are required
   call check_gammaZ( ierr, cmessage); call handle_err(ierr,cmessage)
   call check_gammaH( ierr, cmessage); call handle_err(ierr,cmessage)
   ! Identify all the beta parameters to be estimated - 'betaNeeded' incluging betaInGamma

@@ -348,7 +348,7 @@ subroutine whmean(wgtval, wgtvec, datvec, err, message )
   real(dp),               intent(in)     :: datvec(:)           ! Original data value vector
   ! output 
   real(dp),               intent(out)    :: wgtval              ! weighted (scaled) value
-  integer(i4b),           intent(out)    :: err             ! error code
+  integer(i2b),           intent(out)    :: err             ! error code
   character(len=strLen),  intent(out)    :: message          ! error message for current routine
   ! local 
   real(dp),parameter                     :: wgtMin=1.e-50_dp    ! minimum value for weight 

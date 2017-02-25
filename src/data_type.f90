@@ -34,11 +34,21 @@ endtype cpar_meta
 ! ***********************************************************************************************************
 ! Define data structure of input parameter metadata 
 ! ***********************************************************************************************************
+type,public :: scale_meta
+  character(len=strLen)            :: betaname=''        ! Beta name
+  real(dp)                         :: pdefault(2)        ! default P values 
+  logical(lgc)                     :: mask(2)            ! logical to tell scaling parameter is calibrated or not 
+endtype scale_meta 
+
+! ***********************************************************************************************************
+! Define data structure of input parameter metadata 
+! ***********************************************************************************************************
 type,public :: input_meta
-  character(len=strLen)            :: betaname=''              ! name
+  character(len=strLen)            :: betaname=''              ! Beta name
   integer(i4b)                     :: calMethod=1              ! which calibration methods? 0=skip, 1=MPR, 2=Direct
   integer(i4b)                     :: TF=1                     ! which Transfer function type?
-  logical(lgc)                     :: isScaleCal =.False.      ! calibrating scaling operators? 
+  logical(lgc)                     :: isScaleCalH =.False.     ! calibrating scaling operators for horizontal direction? 
+  logical(lgc)                     :: isScaleCalV =.False.     ! calibrating scaling operators for vertical direction? 
 endtype input_meta 
 
 ! ***********************************************************************************************************

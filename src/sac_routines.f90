@@ -22,23 +22,23 @@ contains
 !***************************
 ! write sac soil parameters 
 !***************************
-subroutine write_soil_param_sac(hruid, param, ierr, message)
+subroutine write_soil_param_sac(hruid, param, err, message)
   implicit none
   !input variables
   integer(i4b),intent(in)            :: hruid(:)     ! hru ID
   real(dp),    intent(in)            :: param(:,:)   ! parameter matrix (nHru x nParamInModel) 
   ! output
-  integer(i4b),intent(out)           :: ierr         ! error code
+  integer(i4b),intent(out)           :: err         ! error code
   character(*),intent(out)           :: message      ! error message
   ! local variables
   character(len=strLen)              :: rowfmt
   integer(i4b)                       :: iHru         ! loop index
 
   ! initialize error control
-  ierr=0; message='write_soil_param_sac/'
-  if(size(param,2)/=TotNpar)then;ierr=10;message=trim(message)//"params 2nd dimension size different than TotNpar";return;endif
-  if(size(param,1)/=nHru)then;ierr=11;message=trim(message)//'params 1st dimension size different than nHru';return;endif
-  if(size(hruid)/=nHru)then;ierr=12;message=trim(message)//'hruid size different than nHru';return;endif
+  err=0; message='write_soil_param_sac/'
+  if(size(param,2)/=TotNpar)then;err=10;message=trim(message)//"params 2nd dimension size different than TotNpar";return;endif
+  if(size(param,1)/=nHru)then;err=11;message=trim(message)//'params 1st dimension size different than nHru';return;endif
+  if(size(hruid)/=nHru)then;err=12;message=trim(message)//'hruid size different than nHru';return;endif
   open(UNIT=51,file=trim(calibparam_name),action='write',status='unknown' )
   write(rowfmt,'(A,I3,A)') '(A,',nHru,'(1X,F10.5))' 
   write(51,fmt=trim(rowfmt)) ('uztwm', param(iHru,1), iHru=1,nHru )
@@ -88,12 +88,12 @@ end subroutine
 !***************************
 ! Read sac soil layer parameters 
 !***************************
-subroutine sac_soil_layer(hlyr, ierr, message)
+subroutine sac_soil_layer(hlyr, err, message)
   implicit none
   ! input 
   ! output
   real(dp),    intent(out)           :: hlyr(:,:)       ! soil layer thickness (bucket size) matrix (nHru x nLyr)
-  integer(i4b),intent(out)           :: ierr            ! error code
+  integer(i4b),intent(out)           :: err            ! error code
   character(*),intent(out)           :: message         ! error message
   ! local variables
   real(dp)                           :: paramTemp(nHru) ! temporal parameter vector (nHru) 
@@ -103,8 +103,8 @@ subroutine sac_soil_layer(hlyr, ierr, message)
   integer(i4b)                       :: stat
 
   ! initialize error control
-  ierr=0; message='sac_soil_layer/'
-  if(size(hlyr,2)/=nLyr)then;ierr=10;message=trim(message)//"hlyr 2nd dimension size different than nLyr";return;endif
+  err=0; message='sac_soil_layer/'
+  if(size(hlyr,2)/=nLyr)then;err=10;message=trim(message)//"hlyr 2nd dimension size different than nLyr";return;endif
   open (UNIT=50,file=origparam_name,form='formatted',status='old',IOSTAT=stat)
   ! Read original soil parameter file
   do iPar=1,TotNpar
@@ -170,7 +170,7 @@ end subroutine
 !***************************
 ! replace sac soil parameters 
 !***************************
-subroutine replace_soil_param_sac(param, parMxyMz, adjParam, ierr, message)
+subroutine replace_soil_param_sac(param, parMxyMz, adjParam, err, message)
   use globalData, only: parMaster, betaInGamma 
   use get_ixname, only: get_ixPar
   implicit none
@@ -179,14 +179,14 @@ subroutine replace_soil_param_sac(param, parMxyMz, adjParam, ierr, message)
   type(namedvar2),  intent(in)   :: parMxyMz(:)   ! soil model parameter at model layer x model hrus
   ! output
   real(dp),         intent(out)  :: adjParam(:,:) ! adjusted soil parameter
-  integer(i4b),     intent(out)  :: ierr          ! error code
+  integer(i4b),     intent(out)  :: err          ! error code
   character(*),     intent(out)  :: message       ! error message
   ! local variables
   integer(i4b)                   :: ipar,iHru     ! loop index
   integer(i4b)                   :: nSoilParModel ! number of parameters 
 
   ! initialize error control
-  ierr=0; message='replace_soil_param_sac/'
+  err=0; message='replace_soil_param_sac/'
   nSoilParModel=size(parMxyMz)
   adjParam=param
   hru: do iHru = 1,nHru
