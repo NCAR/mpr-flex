@@ -5,7 +5,7 @@ module nrtype
     !> 8byte integer
     !integer, parameter :: i8b = SELECTED_INT_KIND(18)  ! 8byte integer
     integer, parameter :: i8b = c_long 
-    !> 2byte integer
+    !> 4byte integer
     !integer, parameter :: I4B = SELECTED_INT_KIND(9)   
     integer, parameter :: I4B = c_int 
     !> 2byte integer

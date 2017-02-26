@@ -3,8 +3,8 @@ program main_calibration
   use nrtype 
   use public_var
   use read_config,          only: read_nml 
-  use globaldata,           only: betaInGamma,gammaSubset,betaNeeded
-  use subset_meta,          only: get_parm_master_meta, get_parm_meta, betaCollection, total_calParam, param_setup, check_gammaZ, check_gammaH
+  use globaldata,           only: parSubset, betaInGamma,gammaSubset, betaNeeded
+  use process_meta,         only: get_parm_master_meta, read_calPar, get_parm_meta, betaCollection, total_calParam, param_setup, check_gammaZ, check_gammaH
   use mo_dds,               only: dds
   use mo_opt_run,           only: opt_run
   use eval_model,           only: objfn
@@ -18,25 +18,28 @@ program main_calibration
   integer(i4b)                      :: ierr            ! error code 
   character(len=strLen)             :: cmessage        ! error message from suroutine
 
-  ! read configuration namelists and save variables 
   nmlfile='namelist.dds.local'
+  ! Read configuration namelists and save variables 
   call read_nml( trim(nmlfile), ierr, cmessage ); call handle_err(ierr,cmessage)
   ! Read parameter master metadata and populate "parMaster" structure
   call get_parm_master_meta(trim(param_master_meta), ierr, cmessage); call handle_err(ierr,cmessage)
-  ! Read 'CalPar' input listing calibrating parameters (beta or gamma), save subset of parameter meta from master- 'parSubset','gammaSubset'
-  ! Identify beta parameter to be estimated - 'betaInGamma'
-  call get_parm_meta( trim(calpar), ierr,cmessage); call handle_err(ierr,cmessage)
-  ! check if gamma parameter is in list, !!z and h gamma parameters are required!!
+  ! Read 'CalPar' input listing metadata of beta parameters to be estimated.  Saved data structure: 'calParMeta'
+  call read_calPar( trim(calpar), ierr,  cmessage ); call handle_err(ierr,cmessage)
+  ! Process 'CalParMeta', save a subset of parameter meta from master. 'betaInGamma', Saved data strucutres: 'parSubset','gammaSubset'  
+  call get_parm_meta(ierr,cmessage); call handle_err(ierr,cmessage)
+  ! check if MPR is used, z and h gamma parameters are required
   call check_gammaZ( ierr, cmessage); call handle_err(ierr,cmessage)
   call check_gammaH( ierr, cmessage); call handle_err(ierr,cmessage)
   ! Identify all the beta parameters to be estimated - 'betaNeeded' incluging betaInGamma
   call betaCollection( ierr, cmessage); call handle_err(ierr,cmessage)
   ! print out list of gamma/beta parameters
-  print*,"-- Beta parameters to be estimated with MPR ----"
+  print*,"!-- Beta and Gamma parameters ----"
+  print*,parSubset(:)%pname
+  print*,"!-- Beta parameters to be estimated with MPR ----"
   print*,betaInGamma
-  print*,"-- List of gamma parameters ----"
+  print*,"!-- List of gamma parameters involved----"
   print*,gammaSubset(:)%pname
-  print*,"-- All beta parameters to be computed with MPR including dependent beta parameters ----"
+  print*,"!-- All beta parameters to be computed with MPR including dependent beta parameters ----"
   print*,betaNeeded
   ! initialize parameter and mask arrays 
   call total_calParam()
@@ -64,7 +67,6 @@ program main_calibration
     case default
       print*, 'integer to specify optimization scheme is not valid' 
   end select 
-
   stop 
 
 contains

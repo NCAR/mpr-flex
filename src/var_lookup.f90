@@ -42,7 +42,7 @@ MODULE var_lookup
    integer(i4b)     :: myu1gamma2      = imiss  ! 
    integer(i4b)     :: z1gamma1        = imiss  ! total depth mulitplier 
    integer(i4b)     :: h1gamma1        = imiss  ! fraction of top layer to total depth  
-   integer(i4b)     :: h1gamma2        = imiss  ! fraction of 2nd layer to total depth
+   integer(i4b)     :: h2gamma1        = imiss  ! fraction of 2nd layer to total depth
    integer(i4b)     :: binfilt1gamma1  = imiss  ! 
    integer(i4b)     :: binfilt1gamma2  = imiss  ! 
    integer(i4b)     :: D11gamma1       = imiss  ! 
@@ -87,11 +87,12 @@ MODULE var_lookup
    integer(i4b)     :: Ws              = imiss  ! 
    integer(i4b)     :: expt            = imiss  ! 
    integer(i4b)     :: bbl             = imiss  ! 
-   integer(i4b)     :: h1              = imiss  ! 
-   integer(i4b)     :: h2              = imiss  ! 
+   integer(i4b)     :: h1              = imiss  ! top layer thickness
+   integer(i4b)     :: h2              = imiss  ! 2nd layer thickness
    integer(i4b)     :: h3              = imiss  !
    integer(i4b)     :: h4              = imiss  ! 
    integer(i4b)     :: h5              = imiss  ! 
+   integer(i4b)     :: z               = imiss  ! 
    integer(i4b)     :: WcrFrac         = imiss  ! 
    integer(i4b)     :: WpwpFrac        = imiss  ! 
    integer(i4b)     :: twm             = imiss  !  tention water maximum 
@@ -193,7 +194,8 @@ MODULE var_lookup
                                                                                  61,62,63,64,65,66,67,68,69,70,&
                                                                                  71,72,73,74,75,76,77,78,79,80,&
                                                                                  81,82,83,84,85,86,87,88,89,90,&
-                                                                                 91,92,93,94,95,96,97,98,99,100)
+                                                                                 91,92,93,94,95,96,97,98,99,100,&
+                                                                                 101)
  type(iLook_VarMapData),  public,parameter :: ixVarMapData   = iLook_VarMapData  (1,2,3)
  type(iLook_VarSoilData), public,parameter :: ixVarSoilData  = iLook_VarSoilData (1,2,3,4,5,6,7,8,9,10)
  type(iLook_VarVegData),  public,parameter :: ixVarVegData   = iLook_VarVegData  (1,2,3,4)
@@ -205,7 +207,7 @@ MODULE var_lookup
 ! define size of data vectors
 ! ***********************************************************************************************************
 ! Number of vairables defined
- integer(i4b),parameter,public    :: nPar = 100 
+ integer(i4b),parameter,public    :: nPar = 101 
  integer(i4b),parameter,public    :: nVarMapData=3
  integer(i4b),parameter,public    :: nVarSoilData=10
  integer(i4b),parameter,public    :: nVarVegData=4

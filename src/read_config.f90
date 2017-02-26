@@ -53,8 +53,7 @@ module read_config
                            nLyr,                   &
                            calpar
 ! DDS algorithm 
-  namelist / DDS / NparCal,     & 
-                   rpar,        &
+  namelist / DDS / rpar,        &
                    isRestart,   &
                    nseed,       & 
                    maxn,        &
@@ -70,7 +69,7 @@ subroutine read_nml(nmlfile, err, message)
   ! input 
   character(*), intent(in)  :: nmlfile
   ! output variables
-  integer                   :: err
+  integer(i4b)              :: err
   character(len=strLen)     :: message    ! error message for downwind routine
 
   ! Start procedure here

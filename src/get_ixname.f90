@@ -54,7 +54,7 @@ contains
     case('myu1gamma2');       get_ixPar = ixPar%myu1gamma2      ! 
     case('z1gamma1');         get_ixPar = ixPar%z1gamma1        ! Layer bottom depth [m] 
     case('h1gamma1');         get_ixPar = ixPar%h1gamma1        ! top layer thickness [m] 
-    case('h1gamma2');         get_ixPar = ixPar%h1gamma2        ! 2nd layer thickness [m] 
+    case('h2gamma1');         get_ixPar = ixPar%h2gamma1        ! 2nd layer thickness [m] 
     case('binfilt1gamma1');   get_ixPar = ixPar%binfilt1gamma1  ! variable infilitration curve parameter 
     case('binfilt1gamma2');   get_ixPar = ixPar%binfilt1gamma2  ! variable infilitration curve parameter 
     case('D11gamma1');        get_ixPar = ixPar%D11gamma1       ! fraction of Dsmax where nonlinear baseflow begins 
@@ -104,6 +104,7 @@ contains
     case('h3');               get_ixPar = ixPar%h3                ! 3rd layer thickness [m] 
     case('h4');               get_ixPar = ixPar%h4                ! 4th layer thickness [m] 
     case('h5');               get_ixPar = ixPar%h5                ! 5th layer thickness [m] 
+    case('z');                get_ixPar = ixPar%z                 ! total depth of soil [m] 
     case('WcrFrac');          get_ixPar = ixPar%WcrFrac           ! Fractional soil moisture content at critical point [-] 
     case('WpwpFrac');         get_ixPar = ixPar%WpwpFrac          ! Fractional soil moisture content at wilting point [-]  
     case('twm');              get_ixPar = ixPar%twm               ! Tention water content [mm]

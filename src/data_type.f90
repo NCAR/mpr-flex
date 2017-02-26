@@ -16,10 +16,13 @@ type,public  :: par_meta
   real(dp)                     :: lwr    =-999.0_dp ! lower and upper bounds
   real(dp)                     :: upr    =-999.0_dp ! lower and upper bounds
   character(len=strLen)        :: beta   =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
+  integer(i2b)                 :: tftype =-999_i2b  ! id of transfer function type 
   character(len=strLen)        :: ptype  =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
   logical(lgc)                 :: flag   =.False.   ! flag to calibrate or not 
   character(len=strLen)        :: hups   =''        ! scaling operator for horizontal direction 
+  real(dp)                     :: hpnorm =-999.0_dp ! scaling operator for horizontal direction 
   character(len=strLen)        :: vups   =''        ! scaling operator for vertical direction 
+  real(dp)                     :: vpnorm =-999.0_dp ! scaling operator for horizontal direction 
   logical(lgc)                 :: perLyr =.False.   ! calibrate per layer (only applicable to multiplier method)
 endtype par_meta
 
@@ -27,6 +30,26 @@ endtype par_meta
 type,extends(par_meta), public  :: cpar_meta
   integer(i4b)        :: ixMaster=-999   ! idex of master parameter list
 endtype cpar_meta
+
+! ***********************************************************************************************************
+! Define data structure of input parameter metadata 
+! ***********************************************************************************************************
+type,public :: scale_meta
+  character(len=strLen)            :: betaname=''        ! Beta name
+  real(dp)                         :: pdefault(2)        ! default P values 
+  logical(lgc)                     :: mask(2)            ! logical to tell scaling parameter is calibrated or not 
+endtype scale_meta 
+
+! ***********************************************************************************************************
+! Define data structure of input parameter metadata 
+! ***********************************************************************************************************
+type,public :: input_meta
+  character(len=strLen)            :: betaname=''              ! Beta name
+  integer(i4b)                     :: calMethod=1              ! which calibration methods? 0=skip, 1=MPR, 2=Direct
+  integer(i4b)                     :: TF=1                     ! which Transfer function type?
+  logical(lgc)                     :: isScaleCalH =.False.     ! calibrating scaling operators for horizontal direction? 
+  logical(lgc)                     :: isScaleCalV =.False.     ! calibrating scaling operators for vertical direction? 
+endtype input_meta 
 
 ! ***********************************************************************************************************
 ! Define data structure of variable metadata - soil propeties, topography, vege propeties, model hru propeties 

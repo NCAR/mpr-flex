@@ -18,34 +18,35 @@ contains
 !************************************
 function objfn( calParam )
   use mpr_routine,   only: mpr
-  use globalData,    only: parMaster, parSubset, betaInGamma, gammaSubset
+  use globalData,    only: betaCalScale, parMaster, parSubset, betaInGamma, gammaSubset, nBetaGamma, nBeta, nGamma
   use model_wrapper, only: read_hru_id, read_soil_param, adjust_param, replace_param, write_soil_param, read_sim
   implicit none
   !input variables
-  real(dp),             intent(in)  :: calParam(:)              ! parameter in namelist, not necessarily all parameters are calibrated
+  real(dp),             intent(in)  :: calParam(:)                   ! parameter in namelist, not necessarily all parameters are calibrated
   !local variables
-  type(var_d)                       :: calParStr(nParCal)     ! parameter storage converted from parameter array 
-  real(dp)                          :: objfn                  ! object function value 
-  integer(i4b)                      :: iPar                   ! loop index for parameter 
-  integer(i4b)                      :: idx                    ! 
-  integer(i4b)                      :: nVegParModel           ! Number of model vege parameters associated with calibrating gamma parameter 
-  integer(i4b)                      :: nSoilParModel          ! Number of model soil parameters associated with calibrating gamma parameter 
-  logical(lgc),         allocatable :: mask(:)                ! 1D mask
-  integer(i4b)                      :: hruID(nHru)            ! Hru ID
-  real(dp)                          :: param(nHru,TotNPar)    ! original soil parameter (model hru x parameter)
-  real(dp)                          :: adjParam(nHru,TotNPar) ! adjustet soil parameter (model hru x parameter) 
-  type(var_d),          allocatable :: paramGammaStr(:)       ! calibratin gamma parameter
-  real(dp),             allocatable :: obs(:)                 ! observation (number of basin*number of time step)
-  real(dp),             allocatable :: sim(:,:)               ! instantaneous sim value (hru x number of time step)
-  real(dp),             allocatable :: simBasin(:,:)          ! instantaneous basin aggregated sim value (basin x number of time step)
-  real(dp),             allocatable :: simBasinRouted(:,:)    ! routed sim value (basin x number of time step)
-  real(dp),             allocatable :: hModel(:,:)            ! storage of model layer thickness at model layer x model hru 
-  type(namedvar2),      allocatable :: parMxyMz(:)            ! storage of model soil parameter at model layer x model hru 
-  type(namedvar),       allocatable :: vegParMxy(:)           ! storage of model vege parameter at model hru
-  real(dp)                          :: ushape,uscale          ! two routing parameter
-  integer(i4b)                      :: err                    ! error id 
-  character(len=strLen)             :: message                ! error message
-  character(len=strLen)             :: cmessage                ! error message from subroutine
+  type(var_d)                       :: calParStr(nBetaGamma)         ! parameter storage converted from parameter array 
+  type(var_d)                       :: pnormCoef(size(betaCalScale)) ! parameter storage converted from parameter array 
+  real(dp)                          :: objfn                         ! object function value 
+  integer(i2b)                      :: iPar                          ! loop index for parameter 
+  integer(i2b)                      :: idx                           ! 
+  integer(i4b)                      :: nVegParModel                  ! Number of model vege parameters associated with calibrating gamma parameter 
+  integer(i4b)                      :: nSoilParModel                 ! Number of model soil parameters associated with calibrating gamma parameter 
+  logical(lgc),         allocatable :: mask(:)                       ! 1D mask
+  integer(i4b)                      :: hruID(nHru)                   ! Hru ID
+  real(dp)                          :: param(nHru,TotNPar)           ! original soil parameter (model hru x parameter)
+  real(dp)                          :: adjParam(nHru,TotNPar)        ! adjustet soil parameter (model hru x parameter) 
+  type(var_d),          allocatable :: paramGammaStr(:)              ! calibratin gamma parameter
+  real(dp),             allocatable :: obs(:)                        ! observation (number of basin*number of time step)
+  real(dp),             allocatable :: sim(:,:)                      ! instantaneous sim value (hru x number of time step)
+  real(dp),             allocatable :: simBasin(:,:)                 ! instantaneous basin aggregated sim value (basin x number of time step)
+  real(dp),             allocatable :: simBasinRouted(:,:)           ! routed sim value (basin x number of time step)
+  real(dp),             allocatable :: hModel(:,:)                   ! storage of model layer thickness at model layer x model hru 
+  type(namedvar2),      allocatable :: parMxyMz(:)                   ! storage of model soil parameter at model layer x model hru 
+  type(namedvar),       allocatable :: vegParMxy(:)                  ! storage of model vege parameter at model hru
+  real(dp)                          :: ushape,uscale                 ! two routing parameter
+  integer(i4b)                      :: err                           ! error id 
+  character(len=strLen)             :: message                       ! error message
+  character(len=strLen)             :: cmessage                      ! error message from subroutine
 
   err=0; message='eval_objfn/' ! to initialize error control
   allocate(obs(nbasin*sim_len))
@@ -53,7 +54,7 @@ function objfn( calParam )
   allocate(simBasin(nbasin,sim_len))
   allocate(simBasinRouted(nbasin,sim_len))
   idx=1
-  do iPar=1,nParCal
+  do iPar=1,nBetaGamma ! put calpar vector from optimization routine output parameter data strucure 
     if (parSubset(iPar)%perLyr)then
       allocate(calParStr(iPar)%var(nLyr))
       calParStr(iPar)%var=calParam(idx:idx+nLyr-1)
@@ -63,6 +64,11 @@ function objfn( calParam )
       calParStr(iPar)%var=calParam(idx)
       idx=idx+1
     endif
+  end do
+  do iPar=1,size(betaCalScale) ! put calpar vector from optimization routine output pnorm coef. data strucure
+    allocate(pnormCoef(iPar)%var(2))
+    pnormCoef(iPar)%var=calParam(idx:idx+1)
+    idx=idx+2
   end do
   call read_hru_id(idModel, hruID, err, cmessage)    ! to get hruID
   if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
@@ -85,14 +91,14 @@ function objfn( calParam )
     do iPar=1,nVegParModel
       allocate(vegParMxy(iPar)%varData(nHru),stat=err)
     enddo
-    allocate(mask(nParCal))
+    allocate(mask(nBetaGamma))
     mask=parSubset(:)%beta/="beta"
     allocate(paramGammaStr(count(mask)))
     paramGammaStr=pack(calParStr,mask)
     do iPar=1,size(paramGammaStr)
-      if (size(paramGammaStr(iPar)%var)>1)then;;print*,trim(message)//'gammaParameter should not have perLayer value';stop;endif
+      if (size(paramGammaStr(iPar)%var)>1)then;print*,trim(message)//'gammaParameter should not have perLayer value';stop;endif
     enddo
-    call mpr(idModel, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
+    call mpr(hruID, pnormCoef, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
     call replace_param(idModel, adjparam, hModel, parMxyMz, adjParam, err, cmessage)
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
@@ -109,7 +115,7 @@ function objfn( calParam )
   ! route sim for each basin
   ushape=parMaster(ixPar%uhshape)%val
   uscale=parMaster(ixPar%uhscale)%val
-  do iPar=1,nParCal
+  do iPar=1,nBetaGamma
     select case( parSubset(iPar)%pname )
       case('uhshape');  ushape = calParStr( iPar )%var(1)
       case('uhscale');  uscale = calParStr( iPar )%var(1)

@@ -63,7 +63,6 @@ module public_var
   !
   !DDS 
   !input parameters
-  integer(i4b),public             :: NparCal        ! number of parameters in namelist
   real(dp),public                 :: rpar           ! search  
   integer(i8b),public             :: nseed          ! starting seed for random number generator
   integer(i8b),public             :: maxn           ! maximum number of trials before optimization is terminated
@@ -72,6 +71,6 @@ module public_var
   character(len=strLen),public    :: restrt_file    ! restart file
   logical,public                  :: isRestart      ! ues restart option? 
 
-  integer(i8b)                    :: nParCalSum     ! Total number of calibratin parameters including per layer parameters 
+  integer(i4b)                    :: nParCalSum     ! Total number of calibratin parameters including per layer parameters 
 
 end module public_var

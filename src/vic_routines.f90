@@ -68,7 +68,7 @@ subroutine vic_hru_id(hruid, err, message)
   character(*),intent(out)                   :: message      ! error message
   ! local variables
   real(dp),dimension(TotNpar)                :: realline
-  integer(i4b)                               :: ipar,iHru    ! loop index
+  integer(i4b)                               :: iPar,iHru    ! loop index
   integer(i4b)                               :: stat
 
   ! initialize error control
@@ -76,7 +76,7 @@ subroutine vic_hru_id(hruid, err, message)
   open (UNIT=50,file=origparam_name,form='formatted',status='old',IOSTAT=stat)
  ! Read original soil parameter file
   do iHru = 1,nHru
-    read(unit=50,fmt=*) (realline(ipar), ipar=1,TotNpar)
+    read(unit=50,fmt=*) (realline(iPar), iPar=1,TotNpar)
     hruid(iHru)=int(realline(2))
   end do
   close(UNIT=50)
@@ -189,7 +189,7 @@ end subroutine
 subroutine adj_soil_param_vic(param, multiplier, adjParam,  err, message)
 !! This routine takes the adjustable parameter set "param" from namelist, reads into "origparam_name",
 !! computes the new parameters, writes them into "calibparam_name" 
-  use globalData, only: parSubset
+  use globalData, only: parSubset, nBetaGamma
   implicit none
   !input variables
   real(dp),    intent(in)    :: param(:,:)    ! original soil parameters 
@@ -206,7 +206,7 @@ subroutine adj_soil_param_vic(param, multiplier, adjParam,  err, message)
   adjParam=param
   do iHru = 1,nHru
     ! Modify parameter values
-    do iPar=1,nParCal
+    do iPar=1,nBetaGamma
       select case( parSubset(iPar)%pname )
         case('binfilt');  adjParam(iHru,5)     = multiplier( iPar )%var(1)*Param(iHru,5)
         case('D1');       adjParam(iHru,6)     = multiplier( iPar )%var(1)*Param(iHru,6)
@@ -266,7 +266,7 @@ end subroutine
 ! Adjust VIC vege parameters with multiplier
 !***************************
 subroutine adj_vege_param_vic(multiplier, err, message)
-  use globalData, only: parSubset
+  use globalData, only: parSubset, nBetaGamma
   implicit none
 
   ! input variables
@@ -300,7 +300,7 @@ subroutine adj_vege_param_vic(multiplier, err, message)
       read(unit=50,fmt=*) vegClass,vegFrac,(rootDepth(iLyr), iLyr=1,nLyr),(rootFrac(iLyr), iLyr=1,nLyr)
       read(unit=50,fmt=*) (laiMonth(iMon), iMon=1,12)
       ! Modify parameter values
-      par:do iPar=1,nParCal
+      par:do iPar=1,nBetaGamma
         select case( parSubset(iPar)%pname )
           case('lai');    laiMonth = multiplier( iPar )%var(1)*laiMonth
         end select

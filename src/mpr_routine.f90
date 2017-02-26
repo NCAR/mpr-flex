@@ -18,33 +18,34 @@ contains
 ! ************************************************************************************************
 ! this subroutine is used for opt = 2 in namelist (run only mpr and output parameters)
 subroutine run_mpr( calParam, restartFile, err, message ) 
-  use globalData,    only: parSubset, betaInGamma, gammaSubset
+  use globalData,    only: betaCalScale, parSubset, betaInGamma, gammaSubset, nBetaGamma
   use model_wrapper, only: read_hru_id
   use write_param_nc,only: defSoilNetCDF, write_vec_ivar, write_array2_dvar
   implicit none
   ! input variables
-  real(dp),             intent(in)  :: calParam(:)            ! parameter in namelist, not necessarily all parameters are calibrated
-  character(len=strLen),intent(in)  :: restartFile            ! name of restart file including iteration, the most recent parameter values 
+  real(dp),             intent(in)  :: calParam(:)                   ! parameter in namelist, not necessarily all parameters are calibrated
+  character(len=strLen),intent(in)  :: restartFile                   ! name of restart file including iteration, the most recent parameter values 
   ! output variables
-  integer(i4b),         intent(out) :: err                    ! error id 
-  character(len=strLen),intent(out) :: message                ! error message
+  integer(i4b),         intent(out) :: err                           ! error id 
+  character(len=strLen),intent(out) :: message                       ! error message
   ! local
-  type(var_d)                       :: calParStr(nParCal)     ! parameter storage including perLayr values converted from parameter array 
-  type(var_d),          allocatable :: paramGammaStr(:)       ! calibratin gamma parameter storage extracted from calParStr
-  integer(i4b)                      :: idummy                 ! dummy vaiable
-  integer(i4b)                      :: idx                    ! counter 
-  integer(i4b)                      :: iLyr                   ! loop index for model layer 
-  integer(i4b)                      :: iPar                   ! loop index for parameter 
-  integer(i4b)                      :: nVegParModel           ! Number of model vege parameters associated with calibrating gamma parameter 
-  integer(i4b)                      :: nSoilParModel          ! Number of model soil parameters associated with calibrating gamma parameter 
-  logical(lgc),         allocatable :: mask(:)                ! 1D mask
-  integer(i4b)                      :: hruID(nHru)            ! Hru ID
-  real(dp),             allocatable :: hModel(:,:)            ! storage of model layer thickness at model layer x model hru 
-  real(dp),             allocatable :: params(:)              ! parameter vector that is input into mpr 
-  type(namedvar2),      allocatable :: parMxyMz(:)            ! storage of model soil parameter at model layer x model hru 
-  type(namedvar),       allocatable :: vegParMxy(:)           ! storage of model vege parameter at model hru
-  logical                           :: isExistFile            ! logical to check if the file exist or not
-  character(len=strLen)             :: cmessage               ! error message from subroutine
+  type(var_d)                       :: calParStr(nBetaGamma)         ! parameter storage including perLayr values converted from parameter array 
+  type(var_d)                       :: pnormCoef(size(betaCalScale)) ! parameter storage converted from parameter array 
+  type(var_d),          allocatable :: paramGammaStr(:)              ! calibratin gamma parameter storage extracted from calParStr
+  integer(i4b)                      :: idummy                        ! dummy vaiable
+  integer(i4b)                      :: idx                           ! counter 
+  integer(i4b)                      :: iLyr                          ! loop index for model layer 
+  integer(i4b)                      :: iPar                          ! loop index for parameter 
+  integer(i4b)                      :: nVegParModel                  ! Number of model vege parameters associated with calibrating gamma parameter 
+  integer(i4b)                      :: nSoilParModel                 ! Number of model soil parameters associated with calibrating gamma parameter 
+  logical(lgc),         allocatable :: mask(:)                       ! 1D mask
+  integer(i4b)                      :: hruID(nHru)                   ! Hru ID
+  real(dp),             allocatable :: hModel(:,:)                   ! storage of model layer thickness at model layer x model hru 
+  real(dp),             allocatable :: params(:)                     ! parameter vector that is input into mpr 
+  type(namedvar2),      allocatable :: parMxyMz(:)                   ! storage of model soil parameter at model layer x model hru 
+  type(namedvar),       allocatable :: vegParMxy(:)                  ! storage of model vege parameter at model hru
+  logical                           :: isExistFile                   ! logical to check if the file exist or not
+  character(len=strLen)             :: cmessage                      ! error message from subroutine
 
   err=0; message='run_mpr/' ! to initialize error control
   if ( idModel/=0 )then;idModel=0;print*,trim(message)//'idModel is set to zero - model inepenedent';endif
@@ -54,11 +55,11 @@ subroutine run_mpr( calParam, restartFile, err, message )
     print*, 'read restart file'
     open(unit=70,file=trim(adjustl(restartFile)), action='read', status = 'unknown')
     read(70,*) idummy ! restart file include iStart  
-    read(70,*) (params(iPar),iPar=1,nParCal)    
+    read(70,*) (params(iPar),iPar=1,nBetaGamma)    
     close(70)
   endif
   idx=1
-  do iPar=1,nParCal
+  do iPar=1,nBetaGamma
     if (parSubset(iPar)%perLyr)then
       allocate(calParStr(iPar)%var(nLyr))
       calParStr(iPar)%var=params(idx:idx+nLyr-1)
@@ -68,6 +69,10 @@ subroutine run_mpr( calParam, restartFile, err, message )
       calParStr(iPar)%var=params(idx)
       idx=idx+1
     endif
+  end do
+  do iPar=1,size(betaCalScale) ! put calpar vector from optimization routine output pnorm coef. data strucure
+    pnormCoef(iPar)%var=calParam(idx:idx+1)
+    idx=idx+2
   end do
   call read_hru_id(idModel, hruID, err, cmessage)    ! to get hruID
   if (err/=0)then;message=trim(message)//trim(cmessage);return;endif
@@ -83,14 +88,14 @@ subroutine run_mpr( calParam, restartFile, err, message )
     do iPar=1,nVegParModel
       allocate(vegParMxy(iPar)%varData(nHru),stat=err)
     enddo
-    allocate(mask(nParCal))
+    allocate(mask(nBetaGamma))
     mask=parSubset(:)%beta/="beta"
     allocate(paramGammaStr(count(mask)))
     paramGammaStr=pack(calParStr,mask)
     do iPar=1,size(paramGammaStr)
       if (size(paramGammaStr(iPar)%var)>1)then;message=trim(message)//'gammaParameter should not have perLayer value';return;endif
     enddo
-    call mpr(idModel, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
+    call mpr(hruID, pnormCoef, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
     if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     !! Write parameter derived from MPR in netCDF 
     call defSoilNetCDF(trim(mpr_output_dir)//trim(param_nc),nHru,nLyr,err,cmessage)
@@ -112,7 +117,8 @@ end subroutine
 ! ************************************************************************************************
 ! public subroutine: mpr 
 ! ************************************************************************************************
-subroutine mpr(idModel,           &     ! input: model ID
+subroutine mpr(hruID,             &     ! input: hruID
+               pnormCoefStr,      &     ! input: list of pnorm coefficients
                gammaParStr,       &     ! input: array of gamma parameter 
                gammaParMeta,      &     ! input: array of gamma parameter metadata
                hModel,            &     ! output: Model layer thickness
@@ -121,7 +127,7 @@ subroutine mpr(idModel,           &     ! input: model ID
                err, message)            ! output: error id and message
   use model_wrapper,        only:read_hru_id
   use popMeta,              only:popMprMeta
-  use globalData,           only:parMaster, betaInGamma
+  use globalData,           only:parMaster, betaInGamma, betaCalScale !THIS (betaCalScale) may be input 
   use globalData,           only:sdata_meta,vdata_meta,map_meta
   use get_ixname,           only:get_ixPar
   use soiltf,               only:comp_soil_model_param         ! Including Soil model parameter transfer function
@@ -142,8 +148,9 @@ subroutine mpr(idModel,           &     ! input: model ID
    implicit none
 
   ! input
-  integer(i4b),         intent(in)   :: idModel 
+  integer(i4b),         intent(in)   :: hruID(:)                 ! hruID list
   type(var_d),          intent(in)   :: gammaParStr(:)           ! data structure of gamma parameter value adjusted with calibration
+  type(var_d),          intent(in)   :: pnormCoefStr(:)          ! data structure of pnorm coefficient value adjusted with calibration
   type(cpar_meta),      intent(in)   :: gammaParMeta(:)          ! array of calibrating meta data
   ! output
   real(dp),             intent(out)  :: hModel(:,:)              ! Model layer thickness at model layer x model hru 
@@ -168,7 +175,6 @@ subroutine mpr(idModel,           &     ! input: model ID
   integer(i4b)                       :: iSub                     ! Loop index of multiple soi layers in model layer
   logical(lgc),allocatable           :: mask(:)                  ! mask for 1D array 
   logical(lgc),allocatable           :: vmask(:)                 ! mask for vpolIdSub array 
-  integer(i4b)                       :: hruID(nHru)
   type(par_meta),allocatable         :: gammaParMasterMeta(:)
   integer(i4b)                       :: nVegParModel             ! Number of model vege parameters
   integer(i4b)                       :: nSoilParModel            ! Number of model soil parameters
@@ -215,6 +221,12 @@ subroutine mpr(idModel,           &     ! input: model ID
   do iGamma=1,size(gammaParStr)
     gammaParMasterMeta(gammaParMeta(iGamma)%ixMaster)%val=gammaParStr(iGamma)%var(1)
   enddo
+  do iParm=1,size(pnormCoefStr)
+    associate(ix=>get_ixPar(betaCalScale(iParm)%betaname))
+    gammaParMasterMeta(ix)%hpnorm=pnormCoefStr(iParm)%var(1)
+    gammaParMasterMeta(ix)%vpnorm=pnormCoefStr(iParm)%var(2)
+    end associate
+  enddo 
   call popMprMeta( err, cmessage)   !for sdata_meta, vdata_meta, map_meta
   if(err/=0)then; message=trim(message)//cmessage; return; endif
   hmult=gammaParMasterMeta(ixPar%z1gamma1)%val
@@ -281,8 +293,6 @@ subroutine mpr(idModel,           &     ! input: model ID
                   nShru,                                     &   ! output: number of hru 
                   nOverSpoly,                                &   ! output: max number of overlap polygons
                   err,cmessage)                                  ! output: error control
-  if (err/=0)then; message=trim(message)//cmessage; return; endif
-  call read_hru_id(idModel, hruID, err, cmessage)  ! get hruID
   if (err/=0)then; message=trim(message)//cmessage; return; endif
   call getMapData(trim(mpr_input_dir)//trim(fname_vmapping), &   ! input: file name
                   'veg',                                     &   ! input: geophysical data type 
@@ -478,11 +488,12 @@ subroutine mpr(idModel,           &     ! input: model ID
           enddo
           do iParm = 1,nSoilParModel
             forth: associate( ix=>get_ixPar(trim(betaInGamma(iParm))) )
-            if ( trim(parMaster(ix)%vups)/='na' )then
+            if ( trim(gammaParMasterMeta(ix)%vups)/='na' )then
               call aggreg(parSxyMz(iParm)%varData(iMLyr,iPoly),         &
                           soil2model_map(iPoly)%layer(iMLyr)%weight(:), &
                           paramvec(iParm)%layer(:),                     &
-                          parMaster(ix)%vups,                           &
+                          gammaParMasterMeta(ix)%vups,                  &
+                          gammaParMasterMeta(ix)%vpnorm,                &
                           err, cmessage)
                if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
             endif
@@ -506,19 +517,20 @@ subroutine mpr(idModel,           &     ! input: model ID
               paramvec(iParm)%layer(iPoly) = parSxyMz(iparm)%varData(iMLyr,iPoly)
           enddo
         enddo
-        call aggreg(hModel(iMLyr,iHru), swgtsub(:), hModelLocal(iMLyr,:), 'wamean', err, cmessage)
+        call aggreg(hModel(iMLyr,iHru), swgtsub(:), hModelLocal(iMLyr,:),'pnorm', 1.0_dp, err, cmessage)
         do iParm = 1,nSoilParModel
           fifth: associate( ix=>get_ixPar(trim(betaInGamma(iParm))) )
-          if ( trim(parMaster(ix)%hups)/='na' )then
+          if ( trim(gammaParMasterMeta(ix)%hups)/='na' )then
             call aggreg(parMxyMz(iParm)%varData(iMLyr,iHru), &
                         swgtsub(:),                          &
                         paramvec(iparm)%layer(:),            &
-                        parMaster(ix)%hups,                  &
+                        gammaParMasterMeta(ix)%hups,         &
+                        gammaParMasterMeta(ix)%hpnorm,       &
                         err, cmessage)
             if ( iHru == iHruPrint ) then
               print*,'-----------------------------------'
               print*,'Aggregated soil parameter '
-              write(*,"(1X,A17,'(layer ',I2,') = ',100f9.3)") parMaster(ix)%pname,iMLyr ,parMxyMz(iParm)%varData(iMLyr,iHru)
+              write(*,"(1X,A17,'(layer ',I2,') = ',100f9.3)") gammaParMasterMeta(ix)%pname,iMLyr ,parMxyMz(iParm)%varData(iMLyr,iHru)
             endif
           endif
           end associate fifth
@@ -658,9 +670,9 @@ subroutine pop_hfrac(gammaParStr, gammaParMeta,hfrac, err, message)
   !check h parameters - now can chcek up to 5 layers
   do i=1,size(gammaSubset)
     if (gammaParMeta(i)%pname=="h1gamma1")then;dummy(1)=gammaParStr(i)%var(1);cycle;endif 
-    if (gammaParMeta(i)%pname=="h1gamma2")then;dummy(2)=gammaParStr(i)%var(1);cycle;endif
-    if (gammaParMeta(i)%pname=="h1gamma3")then;dummy(3)=gammaParStr(i)%var(1);cycle;endif
-    if (gammaParMeta(i)%pname=="h1gamma4")then;dummy(4)=gammaParStr(i)%var(1);cycle;endif
+    if (gammaParMeta(i)%pname=="h2gamma1")then;dummy(2)=gammaParStr(i)%var(1);cycle;endif
+    if (gammaParMeta(i)%pname=="h3gamma1")then;dummy(3)=gammaParStr(i)%var(1);cycle;endif
+    if (gammaParMeta(i)%pname=="h4gamma1")then;dummy(4)=gammaParStr(i)%var(1);cycle;endif
   enddo
   mask=(dummy>0)
   if ( count(mask)/=nLyr-1 ) stop 'number of h1gamma prameters mismatch with nLyr'

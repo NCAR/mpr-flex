@@ -33,7 +33,7 @@ dname_vpoly            = "polyid"                  ! name of vegetation polygon 
 /
 
 !---------------------------------------
-! Model Setting 
+! Model run & Calibration 
 !---------------------------------------
 &calconfig
 filelist_name            = "FILELIST"         ! name of ascii listing model output name
@@ -71,7 +71,6 @@ calpar                   = "calBeta.txt"      ! name of ascii file listing calib
 ! DDS parameters
 !---------------------------------------
 &DDS
-NparCal       =  6                             ! number of parameters listed in namelist
 rpar          =  0.2                           ! perturbation window (default 0.2)
 isRestart     =  F                             ! F -> start with the begining, T -> start with restart file
 nseed         =  32                            ! starting seed for random number generator

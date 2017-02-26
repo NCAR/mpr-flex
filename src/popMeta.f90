@@ -8,6 +8,9 @@ public::popMprMeta
 
 contains
 
+! -----
+!  Public subroutine: Populate metadata for MPR infor 
+! -----------------------
 subroutine popMprMeta(err,message)
   use nrtype
   use data_type,  only:var_meta
