@@ -31,7 +31,7 @@ dname_vpoly            = "polyid"                  ! name of vegetation polygon 
 /
 
 !---------------------------------------
-! Model Setting 
+! Model run & Calibration 
 !---------------------------------------
 &calconfig
 filelist_name            = "FILELIST"         ! name of ascii listing model output name
