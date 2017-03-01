@@ -7,7 +7,7 @@ module process_meta
 
   private
 
-  public::get_parm_master_meta
+  public::read_parm_master_meta
   public::read_calPar
   public::get_parm_meta
   public::betaCollection
@@ -21,7 +21,7 @@ contains
 ! ************************************************************************************************
 ! Subroutine: read soil parameter metadata from a meta file 
 ! ************************************************************************************************
-subroutine get_parm_master_meta(infile, err, message)
+subroutine read_parm_master_meta(infile, err, message)
   ! used to read metadata from an input file and populate the appropriate metadata structure
   use data_type,  only:par_meta            ! metadata structure
   use ascii_util, only:file_open
@@ -44,7 +44,7 @@ subroutine get_parm_master_meta(infile, err, message)
   integer(i4b)                         :: iend           ! check for the end of the file
   character(LEN=256)                   :: ffmt           ! file format
   type(par_meta)                       :: parmdTemp      ! temporary metadata structure
-  character(len=1)                     :: dLim(9)        ! column delimiter
+  character(len=1)                     :: dLim(12)        ! column delimiter
   integer(i4b)                         :: ivar           ! index of model variable
   ! Start procedure here
   err=0; message="read_param_meta/"
@@ -70,10 +70,13 @@ subroutine get_parm_master_meta(infile, err, message)
                                      parmdTemp%lwr,    dLim(3),&
                                      parmdTemp%upr,    dLim(4),& 
                                      parmdTemp%beta,   dLim(5),& 
-                                     parmdTemp%ptype,  dLim(6),&
-                                     parmdTemp%flag,   dLim(7),&
-                                     parmdTemp%hups,   dLim(8),&
-                                     parmdTemp%vups,   dLim(9),&
+                                     parmdTemp%tftype, dLim(6),& 
+                                     parmdTemp%ptype,  dLim(7),&
+                                     parmdTemp%flag,   dLim(8),&
+                                     parmdTemp%hups,   dLim(9),&
+                                     parmdTemp%hpnorm, dLim(10),&
+                                     parmdTemp%vups,   dLim(11),&
+                                     parmdTemp%vpnorm, dLim(12),&
                                      parmdTemp%perLyr
     if (err/=0) then; err=30; message=trim(message)//"errorReadLine"; return; endif
     ! check that the delimiters are in the correct place

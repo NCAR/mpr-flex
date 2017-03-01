@@ -4,7 +4,7 @@ program main_calibration
   use public_var
   use read_config,          only: read_nml 
   use globaldata,           only: parSubset, betaInGamma,gammaSubset, betaNeeded
-  use process_meta,         only: get_parm_master_meta, read_calPar, get_parm_meta, betaCollection, total_calParam, param_setup, check_gammaZ, check_gammaH
+  use process_meta,         only: read_parm_master_meta, read_calPar, get_parm_meta, betaCollection, total_calParam, param_setup, check_gammaZ, check_gammaH
   use mo_dds,               only: dds
   use mo_opt_run,           only: opt_run
   use eval_model,           only: objfn
@@ -22,7 +22,7 @@ program main_calibration
   ! Read configuration namelists and save variables 
   call read_nml( trim(nmlfile), ierr, cmessage ); call handle_err(ierr,cmessage)
   ! Read parameter master metadata and populate "parMaster" structure
-  call get_parm_master_meta(trim(param_master_meta), ierr, cmessage); call handle_err(ierr,cmessage)
+  call read_parm_master_meta(trim(param_master_meta), ierr, cmessage); call handle_err(ierr,cmessage)
   ! Read 'CalPar' input listing metadata of beta parameters to be estimated.  Saved data structure: 'calParMeta'
   call read_calPar( trim(calpar), ierr,  cmessage ); call handle_err(ierr,cmessage)
   ! Process 'CalParMeta', save a subset of parameter meta from master. 'betaInGamma', Saved data strucutres: 'parSubset','gammaSubset'  
