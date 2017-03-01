@@ -1,6 +1,6 @@
 ! **************************************************************************************************************
 ! **************************************************************************************************************
-! ***** Calibration GAMMA PARAMETER TABLE **********************************************************************
+! ***** CALIBRATION PARAMETER TABLE ****************************************************************************
 ! **************************************************************************************************************
 ! **************************************************************************************************************
 ! NOTES:
@@ -9,19 +9,28 @@
 ! (3) the format definition must be the first non-comment line
 ! (4) the delimiters "| " must be present (format a2), as these are used to check the integrety of the file
 ! columns are:
-! 1:  gamma parameter name
-! 4:  Calibrate? T=yes, F=No 
+! 1:  betaname:    beta parameter name
+! 2:  calMethod:   Calibration method,              0= skip calibration, 1=MPR, 2=Direct  
+! 3:  TF:          TF type,                         Integer if calMethod is 1, otherwise, ingored
+! 4:  isScaleCalH: Scaling operator calibration,    T or F if calMethod is 0 or 1, otherwise ignored
+! 5:  isScaleCalV: Scaling operator calibration,    T or F if calMethod is 0 or 1, otherwise ignored
 ! **************************************************************************************************************
 ! format of the descriptions that follow (must be in single quotes)
 ! **************************************************************************************************************
-'(a15,(1x,a1,1x),l1)' 
+'(a15,(1x,a1,1x),i1,(1x,a1,1x),i1,(1x,a1,1x),l1,(1x,a1,1x),l1)' 
 ! **************************************************************************************************************
-! model soil parameter data information
+! List of beta parameters 
 ! **************************************************************************************************************
-binfilt         | T
-D1              | T
-D2              | T
-D3              | T
-D4              | T
-BD              | T
+uhshape         | 2 | 0 | F | F
+uhscale         | 2 | 0 | F | F
+lai             | 2 | 0 | F | F
+D1              | 1 | 1 | F | F
+D2              | 1 | 1 | F | F
+D3              | 1 | 1 | F | F
+ks              | 1 | 1 | F | F
+bd              | 1 | 1 | F | F
+binfilt         | 1 | 1 | F | F
+z               | 1 | 1 | F | F
+h1              | 1 | 1 | F | F
+h2              | 1 | 1 | F | F
 ! **************************************************************************************************************
