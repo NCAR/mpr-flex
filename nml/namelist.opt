@@ -2,10 +2,10 @@
 ! General run configuration
 !---------------------------------------
 &runconfig
-!> Option to run the program 
+!> Option to run the program
 !> 0 = only run model with parameters given by restart file or default in param metafile
 !> 1 = calibrate parameters specifided in input with DDS
-!> 2 = estimate parameter with MPR (this option neglect calconfig and dds nml group) 
+!> 2 = estimate parameter with MPR (this option neglect calconfig and dds nml group)
 opt                    = 1
 /
 
@@ -13,8 +13,8 @@ opt                    = 1
 ! MPR 
 !---------------------------------------
 &mprconfig
-mpr_input_dir          = "/home/mizukami/MPR/input/hcdn/"
-mpr_output_dir         = "/d3/mizukami/hydro_params/vic_regionalization/upscale_hcdn/test/01022500/params/" 
+mpr_input_dir          = "MPRINPUT"                ! name of directory including geophysical data and weight mapping data
+mpr_output_dir         = "PAROUTPUT"               ! name of directory where estimated parameters are saved with option 2
 param_nc               = "soil_temp.nc"            ! name of soil parameter output netCDF
 fname_soil             = "statsgo_v4.nc"           ! name soil netCDF
 fname_veg              = "modis.vege.noahmp.nc"    ! name vege netCDF
