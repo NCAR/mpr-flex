@@ -71,7 +71,7 @@ contains
          if(ierr/=0)then; message=trim(message)//'err allocating 2D int space for vdata data structure'; return; endif
          ! get the data 
          ierr = nf90_get_var(ncid, ivarID, vdata(ivar)%ivar2)
-       case('vector')
+       case('1D')
          ! allocate space for the 1D integer array
          allocate(vdata(ivar)%ivar1(nVpoly),stat=ierr)
          if(ierr/=0)then; message=trim(message)//'err allocating 2D dbl space for vdata data structure'; return; endif
@@ -86,7 +86,7 @@ contains
          if(ierr/=0)then; message=trim(message)//'err allocating 2D int space for vdata data structure'; return; endif
          ! get the data 
          ierr = nf90_get_var(ncid, ivarID, vdata(ivar)%dvar2)
-       case('vector')
+       case('1D')
          ! allocate space for the 1D integer array
          allocate(vdata(ivar)%dvar1(nVpoly),stat=ierr)
          if(ierr/=0)then; message=trim(message)//'err allocating 2D int space for vdata data structure'; return; endif
@@ -134,7 +134,6 @@ contains
    err=0; message="getVegClassLookup/"
    !allocation
    do iVclass=1,nVclass; allocate(vegPropt(iVclass)%var(nPrpVeg)); end do
-     
    ! open file (also returns un-used file unit used to open the file)
    call file_open(in_vegTable,iunit,err,message)
    ! get a list of character strings from non-comment lines

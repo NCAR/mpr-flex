@@ -3,7 +3,7 @@ module globalData
  use nrtype
  use public_var
  use data_type,  only: var_meta, par_meta,cpar_meta, scale_meta, input_meta
- use var_lookup, only: nPar, nVarSoilData, nVarVegData, nVarMapData
+ use var_lookup, only: nPar, nVarSoilData, nVarVegData, nVarMapData, nPrpVeg
 
 implicit none
 private
@@ -25,5 +25,6 @@ integer(i2b),                      public   :: nGamma
 type(var_meta), save,              public   :: map_meta  (nVarMapData)
 type(var_meta), save,              public   :: sdata_meta(nVarSoilData)
 type(var_meta), save,              public   :: vdata_meta(nVarVegData)
+type(var_meta), save,              public   :: vprp_meta (nPrpVeg)
 
 end module globalData

@@ -25,6 +25,7 @@ dname_overVpoly        = "overlapPoly"             ! name of dimension of vege p
 dname_hru              = "hru_id"                  ! name of model hru dimension in mapping netCDF
 sclass_table           = "USDA_soil_class.txt"     ! name of USDA soil class look up table 
 vclass_table           = "NOAHMP_veg_type.txt"     ! name of vegetation class look up table
+nVclass                = NUMVCLASS "               ! number of vegetation class 
 dname_spoly            = "polyid"                  ! name of soil polygon dimension in soil netCDf
 dname_slyrs            = "layer"                   ! name of soil layer dimension in soil data in soil netCDf
 dname_vpoly            = "polyid"                  ! name of vegetation polygon dimension in vegetation netCDf

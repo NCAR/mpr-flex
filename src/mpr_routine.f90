@@ -128,22 +128,24 @@ subroutine mpr(hruID,             &     ! input: hruID
   use model_wrapper,        only:read_hru_id
   use popMeta,              only:popMprMeta
   use globalData,           only:parMaster, betaInGamma, betaCalScale !THIS (betaCalScale) may be input 
-  use globalData,           only:sdata_meta,vdata_meta,map_meta
+  use globalData,           only:sdata_meta,vdata_meta,map_meta, vprp_meta
   use get_ixname,           only:get_ixPar
   use soiltf,               only:comp_soil_model_param         ! Including Soil model parameter transfer function
   use modelLayer,           only:comp_model_depth              ! Including model layr depth computation routine 
   use modelLayer,           only:map_slyr2mlyr                 ! Including model layr computation routine 
-!   USE vegtf,                  only:comp_veg_model_param          ! Including Veg model parameter transfer function
+  !use vegtf,                only:comp_veg_model_param          ! Including Veg model parameter transfer function
   use upscaling,            only:aggreg                        ! Including Upscaling operator 
   use read_mapdata,         only:getMapData                    ! routine to read mapping data into data structures
   use read_vegdata,         only:getVegData                    ! routine to read veg data into data structures
+  use read_vegdata,         only:getVegClassLookup             ! routine to read veg calss-property lookupu table 
+  use read_vegdata,         only:map_vcls2prp                  ! routine to map vege class to prpoerty 
   use read_soildata,        only:getData                       ! routine to read soil data into data structures
   use read_soildata,        only:mod_hslyrs                    ! routine to modify soil layer thickness and updata soil data structure
   use var_lookup,           only:ixPar,nPar                    ! 
   USE var_lookup,           only:ixVarSoilData,nVarSoilData    ! index of soil data variables and number of variables 
   USE var_lookup,           only:ixVarVegData,nVarVegData      ! index of vege data variables and number of variables
   USE var_lookup,           only:ixVarMapData,nVarMapData      ! index of map data variables and number of variables
-!  USE var_lookup,             only:ixPrpVeg,nPrpVeg             ! index of veg properties and number of properties
+  USE var_lookup,           only:ixPrpVeg,nPrpVeg              ! index of veg properties and number of properties
 
    implicit none
 
@@ -255,11 +257,11 @@ subroutine mpr(hruID,             &     ! input: hruID
   ! (1.2)  veg class - properties lookup table ...
   ! *********************************************
   ! (1.2.1) Read in veg data netCDF...
-!   allocate(vegClass(nVclass),stat=err); if(err/=0) call handle_err(err,'error allocating for vegClass')
-!   allocate(vcls2prp(nVclass),stat=err); if(err/=0) call handle_err(err,'error allocating for vcls2prp')
-!   do iVclass=1,nVclass
-!     allocate(vcls2prp(iVclass)%var(nPrpVeg), stat=err); if(err/=0) call handle_err(err,'error allocating for vcls2prp%var') 
-!   enddo
+   allocate(vegClass(nVclass),stat=err);if(err/=0)then;message=trim(message)//'error allocating vegClass'; return; endif 
+   allocate(vcls2prp(nVclass),stat=err);if(err/=0)then;message=trim(message)//'error allocating vcls2prp'; return; endif
+   do iVclass=1,nVclass
+     allocate(vcls2prp(iVclass)%var(nPrpVeg),stat=err);if(err/=0)then;message=trim(message)//'error allocating vcls2prp%var';return;endif
+   enddo
    call getVegData(trim(mpr_input_dir)//trim(fname_veg), & ! input: file name
                    vdata_meta,                           & ! input: veg data meta
                    dname_vpoly,                          & ! input: dimension name for veg polygon
@@ -267,20 +269,21 @@ subroutine mpr(hruID,             &     ! input: hruID
                    nVpoly,                               & ! output: number of veg polygon
                    err, cmessage)                          ! output: error control
    if(err/=0)then; message=message//cmessage; return; endif
-!  ! (1.2.2) Read in veg class-property lookup table 
-!   call getvegClassLookup(trim(mpr_input_dir)//trim(vclass_table), &
-!                          nVclass,                             &
-!                          vegClass,                            &
-!                          vcls2prp,                            &
-!                          err, cmessage)
-!   if(err/=0)then; message=message//cmessage; return; endif
-!  ! (1.2.3) populate veg properties for each polygon 
-!   allocate(vprp(nPrpVeg),stat=err); if(err/=0) call handle_err(err,'error allocating for sprp')
-!   do iPrpVeg=1,nPrpVeg
-!     allocate(vprp(iPrpVeg)%varData(nVpoly), stat=err); if(err/=0) call handle_err(err,'error allocating for sprp%varData')
-!   enddo
-!   call map_vcls2prp(vdata, vcls2prp, vegClass, vprp, err, cmessage)
-!   if(err/=0)then; message=message//cmessage; return; endif
+   print*,'stopstop'
+  ! (1.2.2) Read in veg class-property lookup table 
+   call getvegClassLookup(trim(mpr_input_dir)//trim(vclass_table), &
+                          nVclass,                             &
+                          vegClass,                            &
+                          vcls2prp,                            &
+                          err, cmessage)
+   if(err/=0)then; message=message//cmessage; return; endif
+  ! (1.2.3) populate veg properties for each polygon 
+   allocate(vprp(nPrpVeg),stat=err); if(err/=0)then;message=trim(message)//'error allocating vprp';return;endif
+   do iPrpVeg=1,nPrpVeg
+     allocate(vprp(iPrpVeg)%varData(nVpoly), stat=err); if(err/=0)then;message=trim(message)//'error allocating vprp%varData';return;endif
+   enddo
+   call map_vcls2prp(vdata, vcls2prp, vegClass, vprp, err, cmessage)
+   if(err/=0)then; message=message//cmessage; return; endif
   ! *****
   ! (2.) Read in mapping netcdf 
   ! *********************************************
@@ -306,9 +309,10 @@ subroutine mpr(hruID,             &     ! input: hruID
   if (err/=0)then; message=message//cmessage; return; endif
   if ( nShru /= nVhru )then;err=10;message=trim(message)//'Different number of hru in vege and soil mapping file';return;endif  
   if ( opt==2 .and. nHru /= nShru )then;err=10;message=trim(message)//'nHru= '//trim(int2str(nShru))//' NOT '//trim(int2str(nHru));return;endif
-  associate( hruMap      => mapdata(1)%var(ixVarMapData%hru_id)%ivar1,  &
-             hruMapVege  => mapdata(2)%var(ixVarMapData%hru_id)%ivar1,  &
-             swgt        => mapdata(1)%var(ixVarMapData%weight)%dvar2,  &
+  associate( hruMap      => mapdata(1)%var(ixVarMapData%hru_id)%ivar1,        &
+             hruMapVege  => mapdata(2)%var(ixVarMapData%hru_id)%ivar1,        &
+             swgt        => mapdata(1)%var(ixVarMapData%weight)%dvar2,        &
+             overVpolyID => mapdata(2)%var(ixVarMapData%overlapPolyId)%ivar2, & 
              overSpolyID => mapdata(1)%var(ixVarMapData%overlapPolyId)%ivar2 )
   if ( minval(abs(hruMap-hruMapVege)) /= 0 )then;err=11;message=trim(message)//'different hru id in vege and soil mapping file';return;endif
   !!! ---------------------------------------------
@@ -324,9 +328,9 @@ subroutine mpr(hruID,             &     ! input: hruID
     mask = ( overSpolyID(:,iLocal) /= imiss )
     allocate(polySub(count(mask)))
     allocate(swgtSub(count(mask)))
-    nSpolyLocal = size(polySub)                ! number of contributing soil polygons to current hru
-    polySub = pack(overSpolyID(:,iLocal),mask) ! id of soil polygons contributing to current hru
-    swgtSub = pack(swgt(:,iLocal),mask)        ! weight of soil polygons contributing to current hru
+    nSpolyLocal = size(polySub)                    ! number of contributing soil polygons to current hru
+    polySub     = pack(overSpolyID(:,iLocal),mask) ! id of soil polygons contributing to current hru
+    swgtSub     = pack(swgt(:,iLocal),mask)        ! weight of soil polygons contributing to current hru
     ! allocate memmory
     do iParm=1,nSoilParModel
       allocate(parSxySz(iParm)%varData(nSlyrs,nSpolyLocal),stat=err); if(err/=0)then;message=message//'error allocating parSxySz%varData';return;endif 
@@ -375,39 +379,39 @@ subroutine mpr(hruID,             &     ! input: hruID
         end do
       enddo
     endif
-!    ! *****
-!    ! (3.2) Extract veg poly ID, weight polygon, and veg properties for current model hru 
-!    ! *********************************************************************
-!      ! Select list of veg polygon ID contributing a current hru 
-!      allocate(vmask(nOverVpoly),stat=err);        if(err/=0) call handle_err(err,'error allocating for mask')
-!      vmask        = ( overVpolyID(:,iLocal) /= imiss )
-!      allocate(vPolySub(count(vmask)),stat=err); if(err/=0) call handle_err(err,'error allocating for vPolySub')
-!      allocate(vwgtSub(count(vmask)),stat=err); if(err/=0) call handle_err(err,'error allocating for swgtSub')
-!      vPolySub    = pack(overVpolyID(:,iLocal),vmask)
-!      vwgtSub     = pack(overVpolyID(:,iLocal),vmask)
-!      nVpolyLocal = size(vPolySub)
-!      allocate(vprpLocal(nPrpVeg),stat=err); if(err/=0) call handle_err(err,'error allocating for vprp')
-!      do iPrpVeg=1,nPrpVeg 
-!        allocate(vprpLocal(iPrpVeg)%varData(nVpolyLocal))
-!      enddo
-!      allocate(vclsLocal(nVpolyLocal))
-!      do iPoly = 1,nVpolyLocal
-!        do iPrpVeg = 1,nPrpVeg
-!          vprpLocal(iPrpVeg)%varData(iPoly) =vprp(iPrpVeg)%varData(vPolySub(iPoly)) 
-!        enddo
-!        vclsLocal(iPoly) = vdata(ixVarVegData%vegclass)%ivar1(vPolySub(iPoly))
-!      end do
-!      if ( iHru == iHruPrint ) then
-!        print*,' '
-!        print*,'(1.3) Print list of vege polygon ID and weigth'
-!        write(*,"(' polyID = ',100I7)") (vPolySub(iPoly), iPoly=1,nVpolyLocal)
-!        write(*,"(' weight = ',100f7.3)") (vwgtSub(iPoly), iPoly=1,nVpolyLocal)
-!        write(*,"(' vegclass = ',100I5)") (vclsLocal(iPoly), iPoly=1,nVpolyLocal)
-!        print*,'(1.3) Print veg property for polygon'
-!        do iPrpVeg=1,nPrpVeg
-!          write(*,"(1X,A12,'= ',100f7.3)") vprp_meta(iPrpVeg)%varname, (vprpLocal(iPrpVeg)%varData(iPoly), iPoly=1,nVpolyLocal)
-!        enddo
-!      endif
+  ! *****
+  ! (3.2) Extract veg poly ID, weight polygon, and veg properties for current model hru 
+  ! *********************************************************************
+    ! Select list of veg polygon ID contributing a current hru 
+    allocate(vmask(nOverVpoly),stat=err); if(err/=0)then;message=message//'error allocating vmask';return;endif
+    vmask       = ( overVpolyID(:,iLocal) /= imiss )
+    allocate(vPolySub(count(vmask)),stat=err); if(err/=0)then;message=message//'error allocating vPolySub';return;endif
+    allocate(vwgtSub(count(vmask)),stat=err); if(err/=0)then;message=message//'error allocating vwgtSub';return;endif
+    vPolySub    = pack(overVpolyID(:,iLocal),vmask)
+    vwgtSub     = pack(overVpolyID(:,iLocal),vmask)
+    nVpolyLocal = size(vPolySub)
+    allocate(vprpLocal(nPrpVeg),stat=err); if(err/=0)then;message=message//'error allocating vprpLocal';return;endif
+    do iPrpVeg=1,nPrpVeg 
+      allocate(vprpLocal(iPrpVeg)%varData(nVpolyLocal))
+    enddo
+    allocate(vclsLocal(nVpolyLocal))
+    do iPoly = 1,nVpolyLocal
+      do iPrpVeg = 1,nPrpVeg
+        vprpLocal(iPrpVeg)%varData(iPoly) =vprp(iPrpVeg)%varData(vPolySub(iPoly)) 
+      enddo
+      vclsLocal(iPoly) = vdata(ixVarVegData%vegclass)%ivar1(vPolySub(iPoly))
+    end do
+    if ( iHru == iHruPrint ) then
+      print*,' '
+      print*,'(1.3) Print list of vege polygon ID and weigth'
+        write(*,"(' polyID = ',100I7)") (vPolySub(iPoly), iPoly=1,nVpolyLocal)
+        write(*,"(' weight = ',100f7.3)") (vwgtSub(iPoly), iPoly=1,nVpolyLocal)
+        write(*,"(' vegclass = ',100I5)") (vclsLocal(iPoly), iPoly=1,nVpolyLocal)
+        print*,'(1.3) Print veg property for polygon'
+      do iPrpVeg=1,nPrpVeg
+          write(*,"(1X,A12,'= ',100f7.3)") vprp_meta(iPrpVeg)%varname, (vprpLocal(iPrpVeg)%varData(iPoly), iPoly=1,nVpolyLocal)
+      enddo
+    endif
   ! *****
   ! (3.4) Compute model soil parameters using transfer function
   ! *********************************************************
@@ -423,15 +427,15 @@ subroutine mpr(hruID,             &     ! input: hruID
         enddo
       enddo
     endif
-!    ! *****
-!    ! (3.5) Compute Model vege parameters using transfer function
-!    ! *********************************************************
-!      ! compute model veg parameters
-!      allocate(parVxy(nVegParModel),stat=err); if(err/=0) call handle_err(err,'error allocating for parVxy')
+  ! *****
+  ! (3.5) Compute Model vege parameters using transfer function
+  ! *********************************************************
+    ! compute model veg parameters
+!      allocate(parVxy(nVegParModel),stat=err)
 !      do iParm=1,nVegParModel
 !        select case ( vpar_meta(iParm)%dims )
 !          case( '1D' , 'ST' )
-!            allocate(parVxy(iParm)%varData(nVpolyLocal),stat=err); if(err/=0) call handle_err(err,'error allocating for parVxy%varData')
+!            allocate(parVxy(iParm)%varData(nVpolyLocal),stat=err)
 !        end select
 !      enddo
 !      call comp_veg_model_param(parVxy, vprpLocal, vpar_meta, model_name)
@@ -553,15 +557,15 @@ subroutine mpr(hruID,             &     ! input: hruID
 !          endif
 !        endif
 !      enddo
-      ! deallocate memmory
+    ! deallocate memmory
     deallocate(mask,stat=err);           if(err/=0)then; message=trim(message)//'error deallocating mask'; return; endif
     deallocate(polySub,stat=err);        if(err/=0)then; message=trim(message)//'error deallocating polyIdSub'; return; endif
     deallocate(swgtSub,stat=err);        if(err/=0)then; message=trim(message)//'error deallocating swgtSub'; return; endif
-!      deallocate(vmask,stat=err);            if(err/=0) call handle_err(err,'error deallocating for vmask')
-!      deallocate(vpolySub,stat=err);         if(err/=0) call handle_err(err,'error deallocating for vpolyIdSub')
-!      deallocate(vwgtSub,stat=err);          if(err/=0) call handle_err(err,'error deallocating for vwgtSub')
-!      deallocate(vclsLocal,stat=err);        if(err/=0) call handle_err(err,'error deallocating for vclsLocal')
-!      deallocate(vprpLocal,stat=err);        if(err/=0) call handle_err(err,'error deallocating for sprpLocal')
+    deallocate(vmask,stat=err);          if(err/=0)then; message=trim(message)//'error deallocating vmask'; return; endif
+    deallocate(vpolySub,stat=err);       if(err/=0)then; message=trim(message)//'error deallocating vpolySub'; return; endif
+    deallocate(vwgtSub,stat=err);        if(err/=0)then; message=trim(message)//'error deallocating vwgtSub'; return; endif
+    deallocate(vclsLocal,stat=err);      if(err/=0)then; message=trim(message)//'error deallocating vclasLocal'; return; endif
+    deallocate(vprpLocal,stat=err);      if(err/=0)then; message=trim(message)//'error deallocating vprpLocal'; return; endif
     deallocate(soil2model_map,stat=err); if(err/=0)then; message=trim(message)//'error deallocating soil2model_map';return;endif
     deallocate(hModelLocal,stat=err);    if(err/=0)then; message=trim(message)//'error deallocating hModelLocal';return;endif
     deallocate(zModelLocal,stat=err);    if(err/=0)then; message=trim(message)//'error deallocating zModelLocal';return;endif

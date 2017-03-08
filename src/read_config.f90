@@ -23,6 +23,7 @@ module read_config
                           dname_hru,               &
                           sclass_table,            &
                           vclass_table,            &
+                          nVclass,                 &
                           dname_spoly,             &
                           dname_slyrs,             &              
                           dname_vpoly

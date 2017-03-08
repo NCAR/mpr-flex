@@ -31,6 +31,7 @@ module public_var
   character(len=strLen),public    :: sclass_table
   integer(i4b)                    :: nSclass
   character(len=strLen),public    :: vclass_table
+  integer(i4b)                    :: nVclass
   character(len=strLen),public    :: dname_spoly 
   character(len=strLen),public    :: dname_slyrs
   character(len=strLen),public    :: dname_vpoly 
@@ -59,9 +60,7 @@ module public_var
   integer(i4b),public             :: TotNpar  != 54(VIC)
   integer(i4b),public             :: nLyr     != 3 (VIC)
   character(len=strLen),public    :: calpar 
-  !
-  !DDS 
-  !input parameters
+  ! DDS 
   real(dp),public                 :: rpar           ! search  
   integer(i8b),public             :: nseed          ! starting seed for random number generator
   integer(i8b),public             :: maxn           ! maximum number of trials before optimization is terminated
