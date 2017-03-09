@@ -43,7 +43,7 @@ subroutine run_mpr( calParam, restartFile, err, message )
   real(dp),             allocatable :: hModel(:,:)                   ! storage of model layer thickness at model layer x model hru 
   real(dp),             allocatable :: params(:)                     ! parameter vector that is input into mpr 
   type(namedvar2),      allocatable :: parMxyMz(:)                   ! storage of model soil parameter at model layer x model hru 
-  type(namedvar),       allocatable :: vegParMxy(:)                  ! storage of model vege parameter at model hru
+  type(namedvar2),      allocatable :: vegParMxy(:)                  ! storage of model vege parameter at model hru
   logical                           :: isExistFile                   ! logical to check if the file exist or not
   character(len=strLen)             :: cmessage                      ! error message from subroutine
 
@@ -86,7 +86,7 @@ subroutine run_mpr( calParam, restartFile, err, message )
       allocate(parMxyMz(iPar)%varData(nLyr,nHru),stat=err)
     enddo
     do iPar=1,nVegParModel
-      allocate(vegParMxy(iPar)%varData(nHru),stat=err)
+      allocate(vegParMxy(iPar)%varData(nMonth,nHru),stat=err)
     enddo
     allocate(mask(nBetaGamma))
     mask=parSubset(:)%beta/="beta"
@@ -130,7 +130,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   use globalData,           only:parMaster, betaInGamma, betaCalScale !THIS (betaCalScale) may be input 
   use globalData,           only:sdata_meta,vdata_meta,map_meta, vprp_meta
   use get_ixname,           only:get_ixPar
-  use soiltf,               only:comp_soil_model_param         ! Including Soil model parameter transfer function
+  use tf,                   only:comp_soil_model_param         ! Including Soil model parameter transfer function
   use modelLayer,           only:comp_model_depth              ! Including model layr depth computation routine 
   use modelLayer,           only:map_slyr2mlyr                 ! Including model layr computation routine 
   !use vegtf,                only:comp_veg_model_param          ! Including Veg model parameter transfer function
@@ -138,7 +138,6 @@ subroutine mpr(hruID,             &     ! input: hruID
   use read_mapdata,         only:getMapData                    ! routine to read mapping data into data structures
   use read_vegdata,         only:getVegData                    ! routine to read veg data into data structures
   use read_vegdata,         only:getVegClassLookup             ! routine to read veg calss-property lookupu table 
-  use read_vegdata,         only:map_vcls2prp                  ! routine to map vege class to prpoerty 
   use read_soildata,        only:getData                       ! routine to read soil data into data structures
   use read_soildata,        only:mod_hslyrs                    ! routine to modify soil layer thickness and updata soil data structure
   use var_lookup,           only:ixPar,nPar                    ! 
@@ -157,7 +156,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   ! output
   real(dp),             intent(out)  :: hModel(:,:)              ! Model layer thickness at model layer x model hru 
   type(namedvar2),      intent(inout):: parMxyMz(:)              ! storage of model soil parameter at model layer x model hru 
-  type(namedvar),       intent(inout):: vegParMxy(:)             ! storage of model vege parameter at model hru
+  type(namedvar2),      intent(inout):: vegParMxy(:)             ! storage of model vege parameter at model hru
   integer(i4b),         intent(out)  :: err                      ! error code
   character(len=strLen),intent(out)  :: message                  ! error message 
   ! local
@@ -195,16 +194,13 @@ subroutine mpr(hruID,             &     ! input: hruID
   type(namevar)                      :: sdataLocal(nVarSoilData) ! soil data container for local soil polygon 
   type(namevar)                      :: vdata(nVarVegData)       ! veg data container for all the veg polygons
   integer(i4b),    allocatable       :: vegClass(:)              ! veg class array (e.g., IGBP)
-  integer(i4b),    allocatable       :: vclsLocal(:)             ! veg class id for each poly for subset of veg data
   type(var_d),     allocatable       :: vcls2prp(:)              ! storage of property value for each veg class
-  type(namedvar),  allocatable       :: vprp(:)                  ! storage of veg property values for 1D(poly) 
-  type(namedvar),  allocatable       :: vprpLocal(:)             ! storage of veg property values for 1D(poly) 
   integer(i4b)                       :: iVclass                  ! ID (= index) of vege class 
   real(dp),        allocatable       :: hModelLocal(:,:)         ! Model layer thickness for soil polygon within one hru
   real(dp),        allocatable       :: zModelLocal(:,:)         ! Model layer depth for soil polygon within one hru
   type(namedvar2), allocatable       :: parSxySz(:)              ! storage of model soil parameter for 2D field -soil layer x soil poy 
   type(namedvar2), allocatable       :: parSxyMz(:)              ! storage of model soil parameter for 2D field -model layer x soil poy
-  type(namedvar),  allocatable       :: parVxy(:)                ! storage of model vege parameter for 1D or 2D field - vege poly (x month)
+  type(namedvar2), allocatable       :: parVxy(:)                ! storage of model vege parameter for 1D or 2D field - vege poly (x month)
   integer(i4b),    allocatable       :: polySub(:)               ! list of ID (=index) of soil polygons contributing model hru
   integer(i4b),    allocatable       :: vPolySub(:)              ! list of ID (=index) of veg polygons contributing model hru 
   type(mapvar)                       :: mapdata(2)               ! map data container for all the soil polygons
@@ -269,20 +265,12 @@ subroutine mpr(hruID,             &     ! input: hruID
                    nVpoly,                               & ! output: number of veg polygon
                    err, cmessage)                          ! output: error control
    if(err/=0)then; message=message//cmessage; return; endif
-   print*,'stopstop'
   ! (1.2.2) Read in veg class-property lookup table 
    call getvegClassLookup(trim(mpr_input_dir)//trim(vclass_table), &
-                          nVclass,                             &
-                          vegClass,                            &
-                          vcls2prp,                            &
+                          nVclass,                                 &
+                          vegClass,                                &
+                          vcls2prp,                                &
                           err, cmessage)
-   if(err/=0)then; message=message//cmessage; return; endif
-  ! (1.2.3) populate veg properties for each polygon 
-   allocate(vprp(nPrpVeg),stat=err); if(err/=0)then;message=trim(message)//'error allocating vprp';return;endif
-   do iPrpVeg=1,nPrpVeg
-     allocate(vprp(iPrpVeg)%varData(nVpoly), stat=err); if(err/=0)then;message=trim(message)//'error allocating vprp%varData';return;endif
-   enddo
-   call map_vcls2prp(vdata, vcls2prp, vegClass, vprp, err, cmessage)
    if(err/=0)then; message=message//cmessage; return; endif
   ! *****
   ! (2.) Read in mapping netcdf 
@@ -390,27 +378,11 @@ subroutine mpr(hruID,             &     ! input: hruID
     vPolySub    = pack(overVpolyID(:,iLocal),vmask)
     vwgtSub     = pack(overVpolyID(:,iLocal),vmask)
     nVpolyLocal = size(vPolySub)
-    allocate(vprpLocal(nPrpVeg),stat=err); if(err/=0)then;message=message//'error allocating vprpLocal';return;endif
-    do iPrpVeg=1,nPrpVeg 
-      allocate(vprpLocal(iPrpVeg)%varData(nVpolyLocal))
-    enddo
-    allocate(vclsLocal(nVpolyLocal))
-    do iPoly = 1,nVpolyLocal
-      do iPrpVeg = 1,nPrpVeg
-        vprpLocal(iPrpVeg)%varData(iPoly) =vprp(iPrpVeg)%varData(vPolySub(iPoly)) 
-      enddo
-      vclsLocal(iPoly) = vdata(ixVarVegData%vegclass)%ivar1(vPolySub(iPoly))
-    end do
     if ( iHru == iHruPrint ) then
       print*,' '
       print*,'(1.3) Print list of vege polygon ID and weigth'
         write(*,"(' polyID = ',100I7)") (vPolySub(iPoly), iPoly=1,nVpolyLocal)
         write(*,"(' weight = ',100f7.3)") (vwgtSub(iPoly), iPoly=1,nVpolyLocal)
-        write(*,"(' vegclass = ',100I5)") (vclsLocal(iPoly), iPoly=1,nVpolyLocal)
-        print*,'(1.3) Print veg property for polygon'
-      do iPrpVeg=1,nPrpVeg
-          write(*,"(1X,A12,'= ',100f7.3)") vprp_meta(iPrpVeg)%varname, (vprpLocal(iPrpVeg)%varData(iPoly), iPoly=1,nVpolyLocal)
-      enddo
     endif
   ! *****
   ! (3.4) Compute model soil parameters using transfer function
@@ -564,8 +536,6 @@ subroutine mpr(hruID,             &     ! input: hruID
     deallocate(vmask,stat=err);          if(err/=0)then; message=trim(message)//'error deallocating vmask'; return; endif
     deallocate(vpolySub,stat=err);       if(err/=0)then; message=trim(message)//'error deallocating vpolySub'; return; endif
     deallocate(vwgtSub,stat=err);        if(err/=0)then; message=trim(message)//'error deallocating vwgtSub'; return; endif
-    deallocate(vclsLocal,stat=err);      if(err/=0)then; message=trim(message)//'error deallocating vclasLocal'; return; endif
-    deallocate(vprpLocal,stat=err);      if(err/=0)then; message=trim(message)//'error deallocating vprpLocal'; return; endif
     deallocate(soil2model_map,stat=err); if(err/=0)then; message=trim(message)//'error deallocating soil2model_map';return;endif
     deallocate(hModelLocal,stat=err);    if(err/=0)then; message=trim(message)//'error deallocating hModelLocal';return;endif
     deallocate(zModelLocal,stat=err);    if(err/=0)then; message=trim(message)//'error deallocating zModelLocal';return;endif

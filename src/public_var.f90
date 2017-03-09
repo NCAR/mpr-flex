@@ -9,6 +9,7 @@ module public_var
   ! some common variables
   integer,     parameter,public  :: strLen=256             ! length of character string
   ! some constant variables
+  integer(i4b),parameter,public  :: nMonth=12              ! missing value for integer value
   integer(i4b),parameter,public  :: imiss=-999             ! missing value for integer value
   real(dp),    parameter,public  :: dmiss=-999.0_dp        ! missing value for floating value
   real(dp),    parameter,public  :: verySmall=tiny(1.0_dp) ! a very small number 

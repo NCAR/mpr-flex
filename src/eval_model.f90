@@ -42,7 +42,7 @@ function objfn( calParam )
   real(dp),             allocatable :: simBasinRouted(:,:)           ! routed sim value (basin x number of time step)
   real(dp),             allocatable :: hModel(:,:)                   ! storage of model layer thickness at model layer x model hru 
   type(namedvar2),      allocatable :: parMxyMz(:)                   ! storage of model soil parameter at model layer x model hru 
-  type(namedvar),       allocatable :: vegParMxy(:)                  ! storage of model vege parameter at model hru
+  type(namedvar2),      allocatable :: vegParMxy(:)                  ! storage of model vege parameter at month (or annual) x model hru
   real(dp)                          :: ushape,uscale                 ! two routing parameter
   integer(i4b)                      :: err                           ! error id 
   character(len=strLen)             :: message                       ! error message
@@ -89,7 +89,7 @@ function objfn( calParam )
       allocate(parMxyMz(iPar)%varData(nLyr,nHru),stat=err)
     enddo
     do iPar=1,nVegParModel
-      allocate(vegParMxy(iPar)%varData(nHru),stat=err)
+      allocate(vegParMxy(iPar)%varData(nMonth,nHru),stat=err)
     enddo
     allocate(mask(nBetaGamma))
     mask=parSubset(:)%beta/="beta"

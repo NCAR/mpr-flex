@@ -1,4 +1,4 @@
-module soiltf
+module tf
 ! Compute model soil parameter transfer function 
 use nrtype                                        ! variable types, etc.
 use data_type                                     ! Including custum data structure definition
@@ -933,7 +933,6 @@ end function
 ! pedo-transfer function for bulk density 
 ! *********************************************************************
 function bd( bd_in, gammaPar,opt )
-  ! Define variables
   implicit none
   ! input
   real(dp), intent(in)  :: bd_in(:,:)    ! input: bd from dataset [kg/m3]
@@ -1203,4 +1202,49 @@ function myu(phi_in, fc_in, gammaPar, opt)
   return
 end function
 
-end module soiltf 
+! *********************************************************************
+! Monthly LAI 
+! *********************************************************************
+function lai( lai_in, gammaPar, opt )
+  implicit none
+  ! input
+  real(dp), intent(in)  :: lai_in(:,:)                        ! input: monthly LAI 
+  real(dp), intent(in)  :: gammaPar(:)                        ! input: gamma parameter array 
+  integer(i2b)          :: opt                                ! input: option for transfer function form
+  ! output
+  real(dp)              :: lai(size(lai_in,1),size(lai_in,2)) ! output: adjusted LAI
+  ! local 
+  real(dp),parameter    :: lai_min=0.0_dp                     ! minimum plausible LAI (0 m2/m2 for bare ground)
+  real(dp),parameter    :: lai_max=10.0_dp                    ! maximum plausible LAI (10 m2/m2 for dense conifer forest)
+  real(dp),allocatable  :: lai_temp(:,:)
+  real(dp),allocatable  :: laislope(:,:)
+  integer(i4b)          :: n1                                 ! number of 1st dimension 
+  integer(i4b)          :: n2                                 ! number of 2nd dimension 
+  character(len=strLen) :: message                           
+
+  message="lai/"
+  n1=size(lai_in,1)
+  n2=size(lai_in,2)
+  allocate(laislope(n1,n2))
+  allocate(lai_temp(n1,n2))
+  laislope=0.0_dp
+  lai_temp=0.0_dp
+  associate(g1=>gammaPar(ixPar%lai1gamma1))
+  select case(opt)
+    case(1);  ! 
+      where ( lai_in /= dmiss ) 
+        lai_temp = g1*lai_in
+        laislope=(lai_temp-lai_min)/(lai_max-lai_min)
+        where ( laislope > 1.0_dp) laislope=1.0_dp
+        where ( laislope < 0.0_dp) laislope=0.0_dp
+        lai = laislope*(lai_max-lai_min)+lai_min
+      else where
+        lai = dmiss 
+      end where
+    case default;print*,trim(message)//'opt not recognized';stop
+  end select
+  end associate
+  return
+end function 
+
+end module tf 

@@ -64,6 +64,7 @@ MODULE var_lookup
    integer(i4b)     :: zpk1gamma1      = imiss  ! 
    integer(i4b)     :: pfree1gamma1    = imiss  ! 
    integer(i4b)     :: rexp1gamma1     = imiss  ! 
+   integer(i4b)     :: lai1gamma1      = imiss  ! 
    ! Beta parameter
    integer(i4b)     :: uhshape         = imiss  ! uh gamma pdf shape parameter
    integer(i4b)     :: uhscale         = imiss  ! uh gamma pdf scale parameter
@@ -158,18 +159,7 @@ MODULE var_lookup
 !  Define indices for Veg properties
 ! ***********************************************************************************************************
  type, public  ::  iLook_PrpVeg
-  integer(i4b)     :: lai01          = imiss       ! Jan LAI  m^2/m^2
-  integer(i4b)     :: lai02          = imiss       ! Feb LAI
-  integer(i4b)     :: lai03          = imiss       ! Mar LAI
-  integer(i4b)     :: lai04          = imiss       ! Apr LAI
-  integer(i4b)     :: lai05          = imiss       ! May LAI
-  integer(i4b)     :: lai06          = imiss       ! Jun LAI
-  integer(i4b)     :: lai07          = imiss       ! Jul LAI
-  integer(i4b)     :: lai08          = imiss       ! Aug LAI
-  integer(i4b)     :: lai09          = imiss       ! Sep LAI
-  integer(i4b)     :: lai10          = imiss       ! Oct LAI
-  integer(i4b)     :: lai11          = imiss       ! Nov LAI
-  integer(i4b)     :: lai12          = imiss       ! Dec LAI
+  integer(i4b)     :: lai            = imiss       ! monthly LAI  m^2/m^2
   integer(i4b)     :: vegtype        = imiss       ! vege type
   integer(i4b)     :: nroot          = imiss       ! rooitng depth m 
   integer(i4b)     :: snup           = imiss       ! threshold SWE depth that implies 100% snow cover 
@@ -195,22 +185,21 @@ MODULE var_lookup
                                                                                  71,72,73,74,75,76,77,78,79,80,&
                                                                                  81,82,83,84,85,86,87,88,89,90,&
                                                                                  91,92,93,94,95,96,97,98,99,100,&
-                                                                                 101)
+                                                                                 101,102)
  type(iLook_VarMapData),  public,parameter :: ixVarMapData   = iLook_VarMapData  (1,2,3)
  type(iLook_VarSoilData), public,parameter :: ixVarSoilData  = iLook_VarSoilData (1,2,3,4,5,6,7,8,9,10)
  type(iLook_VarVegData),  public,parameter :: ixVarVegData   = iLook_VarVegData  (1,2,3,4)
  type(iLook_PrpVeg),      public,parameter :: ixPrpVeg       = iLook_PrpVeg      (1,2,3,4,5,6,7,8,9,10,&
-                                                                                  11,12,13,14,15,16,17,18,19,20,&
-                                                                                  21,22)
+                                                                                  11)
 
 ! ***********************************************************************************************************
 ! define size of data vectors
 ! ***********************************************************************************************************
 ! Number of vairables defined
- integer(i4b),parameter,public    :: nPar = 101 
+ integer(i4b),parameter,public    :: nPar = 102 
  integer(i4b),parameter,public    :: nVarMapData=3
  integer(i4b),parameter,public    :: nVarSoilData=10
  integer(i4b),parameter,public    :: nVarVegData=4
- integer(i4b),parameter,public    :: nPrpVeg=22
+ integer(i4b),parameter,public    :: nPrpVeg=11
 
 END MODULE var_lookup

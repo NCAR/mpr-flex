@@ -85,7 +85,7 @@ CORE = \
     sac_routines.f90 \
     vic_routines.f90 \
     model_wrapper.f90 \
-    soiltf.f90 \
+    tf.f90 \
     modelLayer.f90 \
     upscaling.f90 \
     mpr_routine.f90 \
