@@ -12,8 +12,8 @@
 #========================================================================
 # Define core directory.
 # This is the parent directory of 'build' where all the source codes reside
-# 'hydropt" under home directory is default.
-F_MASTER = ~/hydropt/
+# 'mpr-flex" under home directory is default.
+F_MASTER = ~/mpr-flex/
 
 # Define the Fortran Compiler. 
 # ifort is default. The other options are gfortran and pgf90

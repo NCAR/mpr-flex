@@ -337,7 +337,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   ! *****
   ! (3.1) Extract soil poly ID, weight polygon , and soil properties for current model hru 
   ! *********************************************************************
-    call subSoilData(sdata, polySub, sdataLocal, err, cmessage)
+    call subsetData(sdata, polySub, sdataLocal, err, cmessage)
     if(err/=0)then; message=trim(message)//cmessage; return; endif
     if ( iHru == iHruPrint ) then
       print*,' '
@@ -549,7 +549,7 @@ subroutine mpr(hruID,             &     ! input: hruID
 end subroutine
  
 ! private subroutine:
-subroutine subSoilData(soilData, subPolyID, soilDataLocal, err, message)
+subroutine subsetData(soilData, subPolyID, soilDataLocal, err, message)
   use var_lookup,           only:ixVarSoilData,nVarSoilData  ! index of soil data variables and number of variables 
   use globalData,           only:sdata_meta
   implicit none
@@ -569,7 +569,7 @@ subroutine subSoilData(soilData, subPolyID, soilDataLocal, err, message)
   integer(i4b)                        :: nSlyrs        ! number of soil layers 
   integer(i4b)                        :: iDummy(1)     ! 1D integer array for temporal storage 
 
-  err=0; message='subSoilData/'
+  err=0; message='subsetData/'
   allocate(polyID(size(soilData(ixVarSoilData%polyid)%ivar1)))
   polyID = soilData(ixVarSoilData%polyid)%ivar1 
   nPoly=size(subPolyID)
