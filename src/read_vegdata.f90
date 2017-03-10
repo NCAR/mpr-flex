@@ -185,24 +185,4 @@ contains
    return 
  end subroutine
  
- subroutine findix(scl, vec, iSelect, ierr, message)
-   ! Find index where the value match up with scl  
-   implicit none
-   !input 
-   integer(i4b),intent(in)              :: scl
-   integer(i4b),intent(in)              :: vec(:)
-   integer(i4b),intent(out)             :: iSelect
-   integer(i4b)                         :: i(1)
-   integer(i4b), intent(out)            :: ierr      ! error code
-   character(*), intent(out)            :: message   ! error message
-
-   ! initialize error control
-   ierr=0; message='findix/' 
-
-   i = minloc(abs(vec - scl))
-   iSelect = i(1)  ! de-vectorize the found index 
-   if(vec(iSelect) /= scl)&
-     ierr=60; message=trim(message)//'unable to find matched value'; return  
- end subroutine findix
-
 end module read_vegdata

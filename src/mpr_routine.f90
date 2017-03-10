@@ -638,7 +638,6 @@ subroutine pop_hfrac(gammaParStr, gammaParMeta,hfrac, err, message)
   logical(lgc)                      :: mask(20) 
   integer(i4b)                      :: i
 
-  ! initialize error control
   err=0; message='pop_hfrac/'
   dummy=-999
   !check h parameters - now can chcek up to 5 layers
@@ -654,11 +653,33 @@ subroutine pop_hfrac(gammaParStr, gammaParMeta,hfrac, err, message)
   return
 end subroutine 
 
+! private function 
 character(len=20) function int2str(k)
 !   "Convert an integer to string."
     integer, intent(in) :: k
     write (int2str, *) k
     int2str = adjustl(int2str)
 end function
+
+! private subroutine:
+subroutine findix(scl, vec, iSelect, ierr, message)
+  ! Find index where the value match up with scl  
+  implicit none
+  !input 
+  integer(i4b),intent(in)              :: scl
+  integer(i4b),intent(in)              :: vec(:)
+  integer(i4b),intent(out)             :: iSelect
+  integer(i4b)                         :: i(1)
+  integer(i4b), intent(out)            :: ierr      ! error code
+  character(*), intent(out)            :: message   ! error message
+
+  ! initialize error control
+  ierr=0; message='findix/' 
+
+  i = minloc(abs(vec - scl))
+  iSelect = i(1)  ! de-vectorize the found index 
+  if(vec(iSelect) /= scl)&
+    ierr=60; message=trim(message)//'unable to find matched value'; return  
+end subroutine findix
 
 end module mpr_routine
