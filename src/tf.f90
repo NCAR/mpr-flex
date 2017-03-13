@@ -3,47 +3,53 @@ module tf
 use nrtype                                        ! variable types, etc.
 use data_type                                     ! Including custum data structure definition
 use public_var                                     ! Including common constant (physical constant, other e.g., missingVal, etc.)
-use var_lookup,   only:ixVarSoilData, ixPar, nPar
+use var_lookup, only:ixVarSoilData, ixVarVegData, ixPar, nPar
 
 implicit none
 
 private
 
-public::comp_soil_model_param
+public::comp_model_param
 
 contains
 
 ! ********************************************************************************************
 ! Public subroutine: Execute computation of model-dependant soil parameter transfer function  
 ! *********************************************************************************************
-subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil parameter values for all soil polygons that are input
-                                 sdata,             &  ! input: soil data
-                                 gammaParMasterMeta,&  ! input: gamma parameter meta file - val of calibrating parammeter is adjusted via calibration 
-                                 nSLyr,             &  ! input: number of soil layers
-                                 nSPoly,            &  ! input: number of soil polygons
-                                 err,message) 
+subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter values for all L0 polygons that are included
+                            parVxy,            &  ! in/output: veg parameter values for all L0 polygons that are included 
+                            sdata,             &  ! input: soil data
+                            vdata,             &  ! input: vege data
+                            gammaParMasterMeta,&  ! input: gamma parameter meta file - val of calibrating parammeter is adjusted via calibration 
+                            nSLyr,             &  ! input: number of soil layers
+                            nSPoly,            &  ! input: number of soil polygons
+                            nVPoly,            &  ! input: number of vege polygons (to be deleted as nVpoly=nSpoly)
+                            err,message) 
 
-  use globalData, only:betaInGamma, betaNeeded
+  use globalData, only:parMaster,soilBetaInGamma, vegBetaInGamma, betaNeeded
   use get_ixname, only:get_ixPar
   implicit none
   ! in/out
-  type(namedvar2),      intent(inout) :: parSxySz(:)            ! soil parameter values for ParSxySz(:)%dat(lyr,poly) 
+  type(namedvar2),      intent(inout) :: parSxySz(:)            ! soil parameter values for ParSxySz(:)%varDat(lyr,poly) 
+  type(namedvar2),      intent(inout) :: parVxy(:)              ! veg parameter values for ParVxy(:)%varDat(lyr,poly) 
   ! input
   type(namevar),        intent(in)    :: sdata(:)               ! storage of soil data strucuture
+  type(namevar),        intent(in)    :: vdata(:)               ! storage of veg data strucuture
   type(par_meta)                      :: gammaParMasterMeta(:)
   integer(i4b),         intent(in)    :: nSLyr                  ! number of soil layer
   integer(i4b),         intent(in)    :: nSPoly                 ! number of soil polygons
+  integer(i4b),         intent(in)    :: nVPoly                 ! number of vege polygons (to be deleted)
   ! output
   integer(i4b),         intent(out)   :: err                   ! error code
   character(len=strLen),intent(out)   :: message                ! error message for current routine
   ! Local 
-  type(namedvar2)                     :: ParTemp(nPar)          ! soil parameter values for ParSxySz(:)%dat(lyr,poly) 
+  type(namedvar2)                     :: parTemp(nPar)          ! soil parameter values for ParSxySz(:)%dat(lyr,poly) 
   integer(i4b)                        :: ix                     ! index of gamma parameter 
   integer(i4b)                        :: idBeta                 ! id of beta parameter array 
   integer(i4b)                        :: iParm                  ! Loop index of model parameters (e.g., VIC)
   logical(lgc)                        :: checkDone(nPar)        ! used to check if the VIC parameter is processed
 
-  err=0; message="comp_soil_model_param/"
+  err=0; message="comp_model_param/"
   first: associate(sclass  => sdata(ixVarSoilData%soilclass)%ivar2,   &
                    hslyrs  => sdata(ixVarSoilData%hslyrs)%dvar2,      &
                    sand    => sdata(ixVarSoilData%sand_frc)%dvar2,    & 
@@ -53,11 +59,16 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
                    elestd  => sdata(ixVarSoilData%ele_std)%dvar1,     & 
                    elemean => sdata(ixVarSoilData%ele_mean)%dvar1,    & 
                    slpmean => sdata(ixVarSoilData%slp_mean)%dvar1,    &
+                   monLai  => vdata(ixVarVegData%lai)%dvar2,          &
                    gammaPar=> gammaParMasterMeta(:)%val)
   do iParm = 1,size(betaNeeded)
     ix = get_ixPar(betaNeeded(iParm)) 
-    allocate(ParTemp(ix)%varData(nSLyr,nSPoly) ,stat=err); if(err/=0)then;message=trim(message)//'error allocating ParTemp';stop;endif
-    second: associate (xPar => ParTemp(ix)%varData, &
+    if (trim(parMaster(ix)%ptype)=='soil')then
+      allocate(parTemp(ix)%varData(nSLyr,nSPoly) ,stat=err); if(err/=0)then;message=trim(message)//'error allocating parTemp';stop;endif
+    elseif (parMaster(ix)%ptype=='vege')then 
+      allocate(parTemp(ix)%varData(nMonth,nVPoly) ,stat=err); if(err/=0)then;message=trim(message)//'error allocating parTemp';stop;endif
+    endif
+    second: associate (xPar => parTemp(ix)%varData, &
                        tfid => gammaParMasterMeta(ix)%tftype)
     if (tfid==-999_i2b) tfid=1_i2b
     select case(ix)
@@ -70,7 +81,7 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
       case(ixPar%phi)
         if(.not.checkDone(ixPar%bd)) then;err=10;message=trim(message)//'need to process bd before phi';return;endif
         checkDone(ix)=.true.
-        xPar = phi( sand, clay, ParTemp(ixPar%bd)%varData,gammaPar, tfid)
+        xPar = phi( sand, clay, parTemp(ixPar%bd)%varData,gammaPar, tfid)
       case(ixPar%b)
         checkDone(ix)=.true.
         xPar = ret_curve( sand, clay, gammaPar, tfid)
@@ -82,18 +93,18 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
         if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before fc';return;endif
         if(.not.checkDone(ixPar%b))    then;err=10;message=trim(message)//'need to process b before fc';return;endif
         checkDone(ix)=.true.
-        xPar = fc(sand, ParTemp(ixPar%phi)%varData, ParTemp(ixPar%psis)%varData, ParTemp(ixPar%b)%varData,gammaPar, tfid)
+        xPar = fc(sand, parTemp(ixPar%phi)%varData, parTemp(ixPar%psis)%varData, parTemp(ixPar%b)%varData,gammaPar, tfid)
       case(ixPar%wp)
         if(.not.checkDone(ixPar%psis)) then;err=10;message=trim(message)//'need to process psis before wp';return;endif
         if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before wp';return;endif
         if(.not.checkDone(ixPar%b))    then;err=10;message=trim(message)//'need to process b before wp';return;endif
         checkDone(ix)=.true.
-        xPar = wp( ParTemp(ixPar%phi)%varData, ParTemp(ixPar%psis)%varData, ParTemp(ixPar%b)%varData, gammaPar, tfid) 
+        xPar = wp( parTemp(ixPar%phi)%varData, parTemp(ixPar%psis)%varData, parTemp(ixPar%b)%varData, gammaPar, tfid) 
       case(ixPar%myu)
         if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before myu';return;endif
         if(.not.checkDone(ixPar%fc))   then;err=10;message=trim(message)//'need to process fc before myu';return;endif
         checkDone(ix)=.true.
-        xPar= myu( ParTemp(ixPar%phi)%varData, ParTemp(ixPar%fc)%varData, gammaPar, tfid)
+        xPar= myu( parTemp(ixPar%phi)%varData, parTemp(ixPar%fc)%varData, gammaPar, tfid)
       case(ixPar%binfilt)
         checkDone(ix)=.true.
         xPar=spread( infilt( elestd, gammaPar, tfid), 1, nSLyr)
@@ -102,8 +113,8 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
         if(.not.checkDone(ixPar%phi)) then;err=10;message=trim(message)//'need to process "phi" before "D1"';return;endif
         checkDone(ix)=.true. 
         xPar=D1( slpmean,                    &
-                 ParTemp(ixPar%ks)%varData,  &
-                 ParTemp(ixPar%phi)%varData, & 
+                 parTemp(ixPar%ks)%varData,  &
+                 parTemp(ixPar%phi)%varData, & 
                  hslyrs,                     &
                  gammaPar,                   &
                  tfid)
@@ -112,83 +123,101 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
         if(.not.checkDone(ixPar%D3))    then;err=10;message=trim(message)//'need to process "D3" before "Ds"';return;endif
         if(.not.checkDone(ixPar%Dsmax)) then;err=10;message=trim(message)//'need to process "Dsmax" before "Ds"';return;endif
         checkDone(ix)=.true. 
-        xPar=Ds( ParTemp(ixPar%D1)%varData, ParTemp(ixPar%D3)%varData, ParTemp(ixPar%Dsmax)%varData, tfid)
+        xPar=Ds( parTemp(ixPar%D1)%varData, parTemp(ixPar%D3)%varData, parTemp(ixPar%Dsmax)%varData, tfid)
       case(ixPar%D4)
         checkDone(ix)=.true.
         xPar=D4(gammaPar, tfid)
       case(ixPar%c)
         if(.not.checkDone(ixPar%D4)) then;err=10;message=trim(message)//'need to process "D4" before "c"';return;endif
         checkDone(ix)=.true.
-        xPar=cexpt(ParTemp(ixPar%D4)%varData, tfid)
+        xPar=cexpt(parTemp(ixPar%D4)%varData, tfid)
       case(ixPar%SD)
         checkDone(ix)=.true.
-        xPar=soilDensity(ParTemp(ixPar%sd)%varData, gammaPar ,tfid)
+        xPar=soilDensity(parTemp(ixPar%sd)%varData, gammaPar ,tfid)
       case(ixPar%expt)
+        if(.not.checkDone(ixPar%b)) then;err=10;message=trim(message)//'need to process "b" before "expt"';return;endif
         checkDone(ix)=.true.
-        xPar=expt( ParTemp(ixPar%b)%varData, gammaPar ,tfid)
+        xPar=expt( parTemp(ixPar%b)%varData, gammaPar ,tfid)
       case(ixPar%D2)
         if(.not.checkDone(ixPar%ks)) then;err=10;message=trim(message)//'need to process "ksat" before "D2"';return;endif
         if(.not.checkDone(ixPar%D4)) then;err=10;message=trim(message)//'need to process "D4" before "D2"';return;endif
         checkDone(ix)=.true.
-        xPar=D2( slpmean, ParTemp(ixPar%ks)%varData, ParTemp(ixPar%D4)%varData, gammaPar, tfid )
+        xPar=D2( slpmean, parTemp(ixPar%ks)%varData, parTemp(ixPar%D4)%varData, gammaPar, tfid )
       case(ixPar%Dsmax)
         if(.not.checkDone(ixPar%D1)) then;err=10;message=trim(message)//'need to process "D1" before "Dsmax"';return;endif
         if(.not.checkDone(ixPar%D2)) then;err=10;message=trim(message)//'need to process "D2" before "Dsmax"';return;endif
         if(.not.checkDone(ixPar%D3)) then;err=10;message=trim(message)//'need to process "D3" before "Dsmax"';return;endif
         if(.not.checkDone(ixPar%c))  then;err=10;message=trim(message)//'need to process "c" before "Dsmax"';return;endif
         checkDone(ix)=.true. 
-        xPar=Dsmax( ParTemp(ixPar%D1)%varData,   &
-                    ParTemp(ixPar%D2)%varData,   & 
-                    ParTemp(ixPar%D3)%varData,   & 
-                    ParTemp(ixPar%c)%varData,    & 
-                    ParTemp(ixPar%phi)%varData,  &
+        xPar=Dsmax( parTemp(ixPar%D1)%varData,   &
+                    parTemp(ixPar%D2)%varData,   & 
+                    parTemp(ixPar%D3)%varData,   & 
+                    parTemp(ixPar%c)%varData,    & 
+                    parTemp(ixPar%phi)%varData,  &
                     hslyrs,                      &
                     tfid)
       case(ixPar%bbl)
         if(.not.checkDone(ixPar%expt)) then;err=10;message=trim(message)//'need to process "expt" before "bubble"';return;endif
         checkDone(ix)=.true.
-        xPar=bubble( ParTemp(ixPar%expt)%varData, gammaPar, tfid)
+        xPar=bubble( parTemp(ixPar%expt)%varData, gammaPar, tfid)
       case(ixPar%WcrFrac)
+        if(.not.checkDone(ixPar%fc))then;err=10;message=trim(message)//'need to process "fc" before "WcrFrac"';return;endif 
+        if(.not.checkDone(ixPar%phi))then;err=10;message=trim(message)//'need to process "phi" before "WcrFrac"';return;endif 
         checkDone(ix)=.true.
-        xPar=WcrFrac( ParTemp(ixPar%fc)%varData,ParTemp(ixPar%phi)%varData,gammaPar , tfid)
+        xPar=WcrFrac( parTemp(ixPar%fc)%varData,parTemp(ixPar%phi)%varData,gammaPar , tfid)
       case(ixPar%WpwpFrac)
+        if(.not.checkDone(ixPar%wp))then;err=10;message=trim(message)//'need to process "wp" before "WpwpFrac"';return;endif 
+        if(.not.checkDone(ixPar%phi))then;err=10;message=trim(message)//'need to process "phi" before "WpwpFrac"';return;endif 
         checkDone(ix)=.true.
-        xPar=WpwpFrac( ParTemp(ixPar%wp)%varData, ParTemp(ixPar%phi)%varData, gammaPar, tfid)
+        xPar=WpwpFrac( parTemp(ixPar%wp)%varData, parTemp(ixPar%phi)%varData, gammaPar, tfid)
       case(ixPar%D3)
         if(.not.checkDone(ixPar%fc))   then;err=10;message=trim(message)//'need to process fc before D3';return;endif
         checkDone(ix)=.true.
-        xPar=D3( ParTemp(ixPar%fc)%varData, hslyrs, gammaPar , tfid)
+        xPar=D3( parTemp(ixPar%fc)%varData, hslyrs, gammaPar , tfid)
       case(ixPar%Ws)
         if(.not.checkDone(ixPar%D3))then;err=10;message=trim(message)//'need to process "D3" before "Dsmax"';return;endif 
         checkDone(ix)=.true. 
-        xPar=Ws( ParTemp(ixPar%D3)%varData, ParTemp(ixPar%phi)%varData,hslyrs , tfid)
+        xPar=Ws( parTemp(ixPar%D3)%varData, parTemp(ixPar%phi)%varData,hslyrs , tfid)
       case(ixPar%twm)
+        if(.not.checkDone(ixPar%fc))   then;err=10;message=trim(message)//'need to process fc before twm';return;endif
+        if(.not.checkDone(ixPar%wp))   then;err=10;message=trim(message)//'need to process wp before twm';return;endif
         checkDone(ix)=.true. 
-        xPar= twm( ParTemp(ixPar%fc)%varData,ParTemp(ixPar%wp)%varData,hslyrs , tfid)
+        xPar= twm( parTemp(ixPar%fc)%varData,parTemp(ixPar%wp)%varData,hslyrs , tfid)
       case(ixPar%fwm)
+        if(.not.checkDone(ixPar%fc))   then;err=10;message=trim(message)//'need to process fc before fwm';return;endif
+        if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before fwm';return;endif
         checkDone(ix)=.true. 
-        xPar= fwm( ParTemp(ixPar%phi)%varData,ParTemp(ixPar%fc)%varData,hslyrs, tfid )
+        xPar= fwm( parTemp(ixPar%phi)%varData,parTemp(ixPar%fc)%varData,hslyrs, tfid )
       case(ixPar%fsm)
         if(.not.checkDone(ixPar%fwm))then;err=10;message=trim(message)//'need to process "fwm" before "fsm"';return;endif 
         checkDone(ix)=.true. 
-        xPar= fsm( ParTemp(ixPar%fwm)%varData,ParTemp(ixPar%phi)%varData,ParTemp(ixPar%wp)%varData,gammaPar, tfid )
+        xPar= fsm( parTemp(ixPar%fwm)%varData,parTemp(ixPar%phi)%varData,parTemp(ixPar%wp)%varData,gammaPar, tfid )
       case(ixPar%fpm)
         if(.not.checkDone(ixPar%fwm))then;err=10;message=trim(message)//'need to process "fwm" before "fpm"';return;endif 
         if(.not.checkDone(ixPar%fsm))then;err=10;message=trim(message)//'need to process "fsm" before "fpm"';return;endif 
         checkDone(ix)=.true. 
-        xPar= fpm( ParTemp(ixPar%fwm)%varData, ParTemp(ixPar%fsm)%varData, tfid )
+        xPar= fpm( parTemp(ixPar%fwm)%varData, parTemp(ixPar%fsm)%varData, tfid )
       case(ixPar%zk)
+        if(.not.checkDone(ixPar%fc))   then;err=10;message=trim(message)//'need to process fc before zk';return;endif
+        if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before zk';return;endif
         checkDone(ix)=.true. 
-        xPar= zk( ParTemp(ixPar%phi)%varData,ParTemp(ixPar%fc)%varData,gammaPar, tfid )
+        xPar= zk( parTemp(ixPar%phi)%varData,parTemp(ixPar%fc)%varData,gammaPar, tfid )
       case(ixPar%zsk)
+        if(.not.checkDone(ixPar%fc))   then;err=10;message=trim(message)//'need to process fc before zsk';return;endif
+        if(.not.checkDone(ixPar%wp))   then;err=10;message=trim(message)//'need to process wp before zsk';return;endif
+        if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before zsk';return;endif
         checkDone(ix)=.true. 
-        xPar= zsk( ParTemp(ixPar%phi)%varData,ParTemp(ixPar%fc)%varData,ParTemp(ixPar%wp)%varData,gammaPar, tfid )
+        xPar= zsk( parTemp(ixPar%phi)%varData,parTemp(ixPar%fc)%varData,parTemp(ixPar%wp)%varData,gammaPar, tfid )
       case(ixPar%zpk)
+        if(.not.checkDone(ixPar%ks))   then;err=10;message=trim(message)//'need to process ks before zpk';return;endif
+        if(.not.checkDone(ixPar%myu))  then;err=10;message=trim(message)//'need to process myu before zpk';return;endif
         checkDone(ix)=.true. 
-        xPar= zpk( ParTemp(ixPar%ks)%varData,ParTemp(ixPar%myu)%varData,hslyrs,gammaPar, tfid )
+        xPar= zpk( parTemp(ixPar%ks)%varData,parTemp(ixPar%myu)%varData,hslyrs,gammaPar, tfid )
       case(ixPar%pfree)
+        if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before pfree';return;endif
+        if(.not.checkDone(ixPar%wp))   then;err=10;message=trim(message)//'need to process wp before pfree';return;endif
         checkDone(ix)=.true. 
-        xPar= pfree( ParTemp(ixPar%phi)%varData,ParTemp(ixPar%wp)%varData,gammaPar, tfid )
+        xPar= pfree( parTemp(ixPar%phi)%varData,parTemp(ixPar%wp)%varData,gammaPar, tfid )
       case(ixPar%zperc)
         if(.not.checkDone(ixPar%twm))then;err=10;message=trim(message)//'need to process "twm" before "pfree"';return;endif 
         if(.not.checkDone(ixPar%fsm))then;err=10;message=trim(message)//'need to process "fsm" before "pfree"';return;endif 
@@ -196,18 +225,25 @@ subroutine comp_soil_model_param(parSxySz,          &  ! in/output: soil paramet
         if(.not.checkDone(ixPar%fpm))then;err=10;message=trim(message)//'need to process "fpm" before "pfree"';return;endif 
         if(.not.checkDone(ixPar%zpk))then;err=10;message=trim(message)//'need to process "zpk" before "pfree"';return;endif 
         checkDone(ix)=.true. 
-        xPar= zperc(ParTemp(ixPar%twm)%varData,ParTemp(ixPar%fsm)%varData,ParTemp(ixPar%zsk)%varData,ParTemp(ixPar%fpm)%varData,ParTemp(ixPar%zsk)%varData, tfid)
+        xPar= zperc(parTemp(ixPar%twm)%varData,parTemp(ixPar%fsm)%varData,parTemp(ixPar%zsk)%varData,parTemp(ixPar%fpm)%varData,parTemp(ixPar%zsk)%varData, tfid)
       case(ixPar%rexp)
+        if(.not.checkDone(ixPar%wp))then;err=10;message=trim(message)//'need to process "wp" before "rexp"';return;endif 
         checkDone(ix)=.true. 
-        xPar= rexp( ParTemp(ixPar%wp)%varData,gammaPar, tfid )
+        xPar= rexp( parTemp(ixPar%wp)%varData,gammaPar, tfid )
+      case(ixPar%lai)
+        xPar= lai( monLai, gammaPar, tfid )
     end select ! end of parameter case
     end associate second
   end do ! end of parameter loop
   end associate first
   ! extract beta parameters in 'CalPar' list
-  do iParm=1,size(betaInGamma)
-    idBeta=get_ixPar(trim(betaInGamma(iParm)))
+  do iParm=1,size(soilBetaInGamma)
+    idBeta=get_ixPar(trim(soilBetaInGamma(iParm)))
     parSxySz(iParm)%varData=parTemp(idBeta)%varData 
+  enddo
+  do iParm=1,size(vegBetaInGamma)
+    idBeta=get_ixPar(trim(vegBetaInGamma(iParm)))
+    parVxy(iParm)%varData=parTemp(idBeta)%varData 
   enddo
   return
 end subroutine 

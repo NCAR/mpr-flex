@@ -87,19 +87,21 @@ end subroutine
 ! ************************************************************************************************
 subroutine get_parm_meta( err, message)
   ! Process calParMeta along with parMaster (popMeta.f90) 
-  ! Saved data:  gammaMaster, betaMaster, parSubset, gammaSubset, betaInGamma data structure 
+  ! Saved data:  parSubset, gammaSubset, betaInGamma data structure 
   use data_type,  only:par_meta,cpar_meta
-  use globalData, only:calParMeta,  & ! meta for beta parameter listed in 'calPar' input
-                       parMaster,   & ! meta for all gamma and beta parameters
-                       gammaMaster, & ! meta for all gamma parameter 
-                       betaMaster,  & ! meta for all beta parameter 
-                       parSubset,   & ! meta for only parameter listed in input
-                       gammaSubset, & ! meta for only gamma parameters listed in input
-                       betaInGamma, & ! list of beta parameter associated with gamma parameters in list
-                       betaCalScale,& ! meta for beta parameter whose scaling operator(s) is calibrated
-                       nBetaGamma,  & ! sum of beta and gamma parameters to be calibrated 
-                       nBeta,       & ! number of beta parameters to be calibrated directly
-                       nGamma         ! number of gamma parameters to be calibrated 
+  use globalData, only:calParMeta,     & ! meta for beta parameter listed in 'calPar' input
+                       parMaster,      & ! meta for all gamma and beta parameters
+                       parSubset,      & ! meta for only parameter listed in input
+                       gammaSubset,    & ! meta for only gamma parameters listed in input
+                       betaInGamma,    & ! list of beta parameter associated with gamma parameters in list
+                       betaCalScale,   & ! meta for beta parameter whose scaling operator(s) is calibrated
+                       nBetaGamma,     & ! sum of beta and gamma parameters to be calibrated 
+                       nBeta,          & ! number of beta parameters to be calibrated directly
+                       nGamma,         & ! number of gamma parameters to be calibrated 
+                       nSoilParModel,  & ! number of soil beta parameters to be calibrated 
+                       nVegParModel,  & ! number of soil beta parameters to be calibrated 
+                       soilBetaInGamma,& ! list of Soil parameters to be estimated via MPR
+                       vegBetaInGamma    ! list of vege parameters to be estimated via MPR
   use get_ixname, only:get_ixPar
   use var_lookup, only:nPar
   implicit none
@@ -109,94 +111,20 @@ subroutine get_parm_meta( err, message)
   character(*),intent(out)             :: message          ! error message
   ! local variables
   character(len=strLen)                :: cmessage         ! error message from subroutine
-  type(cpar_meta),allocatable          :: tempGammaMeta(:)
-  type(cpar_meta),allocatable          :: tempParSubset(:)
-  logical(lgc),allocatable             :: mask(:)
   integer(i4b)                         :: iBeta            ! loop index of lines in calPar input file 
   integer(i4b)                         :: ivar             ! loop index of master parameter  
   integer(i4b)                         :: iPar             ! loop index of master parameter  
-  integer(i4b)                         :: iGamma           ! loop index of all the gamma parameters in master 
-  integer(i4b)                         :: iend             ! check for the end of the file
  
   err=0; message="get_param_meta/"
-  ! update parMaster(:)%tftype (transfer function type)
+  ! update parMaster(:)%tftype (transfer function type to be used)
   do iBeta=1,size(calParMeta)
     ivar=get_ixPar(calParMeta(iBeta)%betaname)
     if(ivar<=0)then; err=40; message=trim(message)//"1.variableNotFound[var="//trim(calParMeta(iBeta)%betaname)//"]"; return; endif
     parMaster(ivar)%tftype=calParMeta(iBeta)%TF
   enddo
-  ! split parMaster into gammaMaster and betaMaster 
-  ! gammaMaster
-  allocate(mask(nPar),stat=err); if(err/=0)then;message=trim(message)//'1.error allocating mask';return;endif
-  mask=parMaster(:)%beta/='beta'
-  allocate(gammaMaster(count(mask)))
-  gammaMaster=pack(parMaster,mask)
-  deallocate(mask,stat=err); if(err/=0)then;message=trim(message)//'1.error deallocating mask';return;endif
-  ! betaMaster
-  allocate(mask(nPar),stat=err); if(err/=0)then;message=trim(message)//'2.error allocating mask';return;endif
-  mask=parMaster(:)%beta=='beta'
-  allocate(betaMaster(count(mask)))
-  betaMaster=pack(parMaster,mask)
-  deallocate(mask,stat=err); if(err/=0)then;message=trim(message)//'2.error deallocating mask';return;endif
-  allocate(tempParSubset(nPar))
-  allocate(tempGammaMeta(nPar))
-  nBetaGamma=0 ! Count and Save number of parameters to be calibrated
-  nGamma=0     ! Count and Save number of gamma parameter to be calibrated
-  do iBeta=1,size(calParMeta)
-    if(calParMeta(iBeta)%calMethod==1) then !if calMethod is MPR
-      do iGamma=1,size(gammaMaster) ! look for gammma parameters associated with this beta parameter
-        if (gammaMaster(igamma)%beta==calparmeta(ibeta)%betaname .and. gammaMaster(igamma)%tftype==calparmeta(ibeta)%TF) then
-          nBetaGamma = nBetaGamma+1
-          ivar=get_ixPar(gammaMaster(iGamma)%pname)
-          tempParSubset(nBetaGamma)%ixMaster = ivar
-          tempParSubset(nBetaGamma)%pname    = gammaMaster(iGamma)%pname
-          tempParSubset(nBetaGamma)%val      = gammaMaster(iGamma)%val
-          tempParSubset(nBetaGamma)%lwr      = gammaMaster(iGamma)%lwr
-          tempParSubset(nBetaGamma)%upr      = gammaMaster(iGamma)%upr
-          tempParSubset(nBetaGamma)%beta     = gammaMaster(iGamma)%beta
-          tempParSubset(nBetaGamma)%tftype   = gammaMaster(iGamma)%tftype
-          tempParSubset(nBetaGamma)%ptype    = gammaMaster(iGamma)%ptype
-          tempParSubset(nBetaGamma)%flag     = .True.
-          tempParSubset(nBetaGamma)%hups     = gammaMaster(iGamma)%hups
-          tempParSubset(nBetaGamma)%hpnorm   = gammaMaster(iGamma)%hpnorm
-          tempParSubset(nBetaGamma)%vups     = gammaMaster(iGamma)%vups
-          tempParSubset(nBetaGamma)%vpnorm   = gammaMaster(iGamma)%vpnorm
-          tempParSubset(nBetaGamma)%perLyr   = gammaMaster(iGamma)%perLyr
-          nGamma = nGamma+1
-          tempGammaMeta(nGamma) = tempParSubset(nBetaGamma)
-        endif
-      end do
-    elseif (calParMeta(iBeta)%calMethod==2) then ! if calMethod is direct calibration
-      ivar = get_ixPar(calParMeta(iBeta)%betaname)
-      if(ivar<=0)then; err=40; message=trim(message)//"2.variableNotFound[var="//trim(calParMeta(iBeta)%betaname)//"]"; return; endif
-      nBetaGamma = nBetaGamma+1
-      tempParSubset(nBetaGamma)%ixMaster = ivar
-      tempParSubset(nBetaGamma)%pname    = parMaster(ivar)%pname
-      tempParSubset(nBetaGamma)%val      = parMaster(ivar)%val
-      tempParSubset(nBetaGamma)%lwr      = parMaster(ivar)%lwr
-      tempParSubset(nBetaGamma)%upr      = parMaster(ivar)%upr
-      tempParSubset(nBetaGamma)%beta     = parMaster(ivar)%beta
-      tempParSubset(nBetaGamma)%tftype   = parMaster(ivar)%tftype
-      tempParSubset(nBetaGamma)%ptype    = parMaster(ivar)%ptype
-      tempParSubset(nBetaGamma)%flag     = .True. 
-      tempParSubset(nBetaGamma)%hups     = parMaster(ivar)%hups
-      tempParSubset(nBetaGamma)%hpnorm   = parMaster(ivar)%hpnorm
-      tempParSubset(nBetaGamma)%vups     = parMaster(ivar)%vups
-      tempParSubset(nBetaGamma)%vpnorm   = parMaster(ivar)%vpnorm
-      tempParSubset(nBetaGamma)%perLyr   = parMaster(ivar)%perLyr
-    endif
-  enddo
-  nBeta=nBetaGamma-nGamma      ! Save number of beta parameter to be directly calibrated
-  if (nBetaGamma > 0_i2b) then ! Save 'parSubset'
-    allocate(parSubset(nBetaGamma))
-    parSubset=tempParSubset(1:nBetaGamma) 
-  endif
-  if (nGamma > 0_i2b) then     ! Save'gammaSubset'
-    allocate(gammaSubset(nGamma))
-    gammaSubset=tempGammaMeta(1:nGamma) 
-  endif
-  call get_betaInGamma( err, cmessage ); if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
-  call get_betaCalScale( err, cmessage );if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
+  call get_parMetaSubset( err, cmessage ); if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
+  call get_betaInGamma( err, cmessage );   if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
+  call get_betaCalScale( err, cmessage );  if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
   ! check that all elements are populated
   if(any(parSubset(:)%pname==''))then
     do iPar=1,size(parSubset)
@@ -204,22 +132,112 @@ subroutine get_parm_meta( err, message)
     end do
     err=40; message=trim(message)//"parSubset is not filled out completely"; return
   endif
-  print*, betaCalScale
   return
 
   contains
 
   ! Private subroutine:   
-  subroutine get_betaInGamma( err, message )
+  subroutine get_parMetaSubset( err, message )
+  ! Saved data:  parSubset, gammaSubset, nBetaGamma, nBeta, nGamma
     !input
     !output
     character(len=strLen),intent(out)   :: message           ! error message for current routine
     integer(i4b),         intent(out)   :: err               ! error code
     !local
-    character(len=strLen),allocatable    :: allbeta(:)       ! 
-    character(len=strLen),allocatable    :: res(:)           ! 
-    integer(i4b)                         :: i,j,k            ! loop index
+    integer(i4b)                         :: ivar             ! loop index of master parameter  
+    integer(i4b)                         :: iBeta            ! loop index of lines in calPar input file 
+    integer(i4b)                         :: iGamma           ! loop index of all the gamma parameters in master 
+    logical(lgc),allocatable             :: mask(:)
+    type(par_meta),allocatable           :: gammaMaster(:)   ! meta for all gamma parameter extracted from parMaster
+    type(cpar_meta),allocatable          :: tempParSubset(:)
+    type(cpar_meta),allocatable          :: tempGammaMeta(:)
+
+    err=0; message="get_parMetaSubset/"
+    ! gammaMaster (gamma parameter subset of parMaster)
+    allocate(mask(nPar),stat=err); if(err/=0)then;message=trim(message)//'1.error allocating mask';return;endif
+    mask=parMaster(:)%beta/='beta'
+    allocate(gammaMaster(count(mask)))
+    gammaMaster=pack(parMaster,mask)
+    deallocate(mask,stat=err); if(err/=0)then;message=trim(message)//'1.error deallocating mask';return;endif
+    allocate(tempParSubset(nPar))
+    allocate(tempGammaMeta(nPar))
+    nBetaGamma=0 ! Count and Save number of sum of beta (directly) and gamma parameters to be calibrated
+    nGamma=0     ! Count and Save number of gamma parameter to be calibrated
+    do iBeta=1,size(calParMeta)
+      if(calParMeta(iBeta)%calMethod==1) then !if calMethod is MPR
+        do iGamma=1,size(gammaMaster) ! look for gammma parameters associated with this beta parameter
+          if (gammaMaster(iGamma)%beta==calParMeta(iBeta)%betaname .and. gammaMaster(iGamma)%tftype==calParMeta(iBeta)%TF) then
+            nBetaGamma = nBetaGamma+1
+            ivar=get_ixPar(gammaMaster(iGamma)%pname)
+            tempParSubset(nBetaGamma)%ixMaster = ivar
+            tempParSubset(nBetaGamma)%pname    = gammaMaster(iGamma)%pname
+            tempParSubset(nBetaGamma)%val      = gammaMaster(iGamma)%val
+            tempParSubset(nBetaGamma)%lwr      = gammaMaster(iGamma)%lwr
+            tempParSubset(nBetaGamma)%upr      = gammaMaster(iGamma)%upr
+            tempParSubset(nBetaGamma)%beta     = gammaMaster(iGamma)%beta
+            tempParSubset(nBetaGamma)%tftype   = gammaMaster(iGamma)%tftype
+            tempParSubset(nBetaGamma)%ptype    = gammaMaster(iGamma)%ptype
+            tempParSubset(nBetaGamma)%flag     = .True.
+            tempParSubset(nBetaGamma)%hups     = gammaMaster(iGamma)%hups
+            tempParSubset(nBetaGamma)%hpnorm   = gammaMaster(iGamma)%hpnorm
+            tempParSubset(nBetaGamma)%vups     = gammaMaster(iGamma)%vups
+            tempParSubset(nBetaGamma)%vpnorm   = gammaMaster(iGamma)%vpnorm
+            tempParSubset(nBetaGamma)%perLyr   = gammaMaster(iGamma)%perLyr
+            nGamma = nGamma+1
+            tempGammaMeta(nGamma) = tempParSubset(nBetaGamma)
+          endif
+        end do
+      elseif (calParMeta(iBeta)%calMethod==2) then ! if calMethod is direct calibration
+        ivar = get_ixPar(calParMeta(iBeta)%betaname)
+        if(ivar<=0)then; err=40; message=trim(message)//"2.variableNotFound[var="//trim(calParMeta(iBeta)%betaname)//"]"; return; endif
+        nBetaGamma = nBetaGamma+1
+        tempParSubset(nBetaGamma)%ixMaster = ivar
+        tempParSubset(nBetaGamma)%pname    = parMaster(ivar)%pname
+        tempParSubset(nBetaGamma)%val      = parMaster(ivar)%val
+        tempParSubset(nBetaGamma)%lwr      = parMaster(ivar)%lwr
+        tempParSubset(nBetaGamma)%upr      = parMaster(ivar)%upr
+        tempParSubset(nBetaGamma)%beta     = parMaster(ivar)%beta
+        tempParSubset(nBetaGamma)%tftype   = parMaster(ivar)%tftype
+        tempParSubset(nBetaGamma)%ptype    = parMaster(ivar)%ptype
+        tempParSubset(nBetaGamma)%flag     = .True. 
+        tempParSubset(nBetaGamma)%hups     = parMaster(ivar)%hups
+        tempParSubset(nBetaGamma)%hpnorm   = parMaster(ivar)%hpnorm
+        tempParSubset(nBetaGamma)%vups     = parMaster(ivar)%vups
+        tempParSubset(nBetaGamma)%vpnorm   = parMaster(ivar)%vpnorm
+        tempParSubset(nBetaGamma)%perLyr   = parMaster(ivar)%perLyr
+      endif
+    enddo
+    nBeta=nBetaGamma-nGamma      ! Save number of beta parameter to be directly calibrated
+    if (nBetaGamma > 0_i2b) then ! Save 'parSubset'
+      allocate(parSubset(nBetaGamma))
+      parSubset=tempParSubset(1:nBetaGamma) 
+    endif
+    if (nGamma > 0_i2b) then     ! Save'gammaSubset'
+      allocate(gammaSubset(nGamma))
+      gammaSubset=tempGammaMeta(1:nGamma) 
+    endif
+    return
+  end subroutine
+
+  ! Private subroutine:   
+  subroutine get_betaInGamma( err, message )
+    !input
+    !output
+    character(len=strLen),intent(out)    :: message                ! error message for current routine
+    integer(i4b),         intent(out)    :: err                    ! error code
+    !local
+    logical(lgc),allocatable             :: mask(:)
+    integer(i4b)                         :: iPar                   ! loop index of parameter 
+    integer(i4b)                         :: ivar                   ! index in master parameter
+    integer(i4b)                         :: iSoil                  ! counter for soil beta parameters to be computed with MPR 
+    integer(i4b)                         :: iVeg                   ! counter for vege beta parameters to be computed with MPR
+    character(len=strLen),allocatable    :: allbeta(:)             ! 
+    character(len=strLen),allocatable    :: tempSoilBetaInGamma(:) ! 
+    character(len=strLen),allocatable    :: tempVegBetaInGamma(:)  ! 
+    character(len=strLen),allocatable    :: res(:)                 ! 
+    integer(i4b)                         :: i,j,k                  ! loop index
     err=0; message="get_betaInGamma/"
+
     if ( allocated(gammaSubset) ) then ! get beta parameter associated with gamma parameters (excluding soil depth, layer thickness)
       allocate(res(size(gammaSubset)))
       k = 1
@@ -248,6 +266,27 @@ subroutine get_parm_meta( err, message)
       end do
       allocate(betaInGamma(count(mask)))
       betaInGamma=pack(allbeta,mask)
+      ! Count number of soil and Vege parameters to be computed with MPR 
+      nSoilParModel=0
+      nVegParModel=0
+      do iPar=1,size(betaInGamma)
+        ivar=get_ixPar(betaInGamma(iPar))
+        if (parMaster(ivar)%ptype=='soil') nSoilParModel = nSoilParModel+1
+        if (parMaster(ivar)%ptype=='veg')  nVegParModel  = nVegParModel +1
+      enddo
+      iSoil=0;iVeg=0
+      allocate(tempSoilBetaInGamma(nPar),stat=err)
+      allocate(tempVegBetaInGamma(nPar),stat=err)
+      do iPar=1,size(betaInGamma)
+        ivar = get_ixPar(betaInGamma(iPar))
+        if(ivar<=0)then; err=40; message=trim(message)//"2.variableNotFound[var="//trim(betaInGamma(iPar))//"]"; return; endif
+        if (parMaster(ivar)%ptype=='soil')then; iSoil=iSoil+1; tempSoilBetaInGamma(iSoil) = parMaster(ivar)%pname; endif
+        if (parMaster(ivar)%ptype=='veg') then; iVeg=iVeg+1;   tempVegBetaInGamma(iVeg)   = parMaster(ivar)%pname; endif
+      enddo 
+      allocate(soilBetaInGamma(nSoilParModel))
+      soilBetaInGamma=tempSoilBetaInGamma(1:nSoilParModel) 
+      allocate(vegBetaInGamma(nVegParModel))
+      vegBetaInGamma=tempVegBetaInGamma(1:nVegParModel) 
     else
       print*, 'NO gamma parameters included in the list'
     endif
@@ -336,11 +375,11 @@ subroutine betaCollection(err,message)
           if(.not.checkDone(ixPar%fc))    betaTemp(ixPar%fc)       = parMaster(ixPar%fc)%pname;       checkDone(ixPar%fc)=.true.
                                           betaTemp(ixPar%myu)      = parMaster(ixPar%myu)%pname;      checkDone(ixPar%myu)=.true.
         case(ixPar%binfilt);              betaTemp(ixPar%binfilt)  = parMaster(ixPar%binfilt)%pname;  checkDone(ixPar%binfilt)=.true.
-        case(ixPar%D1);
+        case(ixPar%D1)
           if(.not.checkDone(ixPar%ks))    betaTemp(ixPar%ks)       = parMaster(ixPar%ks)%pname;       checkDone(ixPar%ks)=.true.
           if(.not.checkDone(ixPar%phi))   betaTemp(ixPar%phi)      = parMaster(ixPar%phi)%pname;      checkDone(ixPar%phi)=.true.
                                           betaTemp(ixPar%D1)       = parMaster(ixPar%D1)%pname;       checkDone(ixPar%D1)=.true.
-        case(ixPar%Ds);
+        case(ixPar%Ds)
           if(.not.checkDone(ixPar%D1))    betaTemp(ixPar%D1)       = parMaster(ixPar%D1)%pname;       checkDone(ixPar%D1)=.true.
           if(.not.checkDone(ixPar%D3))    betaTemp(ixPar%D3)       = parMaster(ixPar%D3)%pname;       checkDone(ixPar%D3)=.true.
           if(.not.checkDone(ixPar%Dsmax)) betaTemp(ixPar%Dsmax)    = parMaster(ixPar%Dsmax)%pname;    checkDone(ixPar%Dsmax)=.true.
@@ -350,25 +389,29 @@ subroutine betaCollection(err,message)
           if(.not.checkDone(ixPar%D4))    betaTemp(ixPar%D4)       = parMaster(ixPar%D4)%pname;       checkDone(ixPar%D4)=.true.
                                           betaTemp(ixPar%c)        = parMaster(ixPar%c)%pname;        checkDone(ixPar%c)=.true.
         case(ixPar%SD);                   betaTemp(ixPar%SD)       = parMaster(ixPar%SD)%pname;       checkDone(ixPar%SD)=.true.
-        case(ixPar%expt);                 betaTemp(ixPar%expt)     = parMaster(ixPar%expt)%pname;     checkDone(ixPar%expt)=.true.
+        case(ixPar%expt)                 
+          if(.not.checkDone(ixPar%b))     betaTemp(ixPar%b)        = parMaster(ixPar%b)%pname;        checkDone(ixPar%b)=.true.
+                                          betaTemp(ixPar%expt)     = parMaster(ixPar%expt)%pname;     checkDone(ixPar%expt)=.true.
         case(ixPar%D2)
           if(.not.checkDone(ixPar%ks))    betaTemp(ixPar%ks)       = parMaster(ixPar%ks)%pname;       checkDone(ixPar%ks)=.true.
           if(.not.checkDone(ixPar%D4))    betaTemp(ixPar%D4)       = parMaster(ixPar%D4)%pname;       checkDone(ixPar%D4)=.true.
                                           betaTemp(ixPar%D2)       = parMaster(ixPar%D2)%pname;       checkDone(ixPar%D2)=.true.
-        case(ixPar%Dsmax);
+        case(ixPar%Dsmax)
           if(.not.checkDone(ixPar%D1))    betaTemp(ixPar%D1)       = parMaster(ixPar%D1)%pname;       checkDone(ixPar%D1)=.true.
           if(.not.checkDone(ixPar%D2))    betaTemp(ixPar%D2)       = parMaster(ixPar%D2)%pname;       checkDone(ixPar%D2)=.true.
           if(.not.checkDone(ixPar%D3))    betaTemp(ixPar%D3)       = parMaster(ixPar%D3)%pname;       checkDone(ixPar%D3)=.true.
           if(.not.checkDone(ixPar%c))     betaTemp(ixPar%c)        = parMaster(ixPar%c)%pname;        checkDone(ixPar%c)=.true.
                                           betaTemp(ixPar%Dsmax)    = parMaster(ixPar%Dsmax)%pname;    checkDone(ixPar%Dsmax)=.true.
-        case(ixPar%bbl);
+        case(ixPar%bbl)
           if(.not.checkDone(ixPar%expt))  betaTemp(ixPar%expt)     = parMaster(ixPar%expt)%pname;     checkDone(ixPar%expt)=.true.
                                           betaTemp(ixPar%bbl)      = parMaster(ixPar%bbl)%pname;      checkDone(ixPar%bbl)=.true.
         case(ixPar%WcrFrac)
-          if(.not.checkDone(ixPar%D3))    betaTemp(ixPar%D3)       = parMaster(ixPar%D3)%pname;       checkDone(ixPar%D3)=.true.
+          if(.not.checkDone(ixPar%fc))    betaTemp(ixPar%fc)       = parMaster(ixPar%fc)%pname;       checkDone(ixPar%fc)=.true.
+          if(.not.checkDone(ixPar%phi))   betaTemp(ixPar%phi)      = parMaster(ixPar%phi)%pname;      checkDone(ixPar%phi)=.true.
                                           betaTemp(ixPar%WcrFrac)  = parMaster(ixPar%WcrFrac)%pname;  checkDone(ixPar%WcrFrac)=.true.
         case(ixPar%WpwpFrac)
-          if(.not.checkDone(ixPar%D3))    betaTemp(ixPar%D3)       = parMaster(ixPar%D3)%pname;       checkDone(ixPar%D3)=.true.
+          if(.not.checkDone(ixPar%wp))    betaTemp(ixPar%wp)       = parMaster(ixPar%wp)%pname;       checkDone(ixPar%wp)=.true.
+          if(.not.checkDone(ixPar%phi))   betaTemp(ixPar%phi)      = parMaster(ixPar%phi)%pname;      checkDone(ixPar%phi)=.true.
                                           betaTemp(ixPar%WpwpFrac) = parMaster(ixPar%WpwpFrac)%pname; checkDone(ixPar%WpwpFrac)=.true.
         case(ixPar%D3)
           if(.not.checkDone(ixPar%fc))    betaTemp(ixPar%fc)       = parMaster(ixPar%fc)%pname;       checkDone(ixPar%fc)=.true.
@@ -376,8 +419,14 @@ subroutine betaCollection(err,message)
         case(ixPar%Ws)
           if(.not.checkDone(ixPar%D3))    betaTemp(ixPar%D3)       = parMaster(ixPar%D3)%pname;       checkDone(ixPar%D3)=.true.
                                           betaTemp(ixPar%Ws)       = parMaster(ixPar%Ws)%pname;       checkDone(ixPar%Ws)=.true.
-        case(ixPar%twm);                  betaTemp(ixPar%twm)      = parMaster(ixPar%twm)%pname;      checkDone(ixPar%twm)=.true.
-        case(ixPar%fwm);                  betaTemp(ixPar%fwm)      = parMaster(ixPar%fwm)%pname;      checkDone(ixPar%fwm)=.true.
+        case(ixPar%twm)                  
+          if(.not.checkDone(ixPar%wp))    betaTemp(ixPar%wp)       = parMaster(ixPar%wp)%pname;       checkDone(ixPar%wp)=.true.
+          if(.not.checkDone(ixPar%fc))    betaTemp(ixPar%fc)       = parMaster(ixPar%fc)%pname;       checkDone(ixPar%fc)=.true.
+                                          betaTemp(ixPar%twm)      = parMaster(ixPar%twm)%pname;      checkDone(ixPar%twm)=.true.
+        case(ixPar%fwm)                  
+          if(.not.checkDone(ixPar%phi))   betaTemp(ixPar%phi)      = parMaster(ixPar%phi)%pname;      checkDone(ixPar%phi)=.true.
+          if(.not.checkDone(ixPar%fc))    betaTemp(ixPar%fc)       = parMaster(ixPar%fc)%pname;       checkDone(ixPar%fc)=.true.
+                                          betaTemp(ixPar%fwm)      = parMaster(ixPar%fwm)%pname;      checkDone(ixPar%fwm)=.true.
         case(ixPar%fsm)
           if(.not.checkDone(ixPar%fwm))   betaTemp(ixPar%fwm)      = parMaster(ixPar%fwm)%pname;      checkDone(ixPar%fwm)=.true.
                                           betaTemp(ixPar%fsm)      = parMaster(ixPar%fsm)%pname;      checkDone(ixPar%fsm)=.true.
@@ -385,10 +434,23 @@ subroutine betaCollection(err,message)
           if(.not.checkDone(ixPar%fwm))   betaTemp(ixPar%fwm)      = parMaster(ixPar%fwm)%pname;      checkDone(ixPar%fwm)=.true.
           if(.not.checkDone(ixPar%fsm))   betaTemp(ixPar%fsm)      = parMaster(ixPar%fsm)%pname;      checkDone(ixPar%fsm)=.true.
                                           betaTemp(ixPar%fpm)      = parMaster(ixPar%fpm)%pname;      checkDone(ixPar%fpm)=.true.
-        case(ixPar%zk);                   betaTemp(ixPar%zk)       = parMaster(ixPar%zk)%pname;       checkDone(ixPar%zk)=.true.
-        case(ixPar%zsk);                  betaTemp(ixPar%zsk)      = parMaster(ixPar%zsk)%pname;      checkDone(ixPar%zsk)=.true.
-        case(ixPar%zpk);                  betaTemp(ixPar%zpk)      = parMaster(ixPar%zpk)%pname;      checkDone(ixPar%zpk)=.true.
-        case(ixPar%pfree);                betaTemp(ixPar%pfree)    = parMaster(ixPar%pfree)%pname;    checkDone(ixPar%pfree)=.true.
+        case(ixPar%zk)                   
+          if(.not.checkDone(ixPar%phi))   betaTemp(ixPar%phi)      = parMaster(ixPar%phi)%pname;      checkDone(ixPar%phi)=.true.
+          if(.not.checkDone(ixPar%fc))    betaTemp(ixPar%fc)       = parMaster(ixPar%fc)%pname;       checkDone(ixPar%fc)=.true.
+                                          betaTemp(ixPar%zk)       = parMaster(ixPar%zk)%pname;       checkDone(ixPar%zk)=.true.
+        case(ixPar%zsk)
+          if(.not.checkDone(ixPar%phi))   betaTemp(ixPar%phi)      = parMaster(ixPar%phi)%pname;      checkDone(ixPar%phi)=.true.
+          if(.not.checkDone(ixPar%fc))    betaTemp(ixPar%fc)       = parMaster(ixPar%fc)%pname;       checkDone(ixPar%fc)=.true.
+          if(.not.checkDone(ixPar%wp))    betaTemp(ixPar%wp)       = parMaster(ixPar%wp)%pname;       checkDone(ixPar%wp)=.true.
+                                          betaTemp(ixPar%zsk)      = parMaster(ixPar%zsk)%pname;      checkDone(ixPar%zsk)=.true.
+        case(ixPar%zpk)
+          if(.not.checkDone(ixPar%ks))    betaTemp(ixPar%ks)       = parMaster(ixPar%ks)%pname;       checkDone(ixPar%ks)=.true.
+          if(.not.checkDone(ixPar%myu))   betaTemp(ixPar%myu)      = parMaster(ixPar%myu)%pname;      checkDone(ixPar%myu)=.true.
+                                          betaTemp(ixPar%zpk)      = parMaster(ixPar%zpk)%pname;      checkDone(ixPar%zpk)=.true.
+        case(ixPar%pfree)
+          if(.not.checkDone(ixPar%phi))   betaTemp(ixPar%phi)      = parMaster(ixPar%phi)%pname;      checkDone(ixPar%phi)=.true.
+          if(.not.checkDone(ixPar%wp))    betaTemp(ixPar%wp)       = parMaster(ixPar%wp)%pname;       checkDone(ixPar%wp)=.true.
+                                          betaTemp(ixPar%pfree)    = parMaster(ixPar%pfree)%pname;    checkDone(ixPar%pfree)=.true.
         case(ixPar%zperc)
           if(.not.checkDone(ixPar%twm))   betaTemp(ixPar%twm)      = parMaster(ixPar%twm)%pname;      checkDone(ixPar%twm)=.true.
           if(.not.checkDone(ixPar%fsm))   betaTemp(ixPar%fsm)      = parMaster(ixPar%fsm)%pname;      checkDone(ixPar%fsm)=.true.
@@ -396,7 +458,10 @@ subroutine betaCollection(err,message)
           if(.not.checkDone(ixPar%fpm))   betaTemp(ixPar%fpm)      = parMaster(ixPar%fpm)%pname;      checkDone(ixPar%fpm)=.true.
           if(.not.checkDone(ixPar%zpk))   betaTemp(ixPar%zpk)      = parMaster(ixPar%zpk)%pname;      checkDone(ixPar%zpk)=.true.
                                           betaTemp(ixPar%zperc)    = parMaster(ixPar%zperc)%pname;    checkDone(ixPar%zperc)=.true.
-        case(ixPar%rexp);                 betaTemp(ixPar%rexp)     = parMaster(ixPar%rexp)%pname;     checkDone(ixPar%rexp)=.true.
+        case(ixPar%rexp);                 
+          if(.not.checkDone(ixPar%psis))  betaTemp(ixPar%wp)       = parMaster(ixPar%wp)%pname;       checkDone(ixPar%wp)=.true.
+                                          betaTemp(ixPar%rexp)     = parMaster(ixPar%rexp)%pname;     checkDone(ixPar%rexp)=.true.
+        case(ixPar%lai);                  betaTemp(ixPar%lai)      = parMaster(ixPar%lai)%pname;      checkDone(ixPar%lai)=.true.
       end select ! end of parameter case
     end do ! end of parameter loop
     if (nCheckDone==count(checkDone)) exit

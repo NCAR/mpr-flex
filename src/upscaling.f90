@@ -4,10 +4,11 @@ module upscaling
 ! and compute a single value 
 !
 ! Scale operators and subroutines included here are 
-! 1. wamean: weighted arithmatic mean
-! 2. wgmean: weighted geometric mean
-! 3. whmean: weighted harmonic mean
-! 4. wmedi:  weighted median 
+! 1. powermean: weighted power mean
+! 2. wamean: weighted arithmatic mean
+! 3. wgmean: weighted geometric mean
+! 4. whmean: weighted harmonic mean
+! 5. wmedi:  weighted median 
 ! Also subroutine that allows to switch scaling method by specifying the method in input 
 
 use nrtype                            ! variable types, etc.

@@ -18,7 +18,7 @@ contains
 !************************************
 function objfn( calParam )
   use mpr_routine,   only: mpr
-  use globalData,    only: betaCalScale, parMaster, parSubset, betaInGamma, gammaSubset, nBetaGamma, nBeta, nGamma
+  use globalData,    only: betaCalScale, parMaster, parSubset, betaInGamma, gammaSubset, nBetaGamma, nBeta, nGamma, nSoilParModel, nVegParModel
   use model_wrapper, only: read_hru_id, read_soil_param, adjust_param, replace_param, write_soil_param, read_sim
   implicit none
   !input variables
@@ -29,8 +29,6 @@ function objfn( calParam )
   real(dp)                          :: objfn                         ! object function value 
   integer(i2b)                      :: iPar                          ! loop index for parameter 
   integer(i2b)                      :: idx                           ! 
-  integer(i4b)                      :: nVegParModel                  ! Number of model vege parameters associated with calibrating gamma parameter 
-  integer(i4b)                      :: nSoilParModel                 ! Number of model soil parameters associated with calibrating gamma parameter 
   logical(lgc),         allocatable :: mask(:)                       ! 1D mask
   integer(i4b)                      :: hruID(nHru)                   ! Hru ID
   real(dp)                          :: param(nHru,TotNPar)           ! original soil parameter (model hru x parameter)
@@ -80,8 +78,6 @@ function objfn( calParam )
     if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   endif
   if ( any(parSubset(:)%beta /= "beta") )then ! calPar includes gamma parameters to be used for MPR 
-    nSoilParModel=size(betaInGamma)           ! number of soil parameters associated with gamma parameters
-    nVegParModel=1                            ! number of vege parameters associated with gamma parameters
     allocate(hModel(nLyr,nHru),stat=err);      if(err/=0)then;print*,trim(message)//'error allocating hModel';stop;endif
     allocate(parMxyMz(nSoilParModel),stat=err);if(err/=0)then;print*,trim(message)//'error allocating parMxyMz';stop;endif
     allocate(vegParMxy(nVegParModel),stat=err);if(err/=0)then;print*,trim(message)//'error allocating vegParMxy';stop;endif
@@ -100,7 +96,7 @@ function objfn( calParam )
     enddo
     call mpr(hruID, pnormCoef, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-    call replace_param(idModel, adjparam, hModel, parMxyMz, adjParam, err, cmessage)
+    call replace_param(idModel, adjParam, hModel, parMxyMz, adjParam, err, cmessage)
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   endif
   call write_soil_param(idModel, hruID, adjParam, err, cmessage)
