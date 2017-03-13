@@ -275,22 +275,28 @@ function infilt(elestd_in, gammaPar, opt)
   real(dp), intent(in)    :: gammaPar(:)   ! input: gamma parameter array 
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
-  ! local 
   real(dp)                :: infilt(size(elestd_in)) 
+  ! local 
   real(dp),parameter      :: infilt_min=0.03_dp
   real(dp),parameter      :: infilt_max=0.50_dp
+  character(len=strLen)   :: message                           
   
+  message="infilt/"
   associate(g1=>gammaPar(ixPar%binfilt1gamma1), &
             g2=>gammaPar(ixPar%binfilt1gamma2))
-  where ( elestd_in /= dmiss ) 
-    infilt = (log(elestd_in+verySmall)-g1)/(log(elestd_in+verySmall)+g2*10) !transfer function 
-  else where
-    infilt = dmiss 
-  end where
-   !cap value with upper and lower bounds 
+  select case(opt)
+    case(1); 
+      where ( elestd_in /= dmiss ) 
+        infilt = (log(elestd_in+verySmall)-g1)/(log(elestd_in+verySmall)+g2*10) !transfer function 
+      else where
+        infilt = dmiss 
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
+  end associate
+  !cap value with upper and lower bounds 
   where ( infilt > infilt_max ) infilt=infilt_max 
   where ( infilt /= dmiss .and. infilt < infilt_min ) infilt=infilt_min 
-  end associate
   return
 end function
 
@@ -298,14 +304,20 @@ end function
 ! residual_moist parameter 
 ! *********************************************************************
 function residMoist(opt)
- implicit none
- ! input
-  integer(i2b),intent(in) :: opt           ! input: option for transfer function form
- ! output 
- ! local 
- real(dp) :: residMoist
+  implicit none
+  ! input
+   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
+  ! output 
+  real(dp) :: residMoist
+  ! local 
+  character(len=strLen)   :: message                           
  
- residMoist = 0._dp
+  message="residMoist/"
+  select case(opt)
+    case(1); 
+      residMoist = 0._dp
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
  return
 end function
          
@@ -321,17 +333,18 @@ function D1(slope_in, ks_in, phi_in, h_in, gammaPar, opt)
   real(dp), intent(in)    :: h_in(:,:)     ! layer thickness [m]
   real(dp), intent(in)    :: gammaPar(:)   ! input: gamma parameter array 
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
-! output 
-! local 
+  ! output 
   real(dp)                :: D1(size(ks_in,1),size(ks_in,2)) !output: [day-1]
+  ! local 
   real(dp),allocatable    :: slope2d(:,:)
   integer(i4b)            :: n1            ! number of 1st dimension 
   integer(i4b)            :: n2            ! number of 1st dimension 
   real(dp), allocatable   :: S(:,:)              ! length scaling term [mm]: 1, Max. soil storage etc
   real(dp), parameter     :: D1_min=0.0001_dp
   real(dp), parameter     :: D1_max=1.0_dp
-  !integer(i4b)          :: err                       ! error code
+  character(len=strLen)   :: message                           
    
+  message="D1/"
   ! local variable allocation
   n1=size(D1,1)
   n2=size(D1,2)
@@ -342,15 +355,19 @@ function D1(slope_in, ks_in, phi_in, h_in, gammaPar, opt)
   slope2d=spread(slope_in,1,n1)
   associate(g1=>gammaPar(ixPar%D11gamma1))
   ! compute parameters 
-  where ( slope2d /= dmiss .and. Ks_in /= dmiss )
-    D1 = S**(-1)*10**(-1*g1)*Ks_in*(60*60*24)*(slope2d*0.01)
-  else where
-    D1 = dmiss
-  end where
+  select case(opt)
+    case(1); 
+      where ( slope2d /= dmiss .and. Ks_in /= dmiss )
+        D1 = S**(-1)*10**(-1*g1)*Ks_in*(60*60*24)*(slope2d*0.01)
+      else where
+        D1 = dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
+  end associate 
   ! cap value with upper and lower bounds 
   where ( D1 > D1_max ) D1=D1_max 
   where ( D1 > 0._dp .and. D1 < D1_min ) D1=D1_min 
-  end associate 
   return
 end function
 
@@ -359,22 +376,28 @@ end function
 ! *********************************************************************
 function Ds( D1, D3, Dsmax, opt)
  implicit none
-! input
- real(dp), intent(in)     :: D1(:,:)       ! nijssen baseflow D1 parameter [day-1]
- real(dp), intent(in)     :: D3(:,:)       ! nijssen baseflow D3 parameter [mm]
- real(dp), intent(in)     :: Dsmax(:,:)    ! ARNO Dsmax parameter [mm/day]
+  ! input
+  real(dp), intent(in)     :: D1(:,:)       ! nijssen baseflow D1 parameter [day-1]
+  real(dp), intent(in)     :: D3(:,:)       ! nijssen baseflow D3 parameter [mm]
+  real(dp), intent(in)     :: Dsmax(:,:)    ! ARNO Dsmax parameter [mm/day]
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
-! output 
-! local 
- real(dp)                 :: Ds(size(D1,1),size(D1,2)) !output: [-]
- real(dp), parameter      :: Ds_min=0.0001_dp
- real(dp), parameter      :: Ds_max=1.0_dp
+  ! output 
+  real(dp)                 :: Ds(size(D1,1),size(D1,2)) !output: [-]
+  ! local 
+  real(dp), parameter      :: Ds_min=0.0001_dp
+  real(dp), parameter      :: Ds_max=1.0_dp
+  character(len=strLen)   :: message                           
 
- where ( D1 /= dmiss .and. D3 /= dmiss .and. Dsmax /= dmiss )
-   Ds = D1 * D3 / Dsmax
- else where
-   Ds = dmiss
- end where
+  message="Ds/"
+  select case(opt)
+    case(1); 
+      where ( D1 /= dmiss .and. D3 /= dmiss .and. Dsmax /= dmiss )
+        Ds = D1 * D3 / Dsmax
+      else where
+        Ds = dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
  ! cap value with upper and lower bounds 
  where ( Ds > Ds_max ) Ds=Ds_max 
  where ( Ds > 0._dp .and. Ds < Ds_min ) Ds=Ds_min 
@@ -393,16 +416,17 @@ function D2(slope_in, ks_in, D4_in, gammaPar, opt)
   real(dp), intent(in)    :: gammaPar(:)   ! input: gamma parameter array 
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
-  ! local 
   real(dp)               :: D2(size(Ks_in,1),size(Ks_in,2)) ! output [day^-D4]
+  ! local 
   real(dp),allocatable   :: slope2d(:,:)
   integer(i4b)           :: n1           ! number of element for 1st dimension
   integer(i4b)           :: n2           ! number of element for 2nd dimension
   real(dp), allocatable  :: S(:,:)             ! length scaling term [mm]: 1, Max. soil storage etc
   real(dp), parameter    :: D2_min=0.0001_dp
   real(dp), parameter    :: D2_max=1.0_dp
-  !integer(i4b)          :: err                       ! error code
+  character(len=strLen)   :: message                           
   
+  message="D2/"
  ! local variable allocation
   n1=size(D2,1)
   n2=size(D2,2)
@@ -410,17 +434,21 @@ function D2(slope_in, ks_in, D4_in, gammaPar, opt)
   allocate(slope2d(n1,n2)) 
   S=1.0_dp
   slope2d=spread(slope_in,1,n1)
-  associate(g1=>gammaPar(ixPar%D21gamma1))
  ! compute parameters 
-  where ( slope2d /= dmiss .and. Ks_in /= dmiss )
-    D2 = S**(-1*D4_in)*10**(-1*g1)*Ks_in*(60*60*24)*(slope2d*0.01)
-  else where
-    D2 = dmiss
-  end where
+  associate(g1=>gammaPar(ixPar%D21gamma1))
+  select case(opt)
+    case(1); 
+       where ( slope2d /= dmiss .and. Ks_in /= dmiss )
+         D2 = S**(-1*D4_in)*10**(-1*g1)*Ks_in*(60*60*24)*(slope2d*0.01)
+       else where
+         D2 = dmiss
+       end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
+  end associate
  ! cap value with upper and lower bounds 
   where ( D2 > D2_max ) D2=D2_max
   where ( D2 > 0._dp .and. D2 < D2_min ) D2=D2_min
-  end associate
   return
 end function
 
@@ -444,16 +472,22 @@ function Dsmax( D1,           & ! input:  Nijssen baseflow D1 parameter [day^-1]
   real(dp), intent(in)    :: h_in(:,:)      ! Soil layer thickness [m]
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
-  ! local 
   real(dp)                :: Dsmax(size(D1,1),size(D1,2))     ! Dsmax parameter for Arno baseflow [mm day-1]
+  ! local 
   real(dp), parameter     :: Dsmax_min=0.1_dp
   real(dp), parameter     :: Dsmax_max=30.0_dp
+  character(len=strLen)   :: message                           
 
-  where ( phi_in /= dmiss .and. h_in /= dmiss )
-    Dsmax = D2*(phi_in*h_in*1000-D3)**c+D1*(phi_in*h_in*1000)
-  else where
-    Dsmax = dmiss
-  end where
+  message="Dsmax/"
+  select case(opt)
+    case(1); 
+      where ( phi_in /= dmiss .and. h_in /= dmiss )
+        Dsmax = D2*(phi_in*h_in*1000-D3)**c+D1*(phi_in*h_in*1000)
+      else where
+        Dsmax = dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
  ! cap value with upper and lower bounds 
   where ( Dsmax > Dsmax_max ) Dsmax=Dsmax_max
   where ( Dsmax > 0._dp .and. Dsmax < Dsmax_min ) Dsmax=Dsmax_min
@@ -471,21 +505,27 @@ function D3( fc_in, h_in, gammaPar, opt)
   real(dp), intent(in)    :: gammaPar(:)   ! input: gamma parameter array 
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
-  ! local 
   real(dp)              :: D3(size(fc_in,1),size(fc_in,2)) !output: [mm]
+  ! local 
   real(dp), parameter   :: D3_min=0.0001_dp
   real(dp), parameter   :: D3_max=1000.0_dp
+  character(len=strLen)   :: message                           
 
+  message="D3/"
   associate(g1=>gammaPar(ixPar%D31gamma1))
-  where ( fc_in /= dmiss .and. h_in /= dmiss ) 
-    D3 = g1* fc_in * (h_in*1000)
-  else where
-    D3 = dmiss
-  end where
+  select case(opt)
+    case(1); 
+      where ( fc_in /= dmiss .and. h_in /= dmiss ) 
+        D3 = g1* fc_in * (h_in*1000)
+      else where
+        D3 = dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
+  end associate
  ! cap value with upper and lower bounds 
   where ( D3 > D3_max ) D3=D3_max
   where ( D3 > 0._dp .and. D3 < D3_min ) D3=D3_min 
-  end associate
   return
 end function
 
@@ -503,16 +543,22 @@ function Ws( D3,         & ! input:  D3 parameter [mm]
   real(dp),    intent(in) :: h_in(:,:)
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
-  ! local 
   real(dp)                :: Ws(size(D3,1),size(D3,2))   ! output [-]
+  ! local 
   real(dp), parameter     :: Ws_min=0.05_dp
   real(dp), parameter     :: Ws_max=1.0_dp
+  character(len=strLen)   :: message                           
 
-  where ( phi_in /= dmiss .and. h_in /= dmiss .and. D3 /= dmiss ) 
-    Ws = D3 / phi_in / (h_in*1000)
-  else where
-    Ws = dmiss
-  end where
+  message="Ws/"
+  select case(opt)
+    case(1); 
+      where ( phi_in /= dmiss .and. h_in /= dmiss .and. D3 /= dmiss ) 
+        Ws = D3 / phi_in / (h_in*1000)
+      else where
+        Ws = dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
  ! cap value with upper and lower bounds 
   where ( Ws > Ws_max ) Ws=Ws_max
   where ( Ws > 0._dp .and. Ws < Ws_min ) Ws=Ws_min 
@@ -528,11 +574,17 @@ function D4( gammaPar,opt )
   real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
-  ! local 
   real(dp)                :: D4
+  ! local 
+  character(len=strLen)   :: message                           
   
+  message="D4/"
   associate(g1=>gammaPar(ixPar%D41gamma1))
-  D4 = g1 
+  select case(opt)
+    case(1); 
+      D4 = g1 
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   end associate
   return
 end function D4 
@@ -546,10 +598,16 @@ function cexpt( D4, opt )
   real(dp),    intent(in) :: D4(:,:)
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
-  ! local 
   real(dp)                :: cexpt(size(D4,1),size(D4,2))
+  ! local 
+  character(len=strLen)   :: message                           
   
-  cexpt = D4 
+  message="cexpt/"
+  select case(opt)
+    case(1); 
+      cexpt = D4 
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   return
 end function cexpt 
 
@@ -563,16 +621,22 @@ function expt( b_in, gammaPar, opt )
   real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
-  ! local 
   real(dp)               :: expt(size(b_in,1),size(b_in,2)) ! exponent in campbel equation [-]
+  ! local 
+  character(len=strLen)   :: message                           
 
+  message="expt/"
   associate(g1=>gammaPar(ixPar%exp1gamma1), &
             g2=>gammaPar(ixPar%exp1gamma2))
-  where ( b_in /= dmiss ) 
-    expt = g1+g2*b_in
-  else where
-    expt = dmiss 
-  end where
+  select case(opt)
+    case(1); 
+      where ( b_in /= dmiss ) 
+        expt = g1+g2*b_in
+      else where
+        expt = dmiss 
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   end associate
   return
 end function expt 
@@ -587,14 +651,20 @@ function initMoist( phi_in, h_in, opt)
   real(dp),    intent(in) :: h_in(:,:)     ! thickness [m]
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
-  ! local  
   real(dp)                :: initMoist(size(phi_in,1),size(phi_in,2))
+  ! local  
+  character(len=strLen)   :: message                           
   
-  where ( phi_in /= dmiss ) 
-    initMoist = phi_in*(h_in*1000.0_dp)
-  else where
-    initMoist = dmiss 
-  end where
+  message="initMoist/"
+  select case(opt)
+    case(1); 
+      where ( phi_in /= dmiss ) 
+        initMoist = phi_in*(h_in*1000.0_dp)
+      else where
+        initMoist = dmiss 
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   return
 end function
 
@@ -608,16 +678,22 @@ function bubble( expt_in, gammaPar, opt)
   real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
-  ! local 
   real(dp)                :: bubble(size(expt_in,1),size(expt_in,2))
+  ! local 
+  character(len=strLen)   :: message                           
   
+  message="bubble/"
   associate(g1=>gammaPar(ixPar%bbl1gamma1), &
             g2=>gammaPar(ixPar%bbl1gamma2))
-  where ( expt_in /= dmiss ) 
-    bubble = g1*expt_in+g2
-  else where
-    bubble = dmiss 
-  end where
+  select case(opt)
+    case(1); 
+      where ( expt_in /= dmiss ) 
+        bubble = g1*expt_in+g2
+      else where
+        bubble = dmiss 
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   end associate
   return
 end function
@@ -632,15 +708,21 @@ function soilDensity( srho_in, gammaPar, opt )
   real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
-  ! local 
   real(dp)                :: soilDensity(size(srho_in,1),size(srho_in,2))
+  ! local 
+  character(len=strLen)   :: message                           
   
+  message="soilDensity/"
   associate(g1=>gammaPar(ixPar%sd1gamma1))
-  where ( srho_in /= dmiss ) 
-    soilDensity = g1*srho_in
-  else where
-    soilDensity = dmiss 
-  end where
+  select case(opt)
+    case(1); 
+      where ( srho_in /= dmiss ) 
+        soilDensity = g1*srho_in
+      else where
+        soilDensity = dmiss 
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   end associate
   return
 end function
@@ -656,15 +738,21 @@ function WcrFrac(fc_in, phi_in, gammaPar, opt)
   real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! output 
-  ! local 
   real(dp)                :: WcrFrac(size(fc_in,1),size(fc_in,2)) !output: [frac]
+  ! local 
+  character(len=strLen)   :: message                           
   
+  message="WcrFrac/"
   associate(g1=>gammaPar(ixPar%WcrFrac1gamma1))
-  where ( fc_in /= dmiss .and. phi_in /= dmiss ) 
-    WcrFrac = g1*fc_in/phi_in
-  else where
-    wcrFrac = dmiss
-  end where
+  select case(opt)
+    case(1); 
+      where ( fc_in /= dmiss .and. phi_in /= dmiss ) 
+        WcrFrac = g1*fc_in/phi_in
+      else where
+        wcrFrac = dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   end associate
   return
 end function
@@ -679,15 +767,22 @@ function WpwpFrac( wp_in, phi_in, gammaPar, opt)
   real(dp),    intent(in) :: phi_in(:,:)   ! Porosity [frac]
   real(dp),    intent(in) :: gammaPar(:)   ! input: gamma parameter array 
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
-  ! local 
+  ! output 
   real(dp)                :: WpwpFrac(size(wp_in,1),size(wp_in,2)) !output: [frac] 
+  ! local 
+  character(len=strLen)   :: message                           
   
+  message="WpwFrac/"
   associate(g1=>gammaPar(ixPar%WpwpFrac1gamma1))
-  where ( wp_in /= dmiss .and. phi_in /= dmiss ) 
-    WpwpFrac = g1*wp_in/phi_in
-  else where
-    wpwpFrac = dmiss
-  end where
+  select case(opt)
+    case(1); 
+      where ( wp_in /= dmiss .and. phi_in /= dmiss ) 
+        WpwpFrac = g1*wp_in/phi_in
+      else where
+        wpwpFrac = dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   end associate
   return
 end function
@@ -704,12 +799,18 @@ function twm( fc_in, wp_in, h_in, opt)
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! local 
   real(dp)                :: twm(size(wp_in,1),size(wp_in,2)) ! output: tension water maximum [mm]
+  character(len=strLen)   :: message                           
 
-  where ( wp_in/=dmiss .and. fc_in/=dmiss ) 
-    twm=(fc_in-wp_in)*h_in*1000.0_dp  ! convert m to mm 
-  else where
-    twm=dmiss
-  end where
+  message="twm/"
+  select case(opt)
+    case(1); 
+      where ( wp_in/=dmiss .and. fc_in/=dmiss ) 
+        twm=(fc_in-wp_in)*h_in*1000.0_dp  ! convert m to mm 
+      else where
+        twm=dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   return
 end function 
 
@@ -725,12 +826,18 @@ function fwm( phi_in, fc_in, h_in, opt)
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! local 
   real(dp)                :: fwm(size(fc_in,1),size(fc_in,2)) ! output: free water maximum [mm]
+  character(len=strLen)   :: message                           
 
-  where ( phi_in/=dmiss .and. fc_in/=dmiss .and. h_in/=dmiss ) 
-    fwm=(phi_in-fc_in)*h_in*1000.0_dp ! convert m to mm
-  else where
-    fwm=dmiss
-  end where
+  message="fwm/"
+  select case(opt)
+    case(1); 
+      where ( phi_in/=dmiss .and. fc_in/=dmiss .and. h_in/=dmiss ) 
+        fwm=(phi_in-fc_in)*h_in*1000.0_dp ! convert m to mm
+      else where
+        fwm=dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   return
 end function 
 
@@ -747,13 +854,19 @@ function fsm( fwm_in, phi_in, wp_in, gammaPar ,opt)
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! local 
   real(dp)                :: fsm(size(wp_in,1),size(wp_in,2)) ! output: supplementary free water maximum [mm]
+  character(len=strLen)   :: message                           
 
+  message="fsm/"
   associate(g1=>gammaPar(ixPar%fsm1gamma1))
-  where ( phi_in/=dmiss .and. wp_in/=dmiss .and. fwm_in/=dmiss ) 
-    fsm=fwm_in*(wp_in/phi_in)**g1
-  else where
-    fsm=dmiss
-  end where
+  select case(opt)
+    case(1); 
+      where ( phi_in/=dmiss .and. wp_in/=dmiss .and. fwm_in/=dmiss ) 
+        fsm=fwm_in*(wp_in/phi_in)**g1
+      else where
+        fsm=dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   end associate
   return
 end function 
@@ -769,12 +882,18 @@ function fpm( fwm_in, fsm_in, opt )
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! local  
   real(dp)                :: fpm(size(fwm_in,1),size(fwm_in,2)) ! output: primary free water maximum [mm]
+  character(len=strLen)   :: message                           
 
-  where ( fwm_in/=dmiss .and. fsm_in/=dmiss )
-    fpm=fwm_in-fsm_in
-  else where
-    fpm=dmiss
-  end where
+  message="fpm/"
+  select case(opt)
+    case(1); 
+      where ( fwm_in/=dmiss .and. fsm_in/=dmiss )
+        fpm=fwm_in-fsm_in
+      else where
+        fpm=dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   return
 end function 
 
@@ -790,13 +909,19 @@ function zk( phi_in, fc_in, gammaPar,opt)
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! local 
   real(dp)                :: zk(size(fc_in,1),size(fc_in,2)) ! output: draw coefficient from free water content [/day] 
+  character(len=strLen)   :: message                           
 
+  message="zk/"
   associate(g1=>gammaPar(ixPar%zk1gamma1))
-  where ( phi_in/=dmiss .and. fc_in/=dmiss ) 
-    zk=1.0_dp-(fc_in/phi_in)**g1
-  else where
-    zk=dmiss
-  end where
+  select case(opt)
+    case(1); 
+      where ( phi_in/=dmiss .and. fc_in/=dmiss ) 
+        zk=1.0_dp-(fc_in/phi_in)**g1
+      else where
+        zk=dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   end associate
   return
 end function 
@@ -814,14 +939,20 @@ function zsk( phi_in, fc_in, wp_in, gammaPar, opt)
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! local 
   real(dp)                :: zsk(size(fc_in,1),size(fc_in,2)) ! output: draw coefficient from supplementary free water content [/day] 
+  character(len=strLen)   :: message                           
 
+  message="zsk/"
   associate(g1=>gammaPar(ixPar%zsk1gamma1),&
             g2=>gammaPar(ixPar%zsk1gamma2))
-  where ( phi_in/=dmiss .and. fc_in/=dmiss .and. wp_in/=dmiss ) 
-    zsk=(1.0_dp-(fc_in/phi_in)**g1)/(1.0_dp+g2*(1.0_dp-wp_in)) 
-  else where
-    zsk=dmiss
-  end where
+  select case(opt)
+    case(1); 
+      where ( phi_in/=dmiss .and. fc_in/=dmiss .and. wp_in/=dmiss ) 
+        zsk=(1.0_dp-(fc_in/phi_in)**g1)/(1.0_dp+g2*(1.0_dp-wp_in)) 
+      else where
+        zsk=dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   end associate
   return
 end function 
@@ -840,14 +971,20 @@ function zpk( ks_in, h_in, myu_in, gammaPar,opt)
   ! local 
   real(dp)                :: zpk(size(ks_in,1),size(ks_in,2)) ! output: draw coefficient from primary free water content [/day] 
   real(dp)                :: dt                               ! time step of the simulation [hr]
+  character(len=strLen)   :: message                           
 
+  message="zpk/"
   dt=24.0_dp ! unit: hr
   associate(g1=>gammaPar(ixPar%zpk1gamma1))
-  where ( ks_in/=dmiss .and. myu_in/=dmiss .and. h_in/= dmiss ) 
-    zpk=1.0_dp-exp(-1.0_dp*g1**2.0_dp*pi*ks_in*60.0_dp*h_in*1000.0_dp*dt/myu_in)
-  else where
-    zpk=dmiss
-  end where
+  select case(opt)
+    case(1); 
+      where ( ks_in/=dmiss .and. myu_in/=dmiss .and. h_in/= dmiss ) 
+        zpk=1.0_dp-exp(-1.0_dp*g1**2.0_dp*pi*ks_in*60.0_dp*h_in*1000.0_dp*dt/myu_in)
+      else where
+        zpk=dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   end associate
   return
 end function 
@@ -864,13 +1001,19 @@ function pfree( phi_in, wp_in, gammaPar, opt)
   integer(i2b),intent(in) :: opt           ! input: option for transfer function form
   ! local 
   real(dp)                :: pfree(size(wp_in,1),size(wp_in,2)) ! output: tension water maximum [mm]
+  character(len=strLen)   :: message                           
 
+  message="pfree/"
   associate(g1=>gammaPar(ixPar%pfree1gamma1))
-  where ( phi_in/=dmiss .and. wp_in/=dmiss ) 
-    pfree=(wp_in/phi_in)**g1
-  else where 
-    pfree=dmiss
-  end where
+  select case(opt)
+    case(1); 
+      where ( phi_in/=dmiss .and. wp_in/=dmiss ) 
+        pfree=(wp_in/phi_in)**g1
+      else where 
+        pfree=dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   end associate
   return
 end function
@@ -890,13 +1033,19 @@ function zperc( twm_in, fsm_in, zsk_in, fpm_in, zpk_in, opt)
   ! output 
   real(dp)                 :: zperc(size(twm_in,1),size(twm_in,2))    ! output: ratio of max and min percolation rates [day-1]
   ! local 
+  character(len=strLen)   :: message                           
                        
-  where ( twm_in/=dmiss .and. fsm_in/=dmiss ) 
-    zperc=(twm_in+fsm_in*(1.0_dp-zsk_in)+fsm_in*(1.0_dp-zpk_in))/ &
-          (fsm_in*zsk_in+fpm_in*zpk_in)
-  else where
-    zperc=dmiss
-  end where
+  message="zperc/"
+  select case(opt)
+    case(1); 
+      where ( twm_in/=dmiss .and. fsm_in/=dmiss ) 
+        zperc=(twm_in+fsm_in*(1.0_dp-zsk_in)+fsm_in*(1.0_dp-zpk_in))/ &
+              (fsm_in*zsk_in+fpm_in*zpk_in)
+      else where
+        zperc=dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   return
 end function
 
@@ -911,13 +1060,19 @@ function rexp( wp_in, gammaPar, opt)
   integer(i2b),intent(in)  :: opt             ! input: option for transfer function form
   ! local 
   real(dp)                 :: rexp(size(wp_in,1),size(wp_in,2)) ! output: tension water maximum [mm]
+  character(len=strLen)    :: message                           
   
+  message="rexp/"
   associate(g1=>gammaPar(ixPar%rexp1gamma1))
-  where ( wp_in/=dmiss ) 
-    rexp=sqrt(wp_in/(g1-0.001))
-  else where
-    rexp=dmiss
-  end where
+  select case(opt)
+    case(1); 
+      where ( wp_in/=dmiss ) 
+        rexp=sqrt(wp_in/(g1-0.001))
+      else where
+        rexp=dmiss
+      end where
+    case default; print*,trim(message)//'opt not recognized'; stop
+  end select
   end associate
   return
 end function
@@ -936,6 +1091,7 @@ function ks( sand_in, clay_in, gammaPar, opt)
   real(dp)              :: ks(size(sand_in,1),size(sand_in,2)) ! output: mm/s
   character(len=strLen) :: message                           
 
+  message="ks/"
   ! opt 1: Cosby et al. WRR 1984
   ! opt 2: campbell & shiozawa 1994 
   associate(g1=>gammaPar(ixPar%ks1gamma1), &
@@ -944,10 +1100,9 @@ function ks( sand_in, clay_in, gammaPar, opt)
             g4=>gammaPar(ixPar%ks2gamma1), &
             g5=>gammaPar(ixPar%ks2gamma2), &
             g6=>gammaPar(ixPar%ks2gamma3) )
-  message="ks/"
   select case(opt)
     case(1); 
-      where ( sand_in /= dmiss .and. clay_in /= dmiss ) 
+      where ( sand_in /= dmiss .or. clay_in /= dmiss ) 
         ks = g1 + g2*sand_in + g3*clay_in
         ks = (10**ks)*25.4/60/60   ! 25.4 mm/inch. Cosby give Ksat in inch/hr 
       else where
@@ -1040,7 +1195,7 @@ function phi(sand_in, clay_in, db_in, gammaPar, opt)
             g9=>gammaPar(ixPar%phi2gamma6))
     select case(opt)
       case(1);  ! Cosby
-        where ( sand_in /= dmiss .and. clay_in /= dmiss ) 
+        where ( sand_in /= dmiss .or. clay_in /= dmiss ) 
           phi = ( g1+g2*sand_in+g3*clay_in )/100.0_dp
         else where
           phi = dmiss 

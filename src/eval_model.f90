@@ -18,7 +18,7 @@ contains
 !************************************
 function objfn( calParam )
   use mpr_routine,   only: mpr
-  use globalData,    only: betaCalScale, parMaster, parSubset, betaInGamma, gammaSubset, nBetaGamma, nBeta, nGamma, nSoilParModel, nVegParModel
+  use globalData,    only: betaCalScale, parMaster, parSubset, gammaSubset, nBetaGamma, nSoilParModel, nVegParModel
   use model_wrapper, only: read_hru_id, read_soil_param, adjust_param, replace_param, write_soil_param, read_sim
   implicit none
   !input variables
@@ -161,6 +161,7 @@ subroutine calc_rmse_region(sim, obs, agg, objfn)
   integer(i4b)                            :: nTime        !number of time step 
 
   ! initialize error control
+  err=0; message=trim(message)//'calc_rmse_region/'
   allocate(simIn(nbasin,sim_len))
   allocate(obsIn(nbasin*sim_len))
   allocate(obj_fun_weight(nbasin))

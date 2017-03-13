@@ -112,7 +112,7 @@ subroutine run_mpr( calParam, restartFile, err, message )
       call write_vec_ivar(trim(mpr_output_dir)//trim(param_nc),"month",(/(iMon,iMon=1,nMonth)/),1,err,cmessage) 
       if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
       do iPar=1,nVegParModel
-        call write_array2_dvar(trim(mpr_output_dir)//trim(param_nc),trim(soilBetaInGamma(iPar)),parMxyMz(iPar)%varData,(/1,1/),(/nMonth,nHru/),err,cmessage)
+        call write_array2_dvar(trim(mpr_output_dir)//trim(param_nc),trim(vegBetaInGamma(iPar)),vegParMxy(iPar)%varData,(/1,1/),(/nMonth,nHru/),err,cmessage)
         if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
       enddo
     endif
@@ -135,10 +135,10 @@ subroutine mpr(hruID,             &     ! input: hruID
                err, message)            ! output: error id and message
   use model_wrapper,        only:read_hru_id
   use popMeta,              only:popMprMeta
-  use globalData,           only:parMaster, soilBetaInGamma, vegBetaInGamma, betaCalScale !THIS (betaCalScale) may be input 
-  use globalData,           only:sdata_meta,vdata_meta,map_meta, vprp_meta, nSoilParModel, nVegParModel
+  use globalData,           only:parMaster, soilBetaInGamma, vegBetaInGamma, betaCalScale 
+  use globalData,           only:sdata_meta,vdata_meta, map_meta, nSoilParModel, nVegParModel
   use get_ixname,           only:get_ixPar
-  use tf,                   only:comp_model_param         ! Including Soil model parameter transfer function
+  use tf,                   only:comp_model_param              ! Including Soil model parameter transfer function
   use modelLayer,           only:comp_model_depth              ! Including model layr depth computation routine 
   use modelLayer,           only:map_slyr2mlyr                 ! Including model layr computation routine 
   use upscaling,            only:aggreg                        ! Including Upscaling operator 
@@ -178,7 +178,6 @@ subroutine mpr(hruID,             &     ! input: hruID
   integer(i4b)                       :: iParm                    ! Loop index of model parameters (e.g., VIC)
   integer(i4b)                       :: iVar                     ! Loop index of miscleneous variables 
   integer(i4b)                       :: iMon                     ! Loop index of month 
-  integer(i4b)                       :: iPrpVeg                  ! Loop index of veg properties 
   integer(i4b)                       :: iHru                     ! loop index of hrus 
   integer(i4b)                       :: iSub                     ! Loop index of multiple soi layers in model layer
   logical(lgc),allocatable           :: mask(:)                  ! mask for 1D array 
