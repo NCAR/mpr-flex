@@ -84,7 +84,7 @@ subroutine paramMaster(err,message)
   parMaster(ixPar%zpk1gamma1)      = par_meta('zpk1gamma1',          1.0_dp,    0.8_dp,    1.2_dp,"zpk"      ,     1, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
   parMaster(ixPar%pfree1gamma1)    = par_meta('pfree1gamma1',        1.6_dp,    1.4_dp,    1.8_dp,"pfree"    ,     1, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
   parMaster(ixPar%rexp1gamma1)     = par_meta('rexp1gamma1',        0.03_dp,   0.02_dp,   0.04_dp,"rexp"     ,     1, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
-  parMaster(ixPar%rexp1gamma1)     = par_meta('lai1gamma1',          1.0_dp,    0.8_dp,    1.2_dp,"lai"      ,     1,  "veg", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
+  parMaster(ixPar%lai1gamma1)      = par_meta('lai1gamma1',          1.0_dp,    0.8_dp,    1.2_dp,"lai"      ,     1,  "veg", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
   ! -----
   !  Master list of beta parameters  
   ! -----------------------
