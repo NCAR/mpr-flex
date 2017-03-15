@@ -15,7 +15,8 @@ opt                    = 1
 &mprconfig
 mpr_input_dir          = "MPRINPUT"                ! name of directory including geophysical data and weight mapping data
 mpr_output_dir         = "PAROUTPUT"               ! name of directory where estimated parameters are saved with option 2
-param_nc               = "soil_temp.nc"            ! name of soil parameter output netCDF
+soil_param_nc          = "soil_temp.nc"            ! name of soil parameter output netCDF
+veg_param_nc           = "veg_temp.nc"             ! name of veg parameter output netCDF
 fname_soil             = "statsgo_v4.nc"           ! name soil netCDF
 fname_veg              = "modis.vege.noahmp.nc"    ! name vege netCDF
 fname_smapping         = "statsgo_HCDN.sub.nc"     ! name of mapping netCDF (soil polygon to model hru)

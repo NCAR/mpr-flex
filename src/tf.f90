@@ -65,7 +65,7 @@ subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter va
     ix = get_ixPar(betaNeeded(iParm)) 
     if (trim(parMaster(ix)%ptype)=='soil')then
       allocate(parTemp(ix)%varData(nSLyr,nSPoly) ,stat=err); if(err/=0)then;message=trim(message)//'error allocating parTemp';stop;endif
-    elseif (parMaster(ix)%ptype=='vege')then 
+    elseif (parMaster(ix)%ptype=='veg')then 
       allocate(parTemp(ix)%varData(nMonth,nVPoly) ,stat=err); if(err/=0)then;message=trim(message)//'error allocating parTemp';stop;endif
     endif
     second: associate (xPar => parTemp(ix)%varData, &

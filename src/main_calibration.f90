@@ -16,6 +16,7 @@ program main_calibration
   character(len=strLen)             :: nmlfile         ! namelist containing configuration
   real(dp),             allocatable :: param(:,:)      ! initial value for parameter to be calibrated 
   logical(lgc),         allocatable :: parMask(:)      ! mask of parameter to be calibrated
+  integer(i4b)                      :: i               ! loop index for writing
   integer(i4b)                      :: ierr            ! error code 
   character(len=strLen)             :: cmessage        ! error message from suroutine
 
@@ -35,13 +36,13 @@ program main_calibration
   call betaCollection( ierr, cmessage); call handle_err(ierr,cmessage)
   ! print out list of gamma/beta parameters
   print*,"!-- Beta and Gamma parameters ----"
-  print*,parSubset(:)%pname
+  write(*,*) (trim(adjustl(parSubset(i)%pname)),new_line('a'), i=1,size(parSubset))
   print*,"!-- Beta parameters to be estimated with MPR ----"
-  print*,betaInGamma
-  print*,"!-- List of gamma parameters involved----"
-  print*,gammaSubset(:)%pname
+  write(*,*) (trim(adjustl(betaInGamma(i))),new_line('a'), i=1,size(betaInGamma))
+  print*,"!-- List of gamma parameters calibrated----"
+  write(*,*) (trim(adjustl(gammaSubset(i)%pname)),new_line('a'), i=1,size(gammaSubset))
   print*,"!-- All beta parameters to be computed with MPR including dependent beta parameters ----"
-  print*,betaNeeded
+  write(*,*) (trim(adjustl(betaNeeded(i))),new_line('a'), i=1,size(betaNeeded))
   ! initialize parameter and mask arrays 
   call total_calParam()
   allocate(param(nParCalSum,3))

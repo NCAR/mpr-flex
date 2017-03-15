@@ -32,6 +32,7 @@ subroutine write_soil_param_vic(hruid, param, err, message)
   character(*),intent(out)           :: message      ! error message
   ! local variables
   integer(i4b)                       :: iHru         ! loop index
+  integer(i4b)                       :: i            ! loop index
 
   ! initialize error control
   err=0; message='write_soil_param_vic/'
@@ -41,16 +42,16 @@ subroutine write_soil_param_vic(hruid, param, err, message)
   open(UNIT=51,file=trim(calibparam_name),action='write',status='unknown' )
   hru:do iHru = 1,nHru
     write(51,'(I1,2X)',advance='no') 1
-    write(51,'(I8,2X)',advance='no') hruid(iHru)
-    write(51,'(f9.4,X)',advance='no') param(iHru,3:4)
-    write(51,'(f9.5,X)',advance='no') param(iHru,5)
-    write(51,'(f9.4,X)',advance='no') param(iHru,6:9)
-    write(51,'(f9.4,X)',advance='no') param(iHru,10:12)
-    write(51,'(f10.4,X)',advance='no')param(iHru,13:15)
-    write(51,'(f7.1,X)',advance='no') param(iHru,16:18)
-    write(51,'(f10.4,X)',advance='no')param(iHru,19:52)
-    write(51,'(I2,X)',advance='no') int(param(iHru,53))
-    write(51,'(f9.4)') param(iHru,54)
+    write(51,'(I8,2X)',advance='no')       hruid(iHru)
+    write(51,'(2(f9.4,X))',advance='no')  (param(iHru,i),i=3,4)
+    write(51,'(f9.5,X)',advance='no')      param(iHru,5)
+    write(51,'(4(f9.4,X))',advance='no')  (param(iHru,i),i=6,9)
+    write(51,'(3(f9.4,X))',advance='no')  (param(iHru,i),i=10,12)
+    write(51,'(3(f10.4,X))',advance='no') (param(iHru,i),i=13,15)
+    write(51,'(3(f7.1,X))',advance='no')  (param(iHru,i),i=16,18)
+    write(51,'(34(f10.4,X))',advance='no')(param(iHru,i),i=19,52)
+    write(51,'(I2,X)',advance='no')       int(param(iHru,53))
+    write(51,'(f9.4)')                     param(iHru,54)
   enddo hru 
   close(UNIT=51)
   return

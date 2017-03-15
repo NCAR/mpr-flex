@@ -18,9 +18,9 @@ contains
 ! ************************************************************************************************
 ! this subroutine is used for opt = 2 in namelist (run only mpr and output parameters)
 subroutine run_mpr( calParam, restartFile, err, message ) 
-  use globalData,    only: betaCalScale, parSubset, soilBetaInGamma, vegBetaInGamma, gammaSubset, nBetaGamma, nSoilParModel, nVegParModel
+  use globalData,    only: betaCalScale, parSubset, gammaSubset, nBetaGamma, nSoilParModel, nVegParModel
   use model_wrapper, only: read_hru_id
-  use write_param_nc,only: defSoilNetCDF, write_vec_ivar, write_array2_dvar
+  use write_param_nc,only: write_nc_soil,write_nc_veg
   implicit none
   ! input variables
   real(dp),             intent(in)  :: calParam(:)                   ! parameter in namelist, not necessarily all parameters are calibrated
@@ -34,15 +34,13 @@ subroutine run_mpr( calParam, restartFile, err, message )
   type(var_d),          allocatable :: paramGammaStr(:)              ! calibratin gamma parameter storage extracted from calParStr
   integer(i4b)                      :: idummy                        ! dummy vaiable
   integer(i4b)                      :: idx                           ! counter 
-  integer(i4b)                      :: iLyr                          ! loop index for model layer 
-  integer(i4b)                      :: iMon                          ! loop index for month 
   integer(i4b)                      :: iPar                          ! loop index for parameter 
   logical(lgc),         allocatable :: mask(:)                       ! 1D mask
   integer(i4b)                      :: hruID(nHru)                   ! Hru ID
   real(dp),             allocatable :: hModel(:,:)                   ! storage of model layer thickness at model layer x model hru 
   real(dp),             allocatable :: params(:)                     ! parameter vector that is input into mpr 
   type(namedvar2),      allocatable :: parMxyMz(:)                   ! storage of model soil parameter at model layer x model hru 
-  type(namedvar2),      allocatable :: vegParMxy(:)                  ! storage of model vege parameter at model hru
+  type(namedvar2),      allocatable :: vegParMxy(:)                  ! storage of model vege parameter at month x model hru
   logical                           :: isExistFile                   ! logical to check if the file exist or not
   character(len=strLen)             :: cmessage                      ! error message from subroutine
 
@@ -96,25 +94,11 @@ subroutine run_mpr( calParam, restartFile, err, message )
     call mpr(hruID, pnormCoef, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
     if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     !! Write parameter derived from MPR in netCDF 
-    call defSoilNetCDF(trim(mpr_output_dir)//trim(param_nc),nHru,nLyr,err,cmessage)
-    if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-    call write_vec_ivar(trim(mpr_output_dir)//trim(param_nc),"hruid",hruID,1,err,cmessage) 
-    if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     if (nSoilParModel>0_i2b)then
-      call write_vec_ivar(trim(mpr_output_dir)//trim(param_nc),"lyr",(/(iLyr,iLyr=1,nLyr)/),1,err,cmessage) 
-      if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      do iPar=1,nSoilParModel
-        call write_array2_dvar(trim(mpr_output_dir)//trim(param_nc),trim(soilBetaInGamma(iPar)),parMxyMz(iPar)%varData,(/1,1/),(/nLyr,nHru/),err,cmessage)
-        if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      enddo
+      call write_nc_soil(trim(mpr_output_dir)//trim(soil_param_nc), hruID, hModel, parMxyMz, err, cmessage)
     endif
     if (nVegParModel>0_i2b)then
-      call write_vec_ivar(trim(mpr_output_dir)//trim(param_nc),"month",(/(iMon,iMon=1,nMonth)/),1,err,cmessage) 
-      if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      do iPar=1,nVegParModel
-        call write_array2_dvar(trim(mpr_output_dir)//trim(param_nc),trim(vegBetaInGamma(iPar)),vegParMxy(iPar)%varData,(/1,1/),(/nMonth,nHru/),err,cmessage)
-        if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      enddo
+      call write_nc_veg(trim(mpr_output_dir)//trim(veg_Param_nc), hruID, vegParMxy, err, cmessage)
     endif
   else  
     print*,trim(message)//'there is no gamma pamameters in parameter input file to perform MPR';stop
@@ -168,7 +152,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   character(len=strLen),intent(out)  :: message                  ! error message 
   ! local
   character(len=strLen)              :: cmessage                 ! error message from downward subroutine
-  integer,     parameter             :: iHruPrint = 1            ! model hru id for which everything is printed for checking
+  integer,     parameter             :: iHruPrint = 5            ! model hru id (index) for which everything is printed for checking
   integer(i4b),parameter             :: nSub=11                  ! max. number of Soil layer within Model layer
   integer(i4b)                       :: iLocal                   ! index of hru array in mapping file that match hru id of interest 
   integer(i4b)                       :: iGamma                   ! index loop
@@ -306,6 +290,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   associate( hruMap      => mapdata(1)%var(ixVarMapData%hru_id)%ivar1,        &
              hruMapVege  => mapdata(2)%var(ixVarMapData%hru_id)%ivar1,        &
              swgt        => mapdata(1)%var(ixVarMapData%weight)%dvar2,        &
+             vwgt        => mapdata(2)%var(ixVarMapData%weight)%dvar2,        &
              overVpolyID => mapdata(2)%var(ixVarMapData%overlapPolyId)%ivar2, & 
              overSpolyID => mapdata(1)%var(ixVarMapData%overlapPolyId)%ivar2 )
   if ( minval(abs(hruMap-hruMapVege)) /= 0 )then;err=11;message=trim(message)//'different hru id in vege and soil mapping file';return;endif
@@ -313,8 +298,9 @@ subroutine mpr(hruID,             &     ! input: hruID
   !!! Start of model hru loop (from mapping file) !!!
   !!! ---------------------------------------------
   hru: do iHru=1,nHru
+    print*, 'hruID=',iHru, hruID(iHru)
     ! Get index (iLocal) of hru id that matches with current hru from hru id array in mapping file
-    call findix(hruID(iHru), hruMap, iLocal, err, message)
+    call findix(hruID(iHru), hruMap, iLocal, err, cmessage); if(err/=0)then; message=trim(cmessage)//cmessage; return; endif
     ! Select list of soil polygons contributing a current hru
     allocate(mask(nOverSpoly))
     mask = ( overSpolyID(:,iLocal) /= imiss )
@@ -323,6 +309,14 @@ subroutine mpr(hruID,             &     ! input: hruID
     nSpolyLocal = size(polySub)                    ! number of contributing soil polygons to current hru
     polySub     = pack(overSpolyID(:,iLocal),mask) ! id of soil polygons contributing to current hru
     swgtSub     = pack(swgt(:,iLocal),mask)        ! weight of soil polygons contributing to current hru
+    ! Select list of veg polygon ID contributing a current hru 
+    allocate(vmask(nOverVpoly),stat=err); if(err/=0)then;message=message//'error allocating vmask';return;endif
+    vmask       = ( overVpolyID(:,iLocal) /= imiss )
+    allocate(vPolySub(count(vmask)),stat=err); if(err/=0)then;message=message//'error allocating vPolySub';return;endif
+    allocate(vwgtSub(count(vmask)),stat=err); if(err/=0)then;message=message//'error allocating vwgtSub';return;endif
+    nVpolyLocal = size(vPolySub)
+    vPolySub    = pack(overVpolyID(:,iLocal),vmask)
+    vwgtSub     = pack(vwgt(:,iLocal),vmask)
     ! allocate memmory
     if (nSoilParModel>0_i2b)then !if at least one soil parameter is included 
       do iParm=1,nSoilParModel
@@ -381,21 +375,13 @@ subroutine mpr(hruID,             &     ! input: hruID
   ! *****
   ! (3.2) Extract vege data for current model hru 
   ! *********************************************************************
-    ! Select list of veg polygon ID contributing a current hru 
-    allocate(vmask(nOverVpoly),stat=err); if(err/=0)then;message=message//'error allocating vmask';return;endif
-    vmask       = ( overVpolyID(:,iLocal) /= imiss )
-    allocate(vPolySub(count(vmask)),stat=err); if(err/=0)then;message=message//'error allocating vPolySub';return;endif
-    allocate(vwgtSub(count(vmask)),stat=err); if(err/=0)then;message=message//'error allocating vwgtSub';return;endif
-    vPolySub    = pack(overVpolyID(:,iLocal),vmask)
-    vwgtSub     = pack(overVpolyID(:,iLocal),vmask)
-    nVpolyLocal = size(vPolySub)
-    call subsetData(vdata, polySub, vdataLocal, 'veg' ,err, cmessage)
+    call subsetData(vdata, vpolySub, vdataLocal, 'veg' ,err, cmessage)
     if(err/=0)then; message=trim(message)//cmessage; return; endif
     if ( iHru == iHruPrint ) then
       print*,' '
       print*,'(1.3) Print list of vege polygon ID and weigth'
-        write(*,"(' polyID = ',100I7)") (vPolySub(iPoly), iPoly=1,nVpolyLocal)
-        write(*,"(' weight = ',100f7.3)") (vwgtSub(iPoly), iPoly=1,nVpolyLocal)
+        write(*,"(' polyID = ',100I9)") (vPolySub(iPoly), iPoly=1,nVpolyLocal)
+        write(*,"(' weight = ',100f9.3)") (vwgtSub(iPoly), iPoly=1,nVpolyLocal)
     endif
   ! *****
   ! (3.4) Compute model parameters using transfer function
@@ -416,7 +402,7 @@ subroutine mpr(hruID,             &     ! input: hruID
       if (nVegParModel>0_i2b)then
         do iParm=1,nVegParModel
           do iPoly = 1,nVpolyLocal
-            write(*,"(1X,A10,'= ',100f5.2)") vegBetaInGamma(iParm), (parVxy(iParm)%varData(iMon, iPoly), iMon=1,nMonth)
+            write(*,"(1X,A10,'= ',100f9.3)") vegBetaInGamma(iParm), (parVxy(iParm)%varData(iMon, iPoly), iMon=1,nMonth)
           enddo
         enddo
       endif 
@@ -535,28 +521,34 @@ subroutine mpr(hruID,             &     ! input: hruID
     if (nVegParModel>0_i2b)then
       do iMon=1,nMonth
         do iParm = 1,nVegParModel
-          allocate( vegParVec(iParm)%var(nVpolyLocal),stat=err); if(err/=0)then; message=trim(message)//'error allocating vegParVec'; return; endif
+          allocate( vegParVec(iParm)%var(nVpolyLocal),stat=err); if(err/=0)then; message=trim(message)//'error allocating vegParVec%var'; return; endif
         enddo
         do iParm = 1,nVegParModel
           do iPoly=1,nVpolyLocal
               vegParVec(iParm)%var(iPoly) = parVxy(iParm)%varData(iMon, iPoly)
           enddo
         enddo
+        do iParm = 1,nVegParModel
+          sixth: associate( ix=>get_ixPar(trim(vegBetaInGamma(iParm))) )
+          call aggreg(vegParMxy(iParm)%varData(iMon, iHru), &
+                      vwgtSub(:),                           &
+                      vegParVec(iParm)%var,                 &
+                      gammaParMasterMeta(ix)%hups,          &
+                      gammaParMasterMeta(ix)%hpnorm,        &
+                      err,cmessage)
+          if ( iHru == iHruPrint ) then
+            print*,'-----------------------------------'
+            print*,'Aggregated vege parameter '
+            write(*,"(1X,A17,'(Month ',I2,') = ',100f9.3)") gammaParMasterMeta(ix)%pname, iMon ,parMxyMz(iParm)%varData(iMon,iHru)
+          endif
+          end associate sixth
+        enddo
+        do iParm = 1,nVegParModel
+          deallocate(vegParVec(iParm)%var, stat=err); if(err/=0)then; message=trim(message)//'error deallocating vegParVec%var'; return; endif 
+        enddo
       enddo
-      do iParm = 1,nVegParModel
-        sixth: associate( ix=>get_ixPar(trim(vegBetaInGamma(iParm))) )
-        call aggreg(vegParMxy(iParm)%varData(iMon, iHru), &
-                    vwgtSub(:),                           &
-                    vegParVec(iParm)%var,                 &
-                    gammaParMasterMeta(ix)%hups,          &
-                    gammaParMasterMeta(ix)%hpnorm,        &
-                    err,cmessage)
-        if ( iHru == iHruPrint ) then
-          print*,'-----------------------------------'
-          print*,'Aggregated vege parameter '
-          write(*,"(1X,A17,'(layer ',I2,') = ',100f9.3)") gammaParMasterMeta(ix)%pname, iMon ,parMxyMz(iParm)%varData(iMon,iHru)
-        endif
-        end associate sixth
+      do iParm=1,nVegParModel
+        deallocate(parVxy(iParm)%varData,stat=err);if(err/=0)then; message=message//'error deallocating parVxy%varData'; return; endif 
       enddo
     endif
     ! deallocate memmory
@@ -703,9 +695,9 @@ subroutine findix(scl, vec, iSelect, ierr, message)
   integer(i4b),intent(in)              :: scl
   integer(i4b),intent(in)              :: vec(:)
   integer(i4b),intent(out)             :: iSelect
-  integer(i4b)                         :: i(1)
   integer(i4b), intent(out)            :: ierr      ! error code
   character(*), intent(out)            :: message   ! error message
+  integer(i4b)                         :: i(1)
 
   ! initialize error control
   ierr=0; message='findix/' 
@@ -714,6 +706,7 @@ subroutine findix(scl, vec, iSelect, ierr, message)
   iSelect = i(1)  ! de-vectorize the found index 
   if(vec(iSelect) /= scl)&
     ierr=60; message=trim(message)//'unable to find matched value'; return  
-end subroutine findix
+  return
+end subroutine
 
 end module mpr_routine

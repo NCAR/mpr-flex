@@ -13,7 +13,7 @@ type(cpar_meta),      allocatable, public   :: parSubset(:)                  ! m
 type(cpar_meta),      allocatable, public   :: gammaSubset(:)                ! meta data for gamma parameters listed in 'CalPar' input  
 character(len=strLen),allocatable, public   :: betaInGamma(:)                ! name of beta parameters to be estimated based on 'CalPar' input
 character(len=strLen),allocatable, public   :: soilBetaInGamma(:)            ! name of soil beta parameters to be estimated based on 'CalPar' input
-character(len=strLen),allocatable, public   :: vegBetaInGamma(:)             ! name of vege beta parameters to be estimated based on 'CalPar' input
+character(len=strLen),allocatable, public   :: vegBetaInGamma(:)             ! name of veg beta parameters to be estimated based on 'CalPar' input
 character(len=strLen),allocatable, public   :: betaNeeded(:)                 ! name of beta parameters to be estimated and their dependent beta parameters 
 type(input_meta),     allocatable, public   :: calParMeta(:)                 ! meta data for all the avaialble paramaeters for both gamma and beta
 type(scale_meta),     allocatable, public   :: betaCalScale(:)               ! meta data for beta paramets whose scaling operator is calibrated

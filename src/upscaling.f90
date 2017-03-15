@@ -115,19 +115,19 @@ subroutine wpnorm(wgtval, wgtvec, datvec, err, message, p_exp_in )
     if (wgtvec_sum /= 1.0) wgtvec_packed = wgtvec_packed / wgtvec_sum 
     wgtval_sum = 0._dp
     if (p_exp .gt. 100._dp) then
-      print*, '    using maximum norm'
+!      print*, '    using maximum norm'
       wgtval = maxval(datvec_packed(1:nElm))
     else if (abs(p_exp) .lt. epsilon(1._dp)) then
-      print*, '    using geometric mean'
+!      print*, '    using geometric mean'
       do iElm = 1, nElm
         wgtval_sum = wgtval_sum + log(datvec_packed(iElm)) * wgtvec_packed(iElm)
       end do 
       wgtval = exp(wgtval_sum)
     else if (p_exp .lt. -100._dp) then
-      print*, '    using minimum '
+!      print*, '    using minimum '
       wgtval = minval(datvec_packed(1:nElm))
     else
-      print*, '    using p-norm with exponent: ', p_exp
+!      print*, '    using p-norm with exponent: ', p_exp
       do iElm = 1, nElm
         !wgtval_sum = wgtval_sum + exp(log(abs(datvec_packed(iElm))) * p_exp) * wgtvec_packed(iElm)
         wgtval_sum = wgtval_sum + (abs(datvec_packed(iElm))**p_exp)*wgtvec_packed(iElm)
