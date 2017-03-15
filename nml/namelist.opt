@@ -2,10 +2,10 @@
 ! General run configuration
 !---------------------------------------
 &runconfig
-!> Option to run the program 
+!> Option to run the program
 !> 0 = only run model with parameters given by restart file or default in param metafile
 !> 1 = calibrate parameters specifided in input with DDS
-!> 2 = estimate parameter with MPR (this option neglect calconfig and dds nml group) 
+!> 2 = estimate parameter with MPR (this option neglect calconfig and dds nml group)
 opt                    = 1
 !> metadata for all gamma and beta parameters 
 param_master_meta      = "/home/mizukami/hydropt/meta/ParamMeta.txt"
@@ -15,9 +15,10 @@ param_master_meta      = "/home/mizukami/hydropt/meta/ParamMeta.txt"
 ! MPR 
 !---------------------------------------
 &mprconfig
-mpr_input_dir          = "/home/mizukami/MPR/input/hcdn/"
-mpr_output_dir         = "/d3/mizukami/hydro_params/vic_regionalization/upscale_hcdn/test/01022500/params/" 
-param_nc               = "soil_temp.nc"            ! name of soil parameter output netCDF
+mpr_input_dir          = "MPRINPUT"                ! name of directory including geophysical data and weight mapping data
+mpr_output_dir         = "PAROUTPUT"               ! name of directory where estimated parameters are saved with option 2
+soil_param_nc          = "soil_temp.nc"            ! name of soil parameter output netCDF
+veg_param_nc           = "veg_temp.nc"             ! name of veg parameter output netCDF
 fname_soil             = "statsgo_v4.nc"           ! name soil netCDF
 fname_veg              = "modis.vege.noahmp.nc"    ! name vege netCDF
 fname_smapping         = "statsgo_HCDN.sub.nc"     ! name of mapping netCDF (soil polygon to model hru)
@@ -27,6 +28,7 @@ dname_overVpoly        = "overlapPoly"             ! name of dimension of vege p
 dname_hru              = "hru_id"                  ! name of model hru dimension in mapping netCDF
 sclass_table           = "USDA_soil_class.txt"     ! name of USDA soil class look up table 
 vclass_table           = "NOAHMP_veg_type.txt"     ! name of vegetation class look up table
+nVclass                = NUMVCLASS "               ! number of vegetation class 
 dname_spoly            = "polyid"                  ! name of soil polygon dimension in soil netCDf
 dname_slyrs            = "layer"                   ! name of soil layer dimension in soil data in soil netCDf
 dname_vpoly            = "polyid"                  ! name of vegetation polygon dimension in vegetation netCDf

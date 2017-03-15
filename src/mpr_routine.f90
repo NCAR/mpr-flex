@@ -18,9 +18,9 @@ contains
 ! ************************************************************************************************
 ! this subroutine is used for opt = 2 in namelist (run only mpr and output parameters)
 subroutine run_mpr( calParam, restartFile, err, message ) 
-  use globalData,    only: betaCalScale, parSubset, betaInGamma, gammaSubset, nBetaGamma
+  use globalData,    only: betaCalScale, parSubset, gammaSubset, nBetaGamma, nSoilParModel, nVegParModel
   use model_wrapper, only: read_hru_id
-  use write_param_nc,only: defSoilNetCDF, write_vec_ivar, write_array2_dvar
+  use write_param_nc,only: write_nc_soil,write_nc_veg
   implicit none
   ! input variables
   real(dp),             intent(in)  :: calParam(:)                   ! parameter in namelist, not necessarily all parameters are calibrated
@@ -34,51 +34,47 @@ subroutine run_mpr( calParam, restartFile, err, message )
   type(var_d),          allocatable :: paramGammaStr(:)              ! calibratin gamma parameter storage extracted from calParStr
   integer(i4b)                      :: idummy                        ! dummy vaiable
   integer(i4b)                      :: idx                           ! counter 
-  integer(i4b)                      :: iLyr                          ! loop index for model layer 
   integer(i4b)                      :: iPar                          ! loop index for parameter 
-  integer(i4b)                      :: nVegParModel                  ! Number of model vege parameters associated with calibrating gamma parameter 
-  integer(i4b)                      :: nSoilParModel                 ! Number of model soil parameters associated with calibrating gamma parameter 
   logical(lgc),         allocatable :: mask(:)                       ! 1D mask
   integer(i4b)                      :: hruID(nHru)                   ! Hru ID
   real(dp),             allocatable :: hModel(:,:)                   ! storage of model layer thickness at model layer x model hru 
   real(dp),             allocatable :: params(:)                     ! parameter vector that is input into mpr 
   type(namedvar2),      allocatable :: parMxyMz(:)                   ! storage of model soil parameter at model layer x model hru 
-  type(namedvar),       allocatable :: vegParMxy(:)                  ! storage of model vege parameter at model hru
+  type(namedvar2),      allocatable :: vegParMxy(:)                  ! storage of model vege parameter at month x model hru
   logical                           :: isExistFile                   ! logical to check if the file exist or not
   character(len=strLen)             :: cmessage                      ! error message from subroutine
 
   err=0; message='run_mpr/' ! to initialize error control
-  if ( idModel/=0 )then;idModel=0;print*,trim(message)//'idModel is set to zero - model inepenedent';endif
-  allocate(params, source=calParam) ! copy calParameter default 
-  inquire(file=trim(adjustl(restartFile)), exist=isExistFile)
-  if ( isExistFile ) then !  if state file exists, update calParam, otherwise use default value
-    print*, 'read restart file'
-    open(unit=70,file=trim(adjustl(restartFile)), action='read', status = 'unknown')
-    read(70,*) idummy ! restart file include iStart  
-    read(70,*) (params(iPar),iPar=1,nBetaGamma)    
-    close(70)
-  endif
-  idx=1
-  do iPar=1,nBetaGamma
-    if (parSubset(iPar)%perLyr)then
-      allocate(calParStr(iPar)%var(nLyr))
-      calParStr(iPar)%var=params(idx:idx+nLyr-1)
-      idx=idx+nLyr
-    else
-      allocate(calParStr(iPar)%var(1))
-      calParStr(iPar)%var=params(idx)
-      idx=idx+1
+  if ( any(parSubset(:)%beta /= "beta") )then ! calPar need to include min. one gamma parameter to be used for MPR 
+    if ( idModel/=0 )then;idModel=0;print*,trim(message)//'idModel is set to zero - model inepenedent';endif
+    allocate(params, source=calParam) ! copy calParameter default 
+    inquire(file=trim(adjustl(restartFile)), exist=isExistFile)
+    if ( isExistFile ) then !  if state file exists, update calParam, otherwise use default value
+      print*, 'read restart file'
+      open(unit=70,file=trim(adjustl(restartFile)), action='read', status = 'unknown')
+      read(70,*) idummy ! restart file include iStart  
+      read(70,*) (params(iPar),iPar=1,nBetaGamma)    
+      close(70)
     endif
-  end do
-  do iPar=1,size(betaCalScale) ! put calpar vector from optimization routine output pnorm coef. data strucure
-    pnormCoef(iPar)%var=calParam(idx:idx+1)
-    idx=idx+2
-  end do
-  call read_hru_id(idModel, hruID, err, cmessage)    ! to get hruID
-  if (err/=0)then;message=trim(message)//trim(cmessage);return;endif
-  if ( any(parSubset(:)%beta /= "beta") )then ! calPar includes gamma parameters to be used for MPR 
-    nSoilParModel=size(betaInGamma)           ! number of soil parameters associated with gamma parameters
-    nVegParModel=1                            ! number of vege parameters associated with gamma parameters (now 1 temporarily)
+    idx=1
+    do iPar=1,nBetaGamma
+      if (parSubset(iPar)%perLyr)then
+        allocate(calParStr(iPar)%var(nLyr))
+        calParStr(iPar)%var=params(idx:idx+nLyr-1)
+        idx=idx+nLyr
+      else
+        allocate(calParStr(iPar)%var(1))
+        calParStr(iPar)%var=params(idx)
+        idx=idx+1
+      endif
+    end do
+    do iPar=1,size(betaCalScale) ! put calpar vector from optimization routine output pnorm coef. data strucure
+      allocate(pnormCoef(iPar)%var(2))
+      pnormCoef(iPar)%var=calParam(idx:idx+1)
+      idx=idx+2
+    end do
+    call read_hru_id(idModel, hruID, err, cmessage)    ! to get hruID
+    if (err/=0)then;message=trim(message)//trim(cmessage);return;endif
     allocate(hModel(nLyr,nHru),stat=err);      if(err/=0)then;message=trim(message)//'error allocating hModel';return;endif
     allocate(parMxyMz(nSoilParModel),stat=err);if(err/=0)then;message=trim(message)//'error allocating parMxyMz';return;endif
     allocate(vegParMxy(nVegParModel),stat=err);if(err/=0)then;message=trim(message)//'error allocating vegParMxy';return;endif
@@ -86,7 +82,7 @@ subroutine run_mpr( calParam, restartFile, err, message )
       allocate(parMxyMz(iPar)%varData(nLyr,nHru),stat=err)
     enddo
     do iPar=1,nVegParModel
-      allocate(vegParMxy(iPar)%varData(nHru),stat=err)
+      allocate(vegParMxy(iPar)%varData(nMonth,nHru),stat=err)
     enddo
     allocate(mask(nBetaGamma))
     mask=parSubset(:)%beta/="beta"
@@ -98,16 +94,12 @@ subroutine run_mpr( calParam, restartFile, err, message )
     call mpr(hruID, pnormCoef, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
     if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     !! Write parameter derived from MPR in netCDF 
-    call defSoilNetCDF(trim(mpr_output_dir)//trim(param_nc),nHru,nLyr,err,cmessage)
-    if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-    call write_vec_ivar(trim(mpr_output_dir)//trim(param_nc),"hruid",hruID,1,err,cmessage) 
-    if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-    call write_vec_ivar(trim(mpr_output_dir)//trim(param_nc),"lyr",(/(iLyr,iLyr=1,nLyr)/),1,err,cmessage) 
-    if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-    do iPar=1,size(betaInGamma)
-      call write_array2_dvar(trim(mpr_output_dir)//trim(param_nc),trim(betaInGamma(iPar)),parMxyMz(iPar)%varData,(/1,1/),(/nLyr,nHru/),err,cmessage)
-      if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-    enddo
+    if (nSoilParModel>0_i2b)then
+      call write_nc_soil(trim(mpr_output_dir)//trim(soil_param_nc), hruID, hModel, parMxyMz, err, cmessage)
+    endif
+    if (nVegParModel>0_i2b)then
+      call write_nc_veg(trim(mpr_output_dir)//trim(veg_Param_nc), hruID, vegParMxy, err, cmessage)
+    endif
   else  
     print*,trim(message)//'there is no gamma pamameters in parameter input file to perform MPR';stop
   endif
@@ -127,23 +119,23 @@ subroutine mpr(hruID,             &     ! input: hruID
                err, message)            ! output: error id and message
   use model_wrapper,        only:read_hru_id
   use popMeta,              only:popMprMeta
-  use globalData,           only:parMaster, betaInGamma, betaCalScale !THIS (betaCalScale) may be input 
-  use globalData,           only:sdata_meta,vdata_meta,map_meta
+  use globalData,           only:parMaster, soilBetaInGamma, vegBetaInGamma, betaCalScale 
+  use globalData,           only:sdata_meta,vdata_meta, map_meta, nSoilParModel, nVegParModel
   use get_ixname,           only:get_ixPar
-  use soiltf,               only:comp_soil_model_param         ! Including Soil model parameter transfer function
+  use tf,                   only:comp_model_param              ! Including Soil model parameter transfer function
   use modelLayer,           only:comp_model_depth              ! Including model layr depth computation routine 
   use modelLayer,           only:map_slyr2mlyr                 ! Including model layr computation routine 
-!   USE vegtf,                  only:comp_veg_model_param          ! Including Veg model parameter transfer function
   use upscaling,            only:aggreg                        ! Including Upscaling operator 
   use read_mapdata,         only:getMapData                    ! routine to read mapping data into data structures
   use read_vegdata,         only:getVegData                    ! routine to read veg data into data structures
+  use read_vegdata,         only:getVegClassLookup             ! routine to read veg calss-property lookupu table 
   use read_soildata,        only:getData                       ! routine to read soil data into data structures
   use read_soildata,        only:mod_hslyrs                    ! routine to modify soil layer thickness and updata soil data structure
   use var_lookup,           only:ixPar,nPar                    ! 
   USE var_lookup,           only:ixVarSoilData,nVarSoilData    ! index of soil data variables and number of variables 
   USE var_lookup,           only:ixVarVegData,nVarVegData      ! index of vege data variables and number of variables
   USE var_lookup,           only:ixVarMapData,nVarMapData      ! index of map data variables and number of variables
-!  USE var_lookup,             only:ixPrpVeg,nPrpVeg             ! index of veg properties and number of properties
+  USE var_lookup,           only:ixPrpVeg,nPrpVeg              ! index of veg properties and number of properties
 
    implicit none
 
@@ -155,68 +147,61 @@ subroutine mpr(hruID,             &     ! input: hruID
   ! output
   real(dp),             intent(out)  :: hModel(:,:)              ! Model layer thickness at model layer x model hru 
   type(namedvar2),      intent(inout):: parMxyMz(:)              ! storage of model soil parameter at model layer x model hru 
-  type(namedvar),       intent(inout):: vegParMxy(:)             ! storage of model vege parameter at model hru
+  type(namedvar2),      intent(inout):: vegParMxy(:)             ! storage of model vege parameter at model hru
   integer(i4b),         intent(out)  :: err                      ! error code
   character(len=strLen),intent(out)  :: message                  ! error message 
   ! local
   character(len=strLen)              :: cmessage                 ! error message from downward subroutine
-  integer,     parameter             :: iHruPrint = 1            ! model hru id for which everything is printed for checking
+  integer,     parameter             :: iHruPrint = 5            ! model hru id (index) for which everything is printed for checking
   integer(i4b),parameter             :: nSub=11                  ! max. number of Soil layer within Model layer
   integer(i4b)                       :: iLocal                   ! index of hru array in mapping file that match hru id of interest 
-  integer(i4b)                       :: iDummy(1)                ! 1D integer array for temporal storage 
   integer(i4b)                       :: iGamma                   ! index loop
   integer(i4b)                       :: iPoly                    ! Loop index of soil polygon
   integer(i4b)                       :: iSLyr                    ! Loop index of soil layer 
   integer(i4b)                       :: iMLyr                    ! loop index of model soil layer (1,...,n from top to bottom) 
   integer(i4b)                       :: iParm                    ! Loop index of model parameters (e.g., VIC)
   integer(i4b)                       :: iVar                     ! Loop index of miscleneous variables 
-  integer(i4b)                       :: iPrpVeg                  ! Loop index of veg properties 
+  integer(i4b)                       :: iMon                     ! Loop index of month 
   integer(i4b)                       :: iHru                     ! loop index of hrus 
   integer(i4b)                       :: iSub                     ! Loop index of multiple soi layers in model layer
   logical(lgc),allocatable           :: mask(:)                  ! mask for 1D array 
-  logical(lgc),allocatable           :: vmask(:)                 ! mask for vpolIdSub array 
+  logical(lgc),allocatable           :: vmask(:)                 ! TO BE DELETED: mask for vpolIdSub array 
   type(par_meta),allocatable         :: gammaParMasterMeta(:)
-  integer(i4b)                       :: nVegParModel             ! Number of model vege parameters
-  integer(i4b)                       :: nSoilParModel            ! Number of model soil parameters
   integer(i4b)                       :: nSpoly                   ! number of soil polygon in entire soil data domain 
   integer(i4b)                       :: nSlyrs                   ! number of soil layers
-  integer(i4b)                       :: nVpoly                   ! number of vege polygon (grid box) in entire vege data domain 
+  integer(i4b)                       :: nVpoly                   ! TO BE DELETED: number of vege polygon (grid box) in entire vege data domain 
   integer(i4b)                       :: nShru                    ! number of hrus in soil mapping file) 
-  integer(i4b)                       :: nVhru                    ! number of hrus in vege mapping file (should be equal to nVhru)
+  integer(i4b)                       :: nVhru                    ! TO BE DELETED: number of hrus in vege mapping file (should be equal to nVhru)
   integer(i4b)                       :: nOverSpoly               ! number of overlapped soil polygon for each model HRU 
-  integer(i4b)                       :: nOverVpoly               ! number of overlapped vege polygon for each model HRU 
+  integer(i4b)                       :: nOverVpoly               ! TO BE DELETED: number of overlapped vege polygon for each model HRU 
   integer(i4b)                       :: nSpolyLocal              ! number of subset overlapped soil polygon for each model HRU 
-  integer(i4b)                       :: nVpolyLocal              ! number of subset overlapped vege polygon for each model HRU 
-  real(dp)                           :: hmult                    ! mulitplier of soil layer  
+  integer(i4b)                       :: nVpolyLocal              ! TO BE DELETED: number of subset overlapped vege polygon for each model HRU 
   real(dp)                           :: hfrac(nLyr-1)            ! fraction of soil depth for each model layer 
   type(namevar)                      :: sdata(nVarSoilData)      ! soil data container for all the soil polygons
   type(namevar)                      :: sdataLocal(nVarSoilData) ! soil data container for local soil polygon 
   type(namevar)                      :: vdata(nVarVegData)       ! veg data container for all the veg polygons
+  type(namevar)                      :: vdataLocal(nVarVegData)  ! veg data container for local vege polygon 
   integer(i4b),    allocatable       :: vegClass(:)              ! veg class array (e.g., IGBP)
-  integer(i4b),    allocatable       :: vclsLocal(:)             ! veg class id for each poly for subset of veg data
   type(var_d),     allocatable       :: vcls2prp(:)              ! storage of property value for each veg class
-  type(namedvar),  allocatable       :: vprp(:)                  ! storage of veg property values for 1D(poly) 
-  type(namedvar),  allocatable       :: vprpLocal(:)             ! storage of veg property values for 1D(poly) 
   integer(i4b)                       :: iVclass                  ! ID (= index) of vege class 
   real(dp),        allocatable       :: hModelLocal(:,:)         ! Model layer thickness for soil polygon within one hru
   real(dp),        allocatable       :: zModelLocal(:,:)         ! Model layer depth for soil polygon within one hru
   type(namedvar2), allocatable       :: parSxySz(:)              ! storage of model soil parameter for 2D field -soil layer x soil poy 
   type(namedvar2), allocatable       :: parSxyMz(:)              ! storage of model soil parameter for 2D field -model layer x soil poy
-  type(namedvar),  allocatable       :: parVxy(:)                ! storage of model vege parameter for 1D or 2D field - vege poly (x month)
+  type(namedvar2), allocatable       :: parVxy(:)                ! storage of model vege parameter for 1D or 2D field - vege poly (x month)
   integer(i4b),    allocatable       :: polySub(:)               ! list of ID (=index) of soil polygons contributing model hru
-  integer(i4b),    allocatable       :: vPolySub(:)              ! list of ID (=index) of veg polygons contributing model hru 
+  integer(i4b),    allocatable       :: vPolySub(:)              ! TO BE DELETED: list of ID (=index) of veg polygons contributing model hru 
   type(mapvar)                       :: mapdata(2)               ! map data container for all the soil polygons
   real(dp),        allocatable       :: swgtSub(:)               ! adjusted Areal weight of soil polygon for all model hrus
-  real(dp),        allocatable       :: vwgtSub(:)               ! adjusted Areal weight of veg polygon for one model hrus
+  real(dp),        allocatable       :: vwgtSub(:)               ! TO BE DELETED: adjusted Areal weight of veg polygon for one model hrus
   type(poly),      allocatable       :: soil2model_map(:)        ! data structure to hold weight and index of contributing soil layer per model layer and per soil polygon
-  type(lyr_d),     allocatable       :: paramvec(:)              !
+  type(var_d),     allocatable       :: soilParVec(:)            ! data structure to hold soil parameter vector e.g., all layers for one polygon
+  type(var_d),     allocatable       :: vegParVec(:)             ! data structure to hold veg parameter vector e.g., all months for one polygon
   
   ! initialize error control
   err=0; message='mpr/'
   !(0) Preparation
   allocate(gammaParMasterMeta, source=parMaster) ! copy master parameter metadata
-  nSoilParModel=size(betaInGamma)                ! number of soil and vege parameters associated with gamma parameter
-  nVegParModel=1
   ! Swap gammaParMasterMeta%val with gammaPar value
   do iGamma=1,size(gammaParStr)
     gammaParMasterMeta(gammaParMeta(iGamma)%ixMaster)%val=gammaParStr(iGamma)%var(1)
@@ -229,18 +214,19 @@ subroutine mpr(hruID,             &     ! input: hruID
   enddo 
   call popMprMeta( err, cmessage)   !for sdata_meta, vdata_meta, map_meta
   if(err/=0)then; message=trim(message)//cmessage; return; endif
-  hmult=gammaParMasterMeta(ixPar%z1gamma1)%val
   call pop_hfrac(gammaParStr, gammaParMeta, hfrac, err, cmessage) ! to get hfrac 
   if(err/=0)then; message=trim(message)//cmessage; return; endif
   ! Memory allocation
-  allocate(parSxySz(nSoilParModel),stat=err);if(err/=0)then; message=trim(message)//'error allocating parSxySz'; return; endif
-  allocate(parSxyMz(nSoilParModel),stat=err);if(err/=0)then; message=trim(message)//'error allocating parSxyMz'; return; endif
-  allocate(paramvec(nSoilParModel),stat=err);if(err/=0)then; message=trim(message)//'error allocating paramvec'; return; endif 
+  allocate(parSxySz(nSoilParModel),stat=err);  if(err/=0)then; message=trim(message)//'error allocating parSxySz'; return; endif
+  allocate(parSxyMz(nSoilParModel),stat=err);  if(err/=0)then; message=trim(message)//'error allocating parSxyMz'; return; endif
+  allocate(parVxy(nVegParModel),stat=err);     if(err/=0)then; message=trim(message)//'error allocating parVxy'  ; return; endif
+  allocate(soilParVec(nSoilParModel),stat=err);if(err/=0)then; message=trim(message)//'error allocating soilParVec'; return; endif 
+  allocate(vegParVec(nvegParModel),stat=err);  if(err/=0)then; message=trim(message)//'error allocating vegParVec'; return; endif 
   ! (1) Get Geophysical data 
   ! *****
   ! (1.1) Get soil data  
   ! *********************************************
-  call getData(trim(mpr_input_dir)//trim(fname_soil),& ! input: soil data (netCDF)
+  call getData(trim(mpr_input_dir)//trim(fname_soil),& ! input: soil data input name (netCDF)
                sdata_meta,                           & ! input: soil data meta
                dname_spoly,                          & ! input: spatial dimension (polygon ID)
                dname_slyrs,                          & ! input: spatial dimension (polygon ID)
@@ -249,38 +235,31 @@ subroutine mpr(hruID,             &     ! input: hruID
                nSlyrs,                               & ! output: number of dimension (i.e. number of soil layer)
                err, cmessage)
   if(err/=0)then; message=trim(message)//cmessage; return; endif 
-  call mod_hslyrs(sdata,hmult,err,cmessage) ! modify soil layer thickness in sdata data structure
+  call mod_hslyrs(sdata, gammaParMasterMeta(ixPar%z1gamma1)%val, err,cmessage) ! modify soil layer thickness in sdata data structure
   if(err/=0)then; message=trim(message)//cmessage; return; endif 
   ! *****
   ! (1.2)  veg class - properties lookup table ...
   ! *********************************************
   ! (1.2.1) Read in veg data netCDF...
-!   allocate(vegClass(nVclass),stat=err); if(err/=0) call handle_err(err,'error allocating for vegClass')
-!   allocate(vcls2prp(nVclass),stat=err); if(err/=0) call handle_err(err,'error allocating for vcls2prp')
-!   do iVclass=1,nVclass
-!     allocate(vcls2prp(iVclass)%var(nPrpVeg), stat=err); if(err/=0) call handle_err(err,'error allocating for vcls2prp%var') 
-!   enddo
-   call getVegData(trim(mpr_input_dir)//trim(fname_veg), & ! input: file name
+   allocate(vegClass(nVclass),stat=err);if(err/=0)then;message=trim(message)//'error allocating vegClass'; return; endif 
+   allocate(vcls2prp(nVclass),stat=err);if(err/=0)then;message=trim(message)//'error allocating vcls2prp'; return; endif
+   do iVclass=1,nVclass
+     allocate(vcls2prp(iVclass)%var(nPrpVeg),stat=err);if(err/=0)then;message=trim(message)//'error allocating vcls2prp%var';return;endif
+   enddo
+   call getVegData(trim(mpr_input_dir)//trim(fname_veg), & ! input: veg data input name (netCDF) 
                    vdata_meta,                           & ! input: veg data meta
                    dname_vpoly,                          & ! input: dimension name for veg polygon
                    vdata,                                & ! input-output: veg data structure
                    nVpoly,                               & ! output: number of veg polygon
                    err, cmessage)                          ! output: error control
    if(err/=0)then; message=message//cmessage; return; endif
-!  ! (1.2.2) Read in veg class-property lookup table 
-!   call getvegClassLookup(trim(mpr_input_dir)//trim(vclass_table), &
-!                          nVclass,                             &
-!                          vegClass,                            &
-!                          vcls2prp,                            &
-!                          err, cmessage)
-!   if(err/=0)then; message=message//cmessage; return; endif
-!  ! (1.2.3) populate veg properties for each polygon 
-!   allocate(vprp(nPrpVeg),stat=err); if(err/=0) call handle_err(err,'error allocating for sprp')
-!   do iPrpVeg=1,nPrpVeg
-!     allocate(vprp(iPrpVeg)%varData(nVpoly), stat=err); if(err/=0) call handle_err(err,'error allocating for sprp%varData')
-!   enddo
-!   call map_vcls2prp(vdata, vcls2prp, vegClass, vprp, err, cmessage)
-!   if(err/=0)then; message=message//cmessage; return; endif
+  ! (1.2.2) Read in veg class-property lookup table 
+   call getvegClassLookup(trim(mpr_input_dir)//trim(vclass_table), &
+                          nVclass,                                 &
+                          vegClass,                                &
+                          vcls2prp,                                &
+                          err, cmessage)
+   if(err/=0)then; message=message//cmessage; return; endif
   ! *****
   ! (2.) Read in mapping netcdf 
   ! *********************************************
@@ -306,28 +285,37 @@ subroutine mpr(hruID,             &     ! input: hruID
   if (err/=0)then; message=message//cmessage; return; endif
   if ( nShru /= nVhru )then;err=10;message=trim(message)//'Different number of hru in vege and soil mapping file';return;endif  
   if ( opt==2 .and. nHru /= nShru )then;err=10;message=trim(message)//'nHru= '//trim(int2str(nShru))//' NOT '//trim(int2str(nHru));return;endif
-  associate( hruMap      => mapdata(1)%var(ixVarMapData%hru_id)%ivar1,  &
-             hruMapVege  => mapdata(2)%var(ixVarMapData%hru_id)%ivar1,  &
-             swgt        => mapdata(1)%var(ixVarMapData%weight)%dvar2,  &
+  associate( hruMap      => mapdata(1)%var(ixVarMapData%hru_id)%ivar1,        &
+             hruMapVege  => mapdata(2)%var(ixVarMapData%hru_id)%ivar1,        &
+             swgt        => mapdata(1)%var(ixVarMapData%weight)%dvar2,        &
+             vwgt        => mapdata(2)%var(ixVarMapData%weight)%dvar2,        &
+             overVpolyID => mapdata(2)%var(ixVarMapData%overlapPolyId)%ivar2, & 
              overSpolyID => mapdata(1)%var(ixVarMapData%overlapPolyId)%ivar2 )
   if ( minval(abs(hruMap-hruMapVege)) /= 0 )then;err=11;message=trim(message)//'different hru id in vege and soil mapping file';return;endif
-    !!! ---------------------------------------------
-    !!! Start of model hru loop (from mapping file) !!!
-    !!! ---------------------------------------------
-    hru: do iHru=1,nHru
-      ! Get index (iLocal) of hru id that matches with current hru from hru id array in mapping file
-      if (minval(abs(hruMap-hruID(iHru))) /= 0 )then;err=10;message=trim(message)//'hru id does not exist in mapping file';return; endif
-      idummy = minloc( abs(hruMap-hruID(iHru)) )
-      iLocal=idummy(1)
-      ! Select list of soil polygons contributing a current hru
-      allocate(mask(nOverSpoly))
-      mask = ( overSpolyID(:,iLocal) /= imiss )
-      allocate(polySub(count(mask)))
-      allocate(swgtSub(count(mask)))
-      nSpolyLocal = size(polySub)                ! number of contributing soil polygons to current hru
-      polySub = pack(overSpolyID(:,iLocal),mask) ! id of soil polygons contributing to current hru
-      swgtSub = pack(swgt(:,iLocal),mask)        ! weight of soil polygons contributing to current hru
-      ! allocate memmory
+  !!! ---------------------------------------------
+  !!! Start of model hru loop (from mapping file) !!!
+  !!! ---------------------------------------------
+  hru: do iHru=1,nHru
+    ! Get index (iLocal) of hru id that matches with current hru from hru id array in mapping file
+    call findix(hruID(iHru), hruMap, iLocal, err, cmessage); if(err/=0)then; message=trim(cmessage)//cmessage; return; endif
+    ! Select list of soil polygons contributing a current hru
+    allocate(mask(nOverSpoly))
+    mask = ( overSpolyID(:,iLocal) /= imiss )
+    allocate(polySub(count(mask)))
+    allocate(swgtSub(count(mask)))
+    nSpolyLocal = size(polySub)                    ! number of contributing soil polygons to current hru
+    polySub     = pack(overSpolyID(:,iLocal),mask) ! id of soil polygons contributing to current hru
+    swgtSub     = pack(swgt(:,iLocal),mask)        ! weight of soil polygons contributing to current hru
+    ! Select list of veg polygon ID contributing a current hru 
+    allocate(vmask(nOverVpoly),stat=err); if(err/=0)then;message=message//'error allocating vmask';return;endif
+    vmask       = ( overVpolyID(:,iLocal) /= imiss )
+    allocate(vPolySub(count(vmask)),stat=err); if(err/=0)then;message=message//'error allocating vPolySub';return;endif
+    allocate(vwgtSub(count(vmask)),stat=err); if(err/=0)then;message=message//'error allocating vwgtSub';return;endif
+    nVpolyLocal = size(vPolySub)
+    vPolySub    = pack(overVpolyID(:,iLocal),vmask)
+    vwgtSub     = pack(vwgt(:,iLocal),vmask)
+    ! allocate memmory
+    if (nSoilParModel>0_i2b)then !if at least one soil parameter is included 
       do iParm=1,nSoilParModel
         allocate(parSxySz(iParm)%varData(nSlyrs,nSpolyLocal),stat=err); if(err/=0)then;message=message//'error allocating parSxySz%varData';return;endif 
         allocate(parSxyMz(iParm)%varData(nLyr,nSpolyLocal),stat=err);   if(err/=0)then;message=message//'error allocating parSxyMz%varData';return;endif
@@ -342,113 +330,90 @@ subroutine mpr(hruID,             &     ! input: hruID
           allocate(soil2model_map(iPoly)%layer(iMLyr)%ixSubLyr(nSub),stat=err);if(err/=0)then;message=trim(message)//'error allocating lyrmap%layer%ixSubLyr';return;endif
         enddo
       enddo
-    ! *****
-    ! (3.1) Extract soil poly ID, weight polygon , and soil properties for current model hru 
-    ! *********************************************************************
-      call subSoilData(sdata, polySub, sdataLocal, err, cmessage)
-      if(err/=0)then; message=trim(message)//cmessage; return; endif
-      if ( iHru == iHruPrint ) then
-        print*,' '
-        print*,'****************************************************'
-        print*,'HRU, hruID = ',iHru,hruID(iHru)
-        print*,'****************************************************'
-        print*,'(1.1) Print list of soil polygon ID and weigth'
-        write(*,"(' polyID = ',100I9)") (polySub(iPoly), iPoly=1,nSpolyLocal)
-        write(*,"(' weight = ',100f9.3)") (swgtSub(iPoly), iPoly=1,nSpolyLocal)
-        do iVar=1,nVarSoilData
-          write(*,"(A12,'= ')") adjustl(sdataLocal(iVar)%varName)
-          do iPoly=1,nSpolyLocal
-          select case(trim(sdata_meta(iVar)%vartype))
-            case('integer')
-              select case(trim(sdata_meta(iVar)%vardims))
-                case('2D'); write(*,"(20I9)") (sdataLocal(iVar)%ivar2(iSLyr,iPoly), iSlyr=1,nSlyrs)
-                case('1D'); write(*,"(I9)") (sdataLocal(iVar)%ivar1(iPoly))
-              end select
-            case('double')
-              select case(trim(sdata_meta(iVar)%vardims))
-                case('2D')
-                  write(*,"(20f9.3)") (sdataLocal(iVar)%dvar2(iSLyr,iPoly), iSlyr=1,nSlyrs)
-                case('1D')
-                  write(*,"(f9.3)") (sdataLocal(iVar)%dvar1(iPoly))
-              end select
+    endif
+    if (nVegParModel>0_i2b)then !if at least one veg parameter is included
+      do iParm=1,nVegParModel
+        allocate(parVxy(iParm)%varData(nMonth, nVpolyLocal),stat=err)
+      enddo
+    endif
+  ! *****
+  ! (3.1) Extract soil data for current model hru 
+  ! *********************************************************************
+    call subsetData(sdata, polySub, sdataLocal, 'soil' ,err, cmessage)
+    if(err/=0)then; message=trim(message)//cmessage; return; endif
+    if ( iHru == iHruPrint ) then
+      print*,' '
+      print*,'****************************************************'
+      print*,'HRU, hruID = ',iHru,hruID(iHru)
+      print*,'****************************************************'
+      print*,'(1.1) Print list of soil polygon ID and weigth'
+      write(*,"(' polyID = ',100I9)") (polySub(iPoly), iPoly=1,nSpolyLocal)
+      write(*,"(' weight = ',100f9.3)") (swgtSub(iPoly), iPoly=1,nSpolyLocal)
+      do iVar=1,nVarSoilData
+        write(*,"(A12,'= ')") adjustl(sdataLocal(iVar)%varName)
+        do iPoly=1,nSpolyLocal
+        select case(trim(sdata_meta(iVar)%vartype))
+          case('integer')
+            select case(trim(sdata_meta(iVar)%vardims))
+              case('2D'); write(*,"(20I9)") (sdataLocal(iVar)%ivar2(iSLyr,iPoly), iSlyr=1,nSlyrs)
+              case('1D'); write(*,"(I9)") (sdataLocal(iVar)%ivar1(iPoly))
             end select
-          end do
-        enddo
-      endif
-!    ! *****
-!    ! (3.2) Extract veg poly ID, weight polygon, and veg properties for current model hru 
-!    ! *********************************************************************
-!      ! Select list of veg polygon ID contributing a current hru 
-!      allocate(vmask(nOverVpoly),stat=err);        if(err/=0) call handle_err(err,'error allocating for mask')
-!      vmask        = ( overVpolyID(:,iLocal) /= imiss )
-!      allocate(vPolySub(count(vmask)),stat=err); if(err/=0) call handle_err(err,'error allocating for vPolySub')
-!      allocate(vwgtSub(count(vmask)),stat=err); if(err/=0) call handle_err(err,'error allocating for swgtSub')
-!      vPolySub    = pack(overVpolyID(:,iLocal),vmask)
-!      vwgtSub     = pack(overVpolyID(:,iLocal),vmask)
-!      nVpolyLocal = size(vPolySub)
-!      allocate(vprpLocal(nPrpVeg),stat=err); if(err/=0) call handle_err(err,'error allocating for vprp')
-!      do iPrpVeg=1,nPrpVeg 
-!        allocate(vprpLocal(iPrpVeg)%varData(nVpolyLocal))
-!      enddo
-!      allocate(vclsLocal(nVpolyLocal))
-!      do iPoly = 1,nVpolyLocal
-!        do iPrpVeg = 1,nPrpVeg
-!          vprpLocal(iPrpVeg)%varData(iPoly) =vprp(iPrpVeg)%varData(vPolySub(iPoly)) 
-!        enddo
-!        vclsLocal(iPoly) = vdata(ixVarVegData%vegclass)%ivar1(vPolySub(iPoly))
-!      end do
-!      if ( iHru == iHruPrint ) then
-!        print*,' '
-!        print*,'(1.3) Print list of vege polygon ID and weigth'
-!        write(*,"(' polyID = ',100I7)") (vPolySub(iPoly), iPoly=1,nVpolyLocal)
-!        write(*,"(' weight = ',100f7.3)") (vwgtSub(iPoly), iPoly=1,nVpolyLocal)
-!        write(*,"(' vegclass = ',100I5)") (vclsLocal(iPoly), iPoly=1,nVpolyLocal)
-!        print*,'(1.3) Print veg property for polygon'
-!        do iPrpVeg=1,nPrpVeg
-!          write(*,"(1X,A12,'= ',100f7.3)") vprp_meta(iPrpVeg)%varname, (vprpLocal(iPrpVeg)%varData(iPoly), iPoly=1,nVpolyLocal)
-!        enddo
-!      endif
-    ! *****
-    ! (3.4) Compute model soil parameters using transfer function
-    ! *********************************************************
-      ! compute model soil parameters
-      call comp_soil_model_param(parSxySz, sdataLocal, gammaParMasterMeta, nSlyrs, nSpolyLocal, err, cmessage)
-      if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
-      if ( iHru == iHruPrint ) then
-        print*,'(2) Print Model parameter for polygon and layer'
+          case('double')
+            select case(trim(sdata_meta(iVar)%vardims))
+              case('2D')
+                write(*,"(20f9.3)") (sdataLocal(iVar)%dvar2(iSLyr,iPoly), iSlyr=1,nSlyrs)
+              case('1D')
+                write(*,"(f9.3)") (sdataLocal(iVar)%dvar1(iPoly))
+            end select
+          end select
+        end do
+      enddo
+    endif
+  ! *****
+  ! (3.2) Extract vege data for current model hru 
+  ! *********************************************************************
+    call subsetData(vdata, vpolySub, vdataLocal, 'veg' ,err, cmessage)
+    if(err/=0)then; message=trim(message)//cmessage; return; endif
+    if ( iHru == iHruPrint ) then
+      print*,' '
+      print*,'(1.3) Print list of vege polygon ID and weigth'
+        write(*,"(' polyID = ',100I9)") (vPolySub(iPoly), iPoly=1,nVpolyLocal)
+        write(*,"(' weight = ',100f9.3)") (vwgtSub(iPoly), iPoly=1,nVpolyLocal)
+    endif
+  ! *****
+  ! (3.4) Compute model parameters using transfer function
+  ! *********************************************************
+    ! compute model soil parameters
+    call comp_model_param(parSxySz, parVxy, sdataLocal, vdataLocal, gammaParMasterMeta, nSlyrs, nSpolyLocal, nVpolyLocal, err, cmessage)
+    if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
+    if ( iHru == iHruPrint ) then
+      print*,'(2) Print Model parameter at native resolution'
+      if (nSoilParModel>0_i2b)then
         write(*,"(' Layer       =',20I9)") (iSLyr, iSlyr=1,nSlyrs)
         do iParm=1,nSoilParModel
           do iPoly = 1,nSpolyLocal
-            write(*,"(1X,A12,'=',20f9.3)") betaInGamma(iParm), (parSxySz(iParm)%varData(iSLyr,iPoly), iSlyr=1,nSlyrs)
+            write(*,"(1X,A12,'=',20f9.3)") soilBetaInGamma(iParm), (parSxySz(iParm)%varData(iSLyr,iPoly), iSlyr=1,nSlyrs)
           enddo
         enddo
       endif
-!    ! *****
-!    ! (3.5) Compute Model vege parameters using transfer function
-!    ! *********************************************************
-!      ! compute model veg parameters
-!      allocate(parVxy(nVegParModel),stat=err); if(err/=0) call handle_err(err,'error allocating for parVxy')
-!      do iParm=1,nVegParModel
-!        select case ( vpar_meta(iParm)%dims )
-!          case( '1D' , 'ST' )
-!            allocate(parVxy(iParm)%varData(nVpolyLocal),stat=err); if(err/=0) call handle_err(err,'error allocating for parVxy%varData')
-!        end select
-!      enddo
-!      call comp_veg_model_param(parVxy, vprpLocal, vpar_meta, model_name)
-!      if ( iHru == iHruPrint ) then
-!        print*,'(2) Print Model parameter for Vege polygon'
-!        do iparm=1,nVegParModel
-!          write(*,"(1X,A10,'= ',100f5.2)") vpar_meta(iparm)%parname, (parVxy(iparm)%varData(iPoly), iPoly=1,nVpolyLocal)
-!        enddo
-!      endif
+      if (nVegParModel>0_i2b)then
+        do iParm=1,nVegParModel
+          do iPoly = 1,nVpolyLocal
+            write(*,"(1X,A10,'= ',100f9.3)") vegBetaInGamma(iParm), (parVxy(iParm)%varData(iMon, iPoly), iMon=1,nMonth)
+          enddo
+        enddo
+      endif 
+    endif
   ! ***********
   ! (4) Spatial aggregation of Model parameter 
   ! *********************************************************************
-    ! **********
-    ! (4.1) Aggregate model parameveter vertical direction - soil data layers to model soil layers
-    ! *********************************************************************
-    ! (4.1.1) Compute Model layer depth 
+    if (nSoilParModel>0_i2b)then
+      ! **********
+      ! (4.1) Aggregate model parameveter vertical direction - soil data layers to model soil layers
+      ! *********************************************************************
+      ! (4.1.1) Compute Model layer depth 
       call comp_model_depth(hModelLocal, zModelLocal, hfrac, sdataLocal, err, cmessage) 
+      if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
       if ( iHru == iHruPrint ) then
         print*, '(3.1.1) Print model depth ---' 
         write(*,"(' Layer       =',20I9)") (iMLyr, iMlyr=1,nlyr)
@@ -456,7 +421,7 @@ subroutine mpr(hruID,             &     ! input: hruID
           write(*,"('z            =',20f9.3)") (zModelLocal(iMLyr,iPoly), iMlyr=1,nLyr)
         enddo 
       endif
-    ! (4.1.2) Computing vertical weight of soil layer for each model layer
+      ! (4.1.2) Computing vertical weight of soil layer for each model layer
       second: associate( hSoilLocal =>sdataLocal(ixVarSoilData%hslyrs)%dvar2 ) 
       call map_slyr2mlyr(hSoilLocal, zModelLocal, soil2model_map, err, cmessage)
       end associate second
@@ -470,28 +435,28 @@ subroutine mpr(hruID,             &     ! input: hruID
           enddo 
         enddo
       endif
-    ! (4.1.3) Computing vertical weight for each model layer
+      ! (4.1.3) Computing vertical weight for each model layer
       do iPoly=1,nSpolyLocal
         do iMLyr = 1,nLyr
           do iParm = 1,nSoilParModel
-            allocate( paramvec(iParm)%layer(nSub),stat=err); if(err/=0)then;message=trim(message)//'error allocating paramvec';return;endif 
-            paramvec(iParm)%layer = 0._dp
+            allocate( soilParVec(iParm)%var(nSub),stat=err); if(err/=0)then;message=trim(message)//'error allocating soilParVec';return;endif 
+            soilParVec(iParm)%var = 0._dp
           enddo
           do iSub=1,nSub
             third: associate(iSelect => soil2model_map(iPoly)%layer(iMLyr)%ixSubLyr(iSub) )
             if (iSelect > 0 ) then 
-              do iparm = 1,nSoilParModel
-                paramvec(iParm)%layer(iSub) = parSxySz(iparm)%varData(iSelect,iPoly)
+              do iParm = 1,nSoilParModel
+                soilParVec(iParm)%var(iSub) = parSxySz(iParm)%varData(iSelect,iPoly)
               enddo
             endif
             end associate third
           enddo
           do iParm = 1,nSoilParModel
-            forth: associate( ix=>get_ixPar(trim(betaInGamma(iParm))) )
+            forth: associate( ix=>get_ixPar(trim(soilBetaInGamma(iParm))) )
             if ( trim(gammaParMasterMeta(ix)%vups)/='na' )then
               call aggreg(parSxyMz(iParm)%varData(iMLyr,iPoly),         &
                           soil2model_map(iPoly)%layer(iMLyr)%weight(:), &
-                          paramvec(iParm)%layer(:),                     &
+                          soilParVec(iParm)%var(:),                     &
                           gammaParMasterMeta(ix)%vups,                  &
                           gammaParMasterMeta(ix)%vpnorm,                &
                           err, cmessage)
@@ -499,31 +464,33 @@ subroutine mpr(hruID,             &     ! input: hruID
             endif
             end associate forth
           enddo
-          do iparm = 1,nSoilParModel
-            deallocate(paramvec(iParm)%layer,stat=err);if(err/=0)then;message=trim(message)//'error deallocating paramvec%layer';return;endif
+          do iParm = 1,nSoilParModel
+            deallocate(soilParVec(iParm)%var,stat=err);if(err/=0)then;message=trim(message)//'error deallocating soilParVec%layer';return;endif
           enddo
         enddo ! end of iMLyr (model layer) loop
       enddo ! end of iPoly
+    endif 
     ! ************
     ! (4.2) Aggregate model parameveter horizontally - use spatial weight netCDF 
     ! *********************************************************************
+    if (nSoilParModel>0_i2b)then
       do iMLyr=1,nLyr
         do iParm = 1,nSoilParModel
-          allocate( paramvec(iParm)%layer(nSpolyLocal),stat=err); if(err/=0)then; message=trim(message)//'error allocating paramvec'; return; endif
-          paramvec(iParm)%layer = 0._dp
+          allocate( soilParVec(iParm)%var(nSpolyLocal),stat=err); if(err/=0)then; message=trim(message)//'error allocating soilParVec'; return; endif
+          soilParVec(iParm)%var = 0._dp
         enddo
-        do iPoly=1,nSpolyLocal
-          do iParm = 1,nSoilParModel
-              paramvec(iParm)%layer(iPoly) = parSxyMz(iparm)%varData(iMLyr,iPoly)
+        do iParm = 1,nSoilParModel
+          do iPoly=1,nSpolyLocal
+              soilParVec(iParm)%var(iPoly) = parSxyMz(iParm)%varData(iMLyr,iPoly)
           enddo
         enddo
         call aggreg(hModel(iMLyr,iHru), swgtsub(:), hModelLocal(iMLyr,:),'pnorm', 1.0_dp, err, cmessage)
         do iParm = 1,nSoilParModel
-          fifth: associate( ix=>get_ixPar(trim(betaInGamma(iParm))) )
+          fifth: associate( ix=>get_ixPar(trim(soilBetaInGamma(iParm))) )
           if ( trim(gammaParMasterMeta(ix)%hups)/='na' )then
             call aggreg(parMxyMz(iParm)%varData(iMLyr,iHru), &
                         swgtsub(:),                          &
-                        paramvec(iparm)%layer(:),            &
+                        soilParVec(iParm)%var(:),            &
                         gammaParMasterMeta(ix)%hups,         &
                         gammaParMasterMeta(ix)%hpnorm,       &
                         err, cmessage)
@@ -536,111 +503,138 @@ subroutine mpr(hruID,             &     ! input: hruID
           end associate fifth
         enddo
         do iParm = 1,nSoilParModel
-          deallocate(paramvec(iParm)%layer, stat=err); if(err/=0)then; message=trim(message)//'error deallocating paramvec%layer'; return; endif 
+          deallocate(soilParVec(iParm)%var, stat=err); if(err/=0)then; message=trim(message)//'error deallocating soilParVec%var'; return; endif 
         enddo
       enddo
-!      do iparm = 1,nVegParModel
-!        if (vpar_meta(iparm)%h_agg) then
-!          call aggreg(vegParMxy(iparm)%varData(iHru), &
-!                      vwgtSub(:),                     &
-!                      parVxy(iparm)%varData,          &
-!                      dmiss,                          &
-!                      vpar_meta(iparm)%haggmethod)
-!          if ( iHru == iHruPrint ) then
-!            print*,'-----------------------------------'
-!            print*,'Aggregated vege parameter '
-!            write(*,"(1X,A17,'= ',100f9.3)") vpar_meta(iparm)%parname, (vegParMxy(iparm)%varData(iHru))
-!          endif
-!        endif
-!      enddo
       ! deallocate memmory
-      deallocate(mask,stat=err);           if(err/=0)then; message=trim(message)//'error deallocating mask'; return; endif
-      deallocate(polySub,stat=err);        if(err/=0)then; message=trim(message)//'error deallocating polyIdSub'; return; endif
-      deallocate(swgtSub,stat=err);        if(err/=0)then; message=trim(message)//'error deallocating swgtSub'; return; endif
-!      deallocate(vmask,stat=err);            if(err/=0) call handle_err(err,'error deallocating for vmask')
-!      deallocate(vpolySub,stat=err);         if(err/=0) call handle_err(err,'error deallocating for vpolyIdSub')
-!      deallocate(vwgtSub,stat=err);          if(err/=0) call handle_err(err,'error deallocating for vwgtSub')
-!      deallocate(vclsLocal,stat=err);        if(err/=0) call handle_err(err,'error deallocating for vclsLocal')
-!      deallocate(vprpLocal,stat=err);        if(err/=0) call handle_err(err,'error deallocating for sprpLocal')
       deallocate(soil2model_map,stat=err); if(err/=0)then; message=trim(message)//'error deallocating soil2model_map';return;endif
       deallocate(hModelLocal,stat=err);    if(err/=0)then; message=trim(message)//'error deallocating hModelLocal';return;endif
       deallocate(zModelLocal,stat=err);    if(err/=0)then; message=trim(message)//'error deallocating zModelLocal';return;endif
       do iParm=1,nSoilParModel
         deallocate(parSxySz(iParm)%varData,stat=err);if(err/=0)then; message=message//'error deallocating parSxySz%varData'; return; endif 
-        deallocate(parSxyMz(iparm)%varData,stat=err);if(err/=0)then; message=message//'error deallocating parSxyMz%varData'; return; endif
+        deallocate(parSxyMz(iParm)%varData,stat=err);if(err/=0)then; message=message//'error deallocating parSxyMz%varData'; return; endif
       enddo
-    enddo hru
-    end associate
-    return
+    endif
+    if (nVegParModel>0_i2b)then
+      do iMon=1,nMonth
+        do iParm = 1,nVegParModel
+          allocate( vegParVec(iParm)%var(nVpolyLocal),stat=err); if(err/=0)then; message=trim(message)//'error allocating vegParVec%var'; return; endif
+        enddo
+        do iParm = 1,nVegParModel
+          do iPoly=1,nVpolyLocal
+              vegParVec(iParm)%var(iPoly) = parVxy(iParm)%varData(iMon, iPoly)
+          enddo
+        enddo
+        do iParm = 1,nVegParModel
+          sixth: associate( ix=>get_ixPar(trim(vegBetaInGamma(iParm))) )
+          call aggreg(vegParMxy(iParm)%varData(iMon, iHru), &
+                      vwgtSub(:),                           &
+                      vegParVec(iParm)%var,                 &
+                      gammaParMasterMeta(ix)%hups,          &
+                      gammaParMasterMeta(ix)%hpnorm,        &
+                      err,cmessage)
+          if ( iHru == iHruPrint ) then
+            print*,'-----------------------------------'
+            print*,'Aggregated vege parameter '
+            write(*,"(1X,A17,'(Month ',I2,') = ',100f9.3)") gammaParMasterMeta(ix)%pname, iMon ,parMxyMz(iParm)%varData(iMon,iHru)
+          endif
+          end associate sixth
+        enddo
+        do iParm = 1,nVegParModel
+          deallocate(vegParVec(iParm)%var, stat=err); if(err/=0)then; message=trim(message)//'error deallocating vegParVec%var'; return; endif 
+        enddo
+      enddo
+      do iParm=1,nVegParModel
+        deallocate(parVxy(iParm)%varData,stat=err);if(err/=0)then; message=message//'error deallocating parVxy%varData'; return; endif 
+      enddo
+    endif
+    ! deallocate memmory
+    deallocate(mask,stat=err);           if(err/=0)then; message=trim(message)//'error deallocating mask'; return; endif
+    deallocate(polySub,stat=err);        if(err/=0)then; message=trim(message)//'error deallocating polyIdSub'; return; endif
+    deallocate(swgtSub,stat=err);        if(err/=0)then; message=trim(message)//'error deallocating swgtSub'; return; endif
+    deallocate(vmask,stat=err);          if(err/=0)then; message=trim(message)//'error deallocating vmask'; return; endif
+    deallocate(vpolySub,stat=err);       if(err/=0)then; message=trim(message)//'error deallocating vpolySub'; return; endif
+    deallocate(vwgtSub,stat=err);        if(err/=0)then; message=trim(message)//'error deallocating vwgtSub'; return; endif
+  enddo hru
+  end associate
+  return
 end subroutine
  
 ! private subroutine:
-subroutine subSoilData(soilData, subPolyID, soilDataLocal, err, message)
+subroutine subsetData(entireData, subPolyID, localData, data_name, err, message)
   use var_lookup,           only:ixVarSoilData,nVarSoilData  ! index of soil data variables and number of variables 
-  use globalData,           only:sdata_meta
+  use var_lookup,           only:ixVarVegData,nVarVegData    ! index of vege data variables and number of variables 
+  use globalData,           only:sdata_meta,vdata_meta
   implicit none
   !input variables
-  type(namevar),        intent(in)    :: soilData(:)      ! soil data container for all the soil polygons
+  type(namevar),        intent(in)    :: entireData(:) ! soil data container for all the soil polygons
   integer(i4b),         intent(in)    :: subPolyID(:)  ! subset of soil polygon id  
+  character(*),         intent(in)    :: data_name     ! data_name e.g., soil, vege 
   !output variables
-  type(namevar),        intent(inout) :: soilDataLocal(:) ! soil data container for local soil polygon 
+  type(namevar),        intent(inout) :: localData(:) ! soil data container for local soil polygon 
   integer(i4b),         intent(out)   :: err           ! error code
   character(*),         intent(out)   :: message       ! error message
   !local variables
+  type(var_meta), allocatable         :: data_meta(:)
   integer(i4b),allocatable            :: polyID(:)
+  integer(i4b)                        :: polyIdx       ! index of polyid variable in dataset 
+  integer(i4b)                        :: nVarData      ! number of data 
   integer(i4b)                        :: iPoly         ! index of soil polygon loop 
   integer(i4b)                        :: iVar          ! index of named variable loop
   integer(i4b)                        :: iLocal        ! index of hru array in mapping file that match hru id of interest 
   integer(i4b)                        :: nPoly         ! number of polygons in subset 
-  integer(i4b)                        :: nSlyrs        ! number of soil layers 
-  integer(i4b)                        :: iDummy(1)     ! 1D integer array for temporal storage 
+  integer(i4b)                        :: nDim1         ! number of 1st dimension 
 
-  err=0; message='subSoilData/'
-  allocate(polyID(size(soilData(ixVarSoilData%polyid)%ivar1)))
-  polyID = soilData(ixVarSoilData%polyid)%ivar1 
+  err=0; message='subsetData/'
+  select case(trim(data_name))
+    case('soil');nVarData=nVarSoilData; allocate(data_meta,source=sdata_meta); polyIdx=ixVarSoilData%polyid
+    case('veg'); nVarData=nVarVegData;  allocate(data_meta,source=vdata_meta); polyIdx=ixVarVegData%polyid
+  end select 
+
+  allocate(polyID(size(entireData(polyIdx)%ivar1)))
+  polyID = entireData(polyIdx)%ivar1 
+
   nPoly=size(subPolyID)
-  do iVar=1,nVarSoilData
-    soilDataLocal(ivar)%varName=trim(soilData(ivar)%varName)
-    select case(trim(sdata_meta(iVar)%vartype))
+  do iVar=1,nVarData
+    localData(ivar)%varName=trim(entireData(ivar)%varName)
+    select case(trim(data_meta(iVar)%vartype))
       case('integer')
-        select case(trim(sdata_meta(iVar)%vardims))
+        select case(trim(data_meta(iVar)%vardims))
           case('2D')
-            nSlyrs=size(soilData(ivar)%ivar2,1) 
-            if ( allocated(soilDataLocal(ivar)%ivar2) ) deallocate(soilDataLocal(ivar)%ivar2)
-            allocate(soilDataLocal(ivar)%ivar2(nSlyrs,nPoly),stat=err)
-            if(err/=0)then; message=trim(message)//'problem allocating 2D int space for soilDataLocal data structure'; return; endif
+            nDim1=size(entireData(ivar)%ivar2,1) 
+            if ( allocated(localData(ivar)%ivar2) ) deallocate(localData(ivar)%ivar2)
+            allocate(localData(ivar)%ivar2(nDim1,nPoly),stat=err)
+            if(err/=0)then; message=trim(message)//'problem allocating 2D int space for localData data structure'; return; endif
           case('1D')
-            if ( allocated(soilDataLocal(ivar)%ivar1) ) deallocate(soilDataLocal(ivar)%ivar1)
-            allocate(soilDataLocal(ivar)%ivar1(nPoly),stat=err)
-            if(err/=0)then; message=trim(message)//'problem allocating 1D int space for soilDataLocal data structure'; return; endif
+            if ( allocated(localData(ivar)%ivar1) ) deallocate(localData(ivar)%ivar1)
+            allocate(localData(ivar)%ivar1(nPoly),stat=err)
+            if(err/=0)then; message=trim(message)//'problem allocating 1D int space for localData data structure'; return; endif
           end select
       case('double')
-        select case(trim(sdata_meta(iVar)%vardims))
+        select case(trim(data_meta(iVar)%vardims))
           case('2D')
-            nSlyrs=size(soilData(ivar)%dvar2,1) 
-            if ( allocated(soilDataLocal(ivar)%dvar2) ) deallocate(soilDataLocal(ivar)%dvar2)
-            allocate(soilDataLocal(ivar)%dvar2(nSlyrs,nPoly),stat=err)
-            if(err/=0)then; message=trim(message)//'problem allocating 2D real space for soilDataLocal data structure'; return; endif
+            nDim1=size(entireData(ivar)%dvar2,1) 
+            if ( allocated(localData(ivar)%dvar2) ) deallocate(localData(ivar)%dvar2)
+            allocate(localData(ivar)%dvar2(nDim1,nPoly),stat=err)
+            if(err/=0)then; message=trim(message)//'problem allocating 2D real space for localData data structure'; return; endif
           case('1D')
-            if ( allocated(soilDataLocal(ivar)%dvar1) ) deallocate(soilDataLocal(ivar)%dvar1)
-            allocate(soilDataLocal(ivar)%dvar1(nPoly),stat=err)
-            if(err/=0)then; message=trim(message)//'problem allocating 1D real space for soilDataLocal data structure'; return; endif
+            if ( allocated(localData(ivar)%dvar1) ) deallocate(localData(ivar)%dvar1)
+            allocate(localData(ivar)%dvar1(nPoly),stat=err)
+            if(err/=0)then; message=trim(message)//'problem allocating 1D real space for localData data structure'; return; endif
         end select
     end select 
     do iPoly=1,nPoly
-      if (minval( abs(polyID-subPolyID(iPoly)) ) /= 0 )then; err=10; message=trim(message)//'hru id does not exist in mapping file';return; endif
-      iDummy = minloc( abs(polyID-subPolyID(iPoly)) )
-      iLocal=iDummy(1)
-      select case(trim(sdata_meta(iVar)%vartype))
+      iLocal=subPolyID(iPoly)
+      select case(trim(data_meta(iVar)%vartype))
         case('integer')
-          select case(trim(sdata_meta(iVar)%vardims))
-            case('2D'); soilDataLocal(ivar)%ivar2(:,iPoly) = soilData(ivar)%ivar2(:,iLocal)
-            case('1D'); soilDataLocal(ivar)%ivar1(iPoly)   = soilData(ivar)%ivar1(iLocal)
+          select case(trim(data_meta(iVar)%vardims))
+            case('2D'); localData(ivar)%ivar2(:,iPoly) = entireData(ivar)%ivar2(:,iLocal)
+            case('1D'); localData(ivar)%ivar1(iPoly)   = entireData(ivar)%ivar1(iLocal)
             end select
         case('double')
-          select case(trim(sdata_meta(iVar)%vardims))
-            case('2D'); soilDataLocal(ivar)%dvar2(:,iPoly) = soilData(ivar)%dvar2(:,iLocal)
-            case('1D'); soilDataLocal(ivar)%dvar1(iPoly)   = soilData(ivar)%dvar1(iLocal)
+          select case(trim(data_meta(iVar)%vardims))
+            case('2D'); localData(ivar)%dvar2(:,iPoly) = entireData(ivar)%dvar2(:,iLocal)
+            case('1D'); localData(ivar)%dvar1(iPoly)   = entireData(ivar)%dvar1(iLocal)
           end select
       end select 
     end do
@@ -664,7 +658,6 @@ subroutine pop_hfrac(gammaParStr, gammaParMeta,hfrac, err, message)
   logical(lgc)                      :: mask(20) 
   integer(i4b)                      :: i
 
-  ! initialize error control
   err=0; message='pop_hfrac/'
   dummy=-999
   !check h parameters - now can chcek up to 5 layers
@@ -680,11 +673,34 @@ subroutine pop_hfrac(gammaParStr, gammaParMeta,hfrac, err, message)
   return
 end subroutine 
 
+! private function 
 character(len=20) function int2str(k)
 !   "Convert an integer to string."
     integer, intent(in) :: k
     write (int2str, *) k
     int2str = adjustl(int2str)
 end function
+
+! private subroutine:
+subroutine findix(scl, vec, iSelect, ierr, message)
+  ! Find index where the value match up with scl  
+  implicit none
+  !input 
+  integer(i4b),intent(in)              :: scl
+  integer(i4b),intent(in)              :: vec(:)
+  integer(i4b),intent(out)             :: iSelect
+  integer(i4b), intent(out)            :: ierr      ! error code
+  character(*), intent(out)            :: message   ! error message
+  integer(i4b)                         :: i(1)
+
+  ! initialize error control
+  ierr=0; message='findix/' 
+
+  i = minloc(abs(vec - scl))
+  iSelect = i(1)  ! de-vectorize the found index 
+  if(vec(iSelect) /= scl)&
+    ierr=60; message=trim(message)//'unable to find matched value'; return  
+  return
+end subroutine
 
 end module mpr_routine

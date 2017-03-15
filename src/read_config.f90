@@ -14,7 +14,8 @@ module read_config
 ! MPR configuration
   namelist / mprconfig /  mpr_input_dir,           & 
                           mpr_output_dir,          &
-                          param_nc,                &
+                          soil_param_nc,           &
+                          veg_param_nc,            &
                           fname_soil,              &
                           fname_veg,               &
                           fname_smapping,          &
@@ -24,6 +25,7 @@ module read_config
                           dname_hru,               &
                           sclass_table,            &
                           vclass_table,            &
+                          nVclass,                 &
                           dname_spoly,             &
                           dname_slyrs,             &              
                           dname_vpoly

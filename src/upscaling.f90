@@ -4,10 +4,11 @@ module upscaling
 ! and compute a single value 
 !
 ! Scale operators and subroutines included here are 
-! 1. wamean: weighted arithmatic mean
-! 2. wgmean: weighted geometric mean
-! 3. whmean: weighted harmonic mean
-! 4. wmedi:  weighted median 
+! 1. powermean: weighted power mean
+! 2. wamean: weighted arithmatic mean
+! 3. wgmean: weighted geometric mean
+! 4. whmean: weighted harmonic mean
+! 5. wmedi:  weighted median 
 ! Also subroutine that allows to switch scaling method by specifying the method in input 
 
 use nrtype                            ! variable types, etc.
@@ -114,19 +115,19 @@ subroutine wpnorm(wgtval, wgtvec, datvec, err, message, p_exp_in )
     if (wgtvec_sum /= 1.0) wgtvec_packed = wgtvec_packed / wgtvec_sum 
     wgtval_sum = 0._dp
     if (p_exp .gt. 100._dp) then
-      print*, '    using maximum norm'
+!      print*, '    using maximum norm'
       wgtval = maxval(datvec_packed(1:nElm))
     else if (abs(p_exp) .lt. epsilon(1._dp)) then
-      print*, '    using geometric mean'
+!      print*, '    using geometric mean'
       do iElm = 1, nElm
         wgtval_sum = wgtval_sum + log(datvec_packed(iElm)) * wgtvec_packed(iElm)
       end do 
       wgtval = exp(wgtval_sum)
     else if (p_exp .lt. -100._dp) then
-      print*, '    using minimum '
+!      print*, '    using minimum '
       wgtval = minval(datvec_packed(1:nElm))
     else
-      print*, '    using p-norm with exponent: ', p_exp
+!      print*, '    using p-norm with exponent: ', p_exp
       do iElm = 1, nElm
         !wgtval_sum = wgtval_sum + exp(log(abs(datvec_packed(iElm))) * p_exp) * wgtvec_packed(iElm)
         wgtval_sum = wgtval_sum + (abs(datvec_packed(iElm))**p_exp)*wgtvec_packed(iElm)

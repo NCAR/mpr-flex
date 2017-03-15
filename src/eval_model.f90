@@ -18,7 +18,7 @@ contains
 !************************************
 function objfn( calParam )
   use mpr_routine,   only: mpr
-  use globalData,    only: betaCalScale, parMaster, parSubset, betaInGamma, gammaSubset, nBetaGamma, nBeta, nGamma
+  use globalData,    only: betaCalScale, parMaster, parSubset, gammaSubset, nBetaGamma, nSoilParModel, nVegParModel
   use model_wrapper, only: read_hru_id, read_soil_param, adjust_param, replace_param, write_soil_param, read_sim
   implicit none
   !input variables
@@ -29,8 +29,6 @@ function objfn( calParam )
   real(dp)                          :: objfn                         ! object function value 
   integer(i2b)                      :: iPar                          ! loop index for parameter 
   integer(i2b)                      :: idx                           ! 
-  integer(i4b)                      :: nVegParModel                  ! Number of model vege parameters associated with calibrating gamma parameter 
-  integer(i4b)                      :: nSoilParModel                 ! Number of model soil parameters associated with calibrating gamma parameter 
   logical(lgc),         allocatable :: mask(:)                       ! 1D mask
   integer(i4b)                      :: hruID(nHru)                   ! Hru ID
   real(dp)                          :: param(nHru,TotNPar)           ! original soil parameter (model hru x parameter)
@@ -42,7 +40,7 @@ function objfn( calParam )
   real(dp),             allocatable :: simBasinRouted(:,:)           ! routed sim value (basin x number of time step)
   real(dp),             allocatable :: hModel(:,:)                   ! storage of model layer thickness at model layer x model hru 
   type(namedvar2),      allocatable :: parMxyMz(:)                   ! storage of model soil parameter at model layer x model hru 
-  type(namedvar),       allocatable :: vegParMxy(:)                  ! storage of model vege parameter at model hru
+  type(namedvar2),      allocatable :: vegParMxy(:)                  ! storage of model vege parameter at month (or annual) x model hru
   real(dp)                          :: ushape,uscale                 ! two routing parameter
   integer(i4b)                      :: err                           ! error id 
   character(len=strLen)             :: message                       ! error message
@@ -80,8 +78,6 @@ function objfn( calParam )
     if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   endif
   if ( any(parSubset(:)%beta /= "beta") )then ! calPar includes gamma parameters to be used for MPR 
-    nSoilParModel=size(betaInGamma)           ! number of soil parameters associated with gamma parameters
-    nVegParModel=1                            ! number of vege parameters associated with gamma parameters
     allocate(hModel(nLyr,nHru),stat=err);      if(err/=0)then;print*,trim(message)//'error allocating hModel';stop;endif
     allocate(parMxyMz(nSoilParModel),stat=err);if(err/=0)then;print*,trim(message)//'error allocating parMxyMz';stop;endif
     allocate(vegParMxy(nVegParModel),stat=err);if(err/=0)then;print*,trim(message)//'error allocating vegParMxy';stop;endif
@@ -89,7 +85,7 @@ function objfn( calParam )
       allocate(parMxyMz(iPar)%varData(nLyr,nHru),stat=err)
     enddo
     do iPar=1,nVegParModel
-      allocate(vegParMxy(iPar)%varData(nHru),stat=err)
+      allocate(vegParMxy(iPar)%varData(nMonth,nHru),stat=err)
     enddo
     allocate(mask(nBetaGamma))
     mask=parSubset(:)%beta/="beta"
@@ -100,7 +96,7 @@ function objfn( calParam )
     enddo
     call mpr(hruID, pnormCoef, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-    call replace_param(idModel, adjparam, hModel, parMxyMz, adjParam, err, cmessage)
+    call replace_param(idModel, adjParam, hModel, parMxyMz, adjParam, err, cmessage)
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   endif
   call write_soil_param(idModel, hruID, adjParam, err, cmessage)
@@ -165,6 +161,7 @@ subroutine calc_rmse_region(sim, obs, agg, objfn)
   integer(i4b)                            :: nTime        !number of time step 
 
   ! initialize error control
+  err=0; message=trim(message)//'calc_rmse_region/'
   allocate(simIn(nbasin,sim_len))
   allocate(obsIn(nbasin*sim_len))
   allocate(obj_fun_weight(nbasin))

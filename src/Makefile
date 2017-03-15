@@ -12,8 +12,8 @@
 #========================================================================
 # Define core directory.
 # This is the parent directory of 'build' where all the source codes reside
-# 'hydropt" under home directory is default.
-F_MASTER = ~/hydropt/
+# 'mpr-flex" under home directory is default.
+F_MASTER = ~/mpr-flex/
 
 # Define the Fortran Compiler. 
 # ifort is default. The other options are gfortran and pgf90
@@ -85,7 +85,7 @@ CORE = \
     sac_routines.f90 \
     vic_routines.f90 \
     model_wrapper.f90 \
-    soiltf.f90 \
+    tf.f90 \
     modelLayer.f90 \
     upscaling.f90 \
     mpr_routine.f90 \
@@ -115,7 +115,7 @@ ifeq "$(FC)" "gfortran"
 endif
 ifeq "$(FC)" "ifort"
  #FLAGS1 = -warn all -noerror_limit -FR -O0 -auto -WB -traceback -g -fltconsistency
- FLAGS = -heap-arrays 10 -debug -warn all -FR -O2 -auto -WB -traceback -g -fltconsistency -fpe0
+ FLAGS = -heap-arrays 10 -debug -warn all -FR -O0 -auto -WB -traceback -g -fltconsistency -fpe0
 endif
 ifeq "$(FC)" "pgf90"
  #FLAGS1 = -Bstatic -Mbackslash -g -Mchkptr -Mchkstk -Mpgicoff -Minform=inform -Ktrap=divz,inv -Mprof=lines,time

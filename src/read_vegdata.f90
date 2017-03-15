@@ -14,7 +14,6 @@ private
 
 public::getVegData
 public::getvegClassLookup
-public::map_vcls2prp
 
 contains
 
@@ -71,7 +70,7 @@ contains
          if(ierr/=0)then; message=trim(message)//'err allocating 2D int space for vdata data structure'; return; endif
          ! get the data 
          ierr = nf90_get_var(ncid, ivarID, vdata(ivar)%ivar2)
-       case('vector')
+       case('1D')
          ! allocate space for the 1D integer array
          allocate(vdata(ivar)%ivar1(nVpoly),stat=ierr)
          if(ierr/=0)then; message=trim(message)//'err allocating 2D dbl space for vdata data structure'; return; endif
@@ -86,7 +85,7 @@ contains
          if(ierr/=0)then; message=trim(message)//'err allocating 2D int space for vdata data structure'; return; endif
          ! get the data 
          ierr = nf90_get_var(ncid, ivarID, vdata(ivar)%dvar2)
-       case('vector')
+       case('1D')
          ! allocate space for the 1D integer array
          allocate(vdata(ivar)%dvar1(nVpoly),stat=ierr)
          if(ierr/=0)then; message=trim(message)//'err allocating 2D int space for vdata data structure'; return; endif
@@ -105,9 +104,9 @@ contains
  ! Public Subroutine: Read in MODIS land cover IGBP class text data...
  ! *********************************************
   subroutine getVegClassLookup(in_vegTable,   &  ! input: look up table to map veg class and veg properties
-                               nVclass,      &  ! input:
-                               vegClass,     &  ! output: veg class
-                               vegPropt,     &  ! output: veg properties in 
+                               nVclass,       &  ! input:
+                               vegClass,      &  ! output: veg class
+                               vegPropt,      &  ! output: veg properties in 
                                err, message)    ! output: number of layer
  
  ! Purpose: read look-up table to map veg class and veg properties
@@ -134,7 +133,6 @@ contains
    err=0; message="getVegClassLookup/"
    !allocation
    do iVclass=1,nVclass; allocate(vegPropt(iVclass)%var(nPrpVeg)); end do
-     
    ! open file (also returns un-used file unit used to open the file)
    call file_open(in_vegTable,iunit,err,message)
    ! get a list of character strings from non-comment lines
@@ -184,84 +182,7 @@ contains
        case default; message=trim(message)//'spName not recognized'; err=35; return
      end select
    end do  ! end of loop thru veg data 
+   return 
+ end subroutine
  
- end subroutine getVegClassLookup
- 
- ! *****
- ! Public Subroutine: Map veg properties from veg class with lookup table  
- ! *********************************************
- subroutine map_vcls2prp(vdata,   &  ! input: veg data holder containing all the vege data variables 
-                         vcls2prp,&  ! input: veg class-property mapping 
-                         vegClass,&  ! input: list of veg class id
-                         vprp,    &  ! output: veg property array for veg polygon
-                         ierr,    &  ! error code
-                         message)    ! error message   
-   implicit none
-   !input
-   type(namevar),intent(in)      :: vdata(:)
-   type(var_d),  intent(in)      :: vcls2prp(:) ! veg properties for polygon 
-   integer(i4b), intent(in)      :: vegClass(:) ! veg properties for polygon 
-   !output
-   type(namedvar),intent(inout)  :: vprp(:)     ! veg properties for polygon
-   integer(i4b), intent(out)     :: ierr      ! error code
-   character(*), intent(out)     :: message   ! error message
-
-   !local
-   integer(i4b)                  :: iPrpVeg       ! Loop index of veg properties 
-   integer(i4b)                  :: ivcls         ! Loop index of veg class 
-   integer(i4b)                  :: iSelect       ! matching indix  
-   integer(i4b)                  :: iVpoly        ! Loop index of veg polygon 
-   integer(i4b)                  :: nVpoly        ! number of veg polygons
- 
-   nVpoly=size(vdata(ixVarVegData%vegclass)%ivar1)
-   ! from straight from netCDF
-   do iVpoly = 1,nVpoly
-     vprp(ixPrpVeg%lai01)%varData(iVpoly) = vdata(ixVarVegData%lai)%dvar2(1, iVpoly)
-     vprp(ixPrpVeg%lai02)%varData(iVpoly) = vdata(ixVarVegData%lai)%dvar2(2, iVpoly)
-     vprp(ixPrpVeg%lai03)%varData(iVpoly) = vdata(ixVarVegData%lai)%dvar2(3, iVpoly)
-     vprp(ixPrpVeg%lai04)%varData(iVpoly) = vdata(ixVarVegData%lai)%dvar2(4, iVpoly)
-     vprp(ixPrpVeg%lai05)%varData(iVpoly) = vdata(ixVarVegData%lai)%dvar2(5, iVpoly)
-     vprp(ixPrpVeg%lai06)%varData(iVpoly) = vdata(ixVarVegData%lai)%dvar2(6, iVpoly)
-     vprp(ixPrpVeg%lai07)%varData(iVpoly) = vdata(ixVarVegData%lai)%dvar2(7, iVpoly)
-     vprp(ixPrpVeg%lai08)%varData(iVpoly) = vdata(ixVarVegData%lai)%dvar2(8, iVpoly)
-     vprp(ixPrpVeg%lai09)%varData(iVpoly) = vdata(ixVarVegData%lai)%dvar2(9, iVpoly)
-     vprp(ixPrpVeg%lai10)%varData(iVpoly) = vdata(ixVarVegData%lai)%dvar2(10,iVpoly)
-     vprp(ixPrpVeg%lai11)%varData(iVpoly) = vdata(ixVarVegData%lai)%dvar2(11,iVpoly)
-     vprp(ixPrpVeg%lai12)%varData(iVpoly) = vdata(ixVarVegData%lai)%dvar2(12,iVpoly)
-     vprp(ixPrpVeg%vegtype)%varData(iVpoly) = vdata(ixVarVegData%vegclass)%ivar1(iVpoly)
-   enddo
-   do iPrpVeg=14,nPrpVeg ! go through veg properties
-     do iVpoly = 1,nVpoly
-        ivcls = vdata(ixVarVegData%vegclass)%ivar1(iVpoly)
-        call findix(ivcls,vegClass,iSelect,ierr,message)  !find index in vegClass array matching iVclass
-        vprp(iPrpVeg)%varData(iVpoly) = vcls2prp(iSelect)%var(iPrpVeg) ! assign veg properties based on veg class
-     enddo
-   enddo
-
-   return   
-
-   contains
-
-     subroutine findix(scl,vec,iSelect, ierr, message)
-       ! Find vec index where the value match up with scl  
-       implicit none
-     
-       integer(i4b),intent(in)              :: scl
-       integer(i4b),intent(in)              :: vec(:)
-       integer(i4b),intent(out)             :: iSelect
-       integer(i4b)                         :: i(1)
-       integer(i4b), intent(out)            :: ierr      ! error code
-       character(*), intent(out)            :: message   ! error message
-
-       ! initialize error control
-       ierr=0; message='findix/' 
-
-       i = minloc(abs(vec - scl))
-       iSelect = i(1)  ! de-vectorize the desired stream segment
-       if(vec(iSelect) /= scl)&
-         ierr=60; message=trim(message)//'unable to find matched value'; return  
-     end subroutine findix
-   
- end subroutine map_vcls2prp
-
 end module read_vegdata

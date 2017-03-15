@@ -9,6 +9,7 @@ module public_var
   ! some common variables
   integer,     parameter,public  :: strLen=256             ! length of character string
   ! some constant variables
+  integer(i4b),parameter,public  :: nMonth=12              ! missing value for integer value
   integer(i4b),parameter,public  :: imiss=-999             ! missing value for integer value
   real(dp),    parameter,public  :: dmiss=-999.0_dp        ! missing value for floating value
   real(dp),    parameter,public  :: verySmall=tiny(1.0_dp) ! a very small number 
@@ -21,7 +22,8 @@ module public_var
   ! mprconfig
   character(len=strLen),public    :: mpr_input_dir 
   character(len=strLen),public    :: mpr_output_dir
-  character(len=strLen),public    :: param_nc 
+  character(len=strLen),public    :: soil_param_nc 
+  character(len=strLen),public    :: veg_param_nc 
   character(len=strLen),public    :: fname_soil
   character(len=strLen),public    :: fname_veg
   character(len=strLen),public    :: fname_smapping
@@ -32,6 +34,7 @@ module public_var
   character(len=strLen),public    :: sclass_table
   integer(i4b)                    :: nSclass
   character(len=strLen),public    :: vclass_table
+  integer(i4b)                    :: nVclass
   character(len=strLen),public    :: dname_spoly 
   character(len=strLen),public    :: dname_slyrs
   character(len=strLen),public    :: dname_vpoly 
@@ -60,9 +63,7 @@ module public_var
   integer(i4b),public             :: TotNpar  != 54(VIC)
   integer(i4b),public             :: nLyr     != 3 (VIC)
   character(len=strLen),public    :: calpar 
-  !
-  !DDS 
-  !input parameters
+  ! DDS 
   real(dp),public                 :: rpar           ! search  
   integer(i8b),public             :: nseed          ! starting seed for random number generator
   integer(i8b),public             :: maxn           ! maximum number of trials before optimization is terminated

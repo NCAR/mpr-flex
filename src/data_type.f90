@@ -58,9 +58,18 @@ type,public :: var_meta
   character(len=strLen)            :: varname=''               ! name
   character(len=strLen)            :: vardesc=''               ! description
   character(len=strLen)            :: varunit=''               ! units
-  character(len=strLen)            :: vardims=''               ! dimension (scaler, vector, 2D, 3D)
+  character(len=strLen)            :: vardims=''               ! dimension (1D, 2D, 3D)
   character(len=strLen)            :: vartype=''               ! type (integer, double)
 endtype var_meta
+
+! ***********************************************************************************************************
+! Define data structure of netCDF dimension metadata  
+! ***********************************************************************************************************
+  type, public :: defDim
+    character(len=32)         :: dimName=''
+    character(len=32)         :: dimDesc=''
+    character(len=32)         :: dimUnit=''
+  endtype defDim
 
 ! *****
 ! data structure to hold polygon data only integer type
