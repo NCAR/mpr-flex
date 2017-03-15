@@ -115,7 +115,7 @@ ifeq "$(FC)" "gfortran"
 endif
 ifeq "$(FC)" "ifort"
  #FLAGS1 = -warn all -noerror_limit -FR -O0 -auto -WB -traceback -g -fltconsistency
- FLAGS = -heap-arrays 10 -debug -warn all -FR -O2 -auto -WB -traceback -g -fltconsistency -fpe0
+ FLAGS = -heap-arrays 10 -debug -warn all -FR -O0 -auto -WB -traceback -g -fltconsistency -fpe0
 endif
 ifeq "$(FC)" "pgf90"
  #FLAGS1 = -Bstatic -Mbackslash -g -Mchkptr -Mchkstk -Mpgicoff -Minform=inform -Ktrap=divz,inv -Mprof=lines,time

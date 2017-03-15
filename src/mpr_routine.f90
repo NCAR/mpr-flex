@@ -45,36 +45,36 @@ subroutine run_mpr( calParam, restartFile, err, message )
   character(len=strLen)             :: cmessage                      ! error message from subroutine
 
   err=0; message='run_mpr/' ! to initialize error control
-  if ( idModel/=0 )then;idModel=0;print*,trim(message)//'idModel is set to zero - model inepenedent';endif
-  allocate(params, source=calParam) ! copy calParameter default 
-  inquire(file=trim(adjustl(restartFile)), exist=isExistFile)
-  if ( isExistFile ) then !  if state file exists, update calParam, otherwise use default value
-    print*, 'read restart file'
-    open(unit=70,file=trim(adjustl(restartFile)), action='read', status = 'unknown')
-    read(70,*) idummy ! restart file include iStart  
-    read(70,*) (params(iPar),iPar=1,nBetaGamma)    
-    close(70)
-  endif
-  idx=1
-  do iPar=1,nBetaGamma
-    if (parSubset(iPar)%perLyr)then
-      allocate(calParStr(iPar)%var(nLyr))
-      calParStr(iPar)%var=params(idx:idx+nLyr-1)
-      idx=idx+nLyr
-    else
-      allocate(calParStr(iPar)%var(1))
-      calParStr(iPar)%var=params(idx)
-      idx=idx+1
+  if ( any(parSubset(:)%beta /= "beta") )then ! calPar need to include min. one gamma parameter to be used for MPR 
+    if ( idModel/=0 )then;idModel=0;print*,trim(message)//'idModel is set to zero - model inepenedent';endif
+    allocate(params, source=calParam) ! copy calParameter default 
+    inquire(file=trim(adjustl(restartFile)), exist=isExistFile)
+    if ( isExistFile ) then !  if state file exists, update calParam, otherwise use default value
+      print*, 'read restart file'
+      open(unit=70,file=trim(adjustl(restartFile)), action='read', status = 'unknown')
+      read(70,*) idummy ! restart file include iStart  
+      read(70,*) (params(iPar),iPar=1,nBetaGamma)    
+      close(70)
     endif
-  end do
-  do iPar=1,size(betaCalScale) ! put calpar vector from optimization routine output pnorm coef. data strucure
-    allocate(pnormCoef(iPar)%var(2))
-    pnormCoef(iPar)%var=calParam(idx:idx+1)
-    idx=idx+2
-  end do
-  call read_hru_id(idModel, hruID, err, cmessage)    ! to get hruID
-  if (err/=0)then;message=trim(message)//trim(cmessage);return;endif
-  if ( any(parSubset(:)%beta /= "beta") )then ! calPar includes gamma parameters to be used for MPR 
+    idx=1
+    do iPar=1,nBetaGamma
+      if (parSubset(iPar)%perLyr)then
+        allocate(calParStr(iPar)%var(nLyr))
+        calParStr(iPar)%var=params(idx:idx+nLyr-1)
+        idx=idx+nLyr
+      else
+        allocate(calParStr(iPar)%var(1))
+        calParStr(iPar)%var=params(idx)
+        idx=idx+1
+      endif
+    end do
+    do iPar=1,size(betaCalScale) ! put calpar vector from optimization routine output pnorm coef. data strucure
+      allocate(pnormCoef(iPar)%var(2))
+      pnormCoef(iPar)%var=calParam(idx:idx+1)
+      idx=idx+2
+    end do
+    call read_hru_id(idModel, hruID, err, cmessage)    ! to get hruID
+    if (err/=0)then;message=trim(message)//trim(cmessage);return;endif
     allocate(hModel(nLyr,nHru),stat=err);      if(err/=0)then;message=trim(message)//'error allocating hModel';return;endif
     allocate(parMxyMz(nSoilParModel),stat=err);if(err/=0)then;message=trim(message)//'error allocating parMxyMz';return;endif
     allocate(vegParMxy(nVegParModel),stat=err);if(err/=0)then;message=trim(message)//'error allocating vegParMxy';return;endif
@@ -176,7 +176,6 @@ subroutine mpr(hruID,             &     ! input: hruID
   integer(i4b)                       :: nOverVpoly               ! TO BE DELETED: number of overlapped vege polygon for each model HRU 
   integer(i4b)                       :: nSpolyLocal              ! number of subset overlapped soil polygon for each model HRU 
   integer(i4b)                       :: nVpolyLocal              ! TO BE DELETED: number of subset overlapped vege polygon for each model HRU 
-  real(dp)                           :: hmult                    ! mulitplier of soil layer  
   real(dp)                           :: hfrac(nLyr-1)            ! fraction of soil depth for each model layer 
   type(namevar)                      :: sdata(nVarSoilData)      ! soil data container for all the soil polygons
   type(namevar)                      :: sdataLocal(nVarSoilData) ! soil data container for local soil polygon 
@@ -215,7 +214,6 @@ subroutine mpr(hruID,             &     ! input: hruID
   enddo 
   call popMprMeta( err, cmessage)   !for sdata_meta, vdata_meta, map_meta
   if(err/=0)then; message=trim(message)//cmessage; return; endif
-  hmult=gammaParMasterMeta(ixPar%z1gamma1)%val
   call pop_hfrac(gammaParStr, gammaParMeta, hfrac, err, cmessage) ! to get hfrac 
   if(err/=0)then; message=trim(message)//cmessage; return; endif
   ! Memory allocation
@@ -237,7 +235,7 @@ subroutine mpr(hruID,             &     ! input: hruID
                nSlyrs,                               & ! output: number of dimension (i.e. number of soil layer)
                err, cmessage)
   if(err/=0)then; message=trim(message)//cmessage; return; endif 
-  call mod_hslyrs(sdata,hmult,err,cmessage) ! modify soil layer thickness in sdata data structure
+  call mod_hslyrs(sdata, gammaParMasterMeta(ixPar%z1gamma1)%val, err,cmessage) ! modify soil layer thickness in sdata data structure
   if(err/=0)then; message=trim(message)//cmessage; return; endif 
   ! *****
   ! (1.2)  veg class - properties lookup table ...
@@ -298,7 +296,6 @@ subroutine mpr(hruID,             &     ! input: hruID
   !!! Start of model hru loop (from mapping file) !!!
   !!! ---------------------------------------------
   hru: do iHru=1,nHru
-    print*, 'hruID=',iHru, hruID(iHru)
     ! Get index (iLocal) of hru id that matches with current hru from hru id array in mapping file
     call findix(hruID(iHru), hruMap, iLocal, err, cmessage); if(err/=0)then; message=trim(cmessage)//cmessage; return; endif
     ! Select list of soil polygons contributing a current hru
@@ -587,7 +584,6 @@ subroutine subsetData(entireData, subPolyID, localData, data_name, err, message)
   integer(i4b)                        :: iLocal        ! index of hru array in mapping file that match hru id of interest 
   integer(i4b)                        :: nPoly         ! number of polygons in subset 
   integer(i4b)                        :: nDim1         ! number of 1st dimension 
-  integer(i4b)                        :: iDummy(1)     ! 1D integer array for temporal storage 
 
   err=0; message='subsetData/'
   select case(trim(data_name))
@@ -628,9 +624,7 @@ subroutine subsetData(entireData, subPolyID, localData, data_name, err, message)
         end select
     end select 
     do iPoly=1,nPoly
-      if (minval( abs(polyID-subPolyID(iPoly)) ) /= 0 )then; err=10; message=trim(message)//'hru id does not exist in mapping file';return; endif
-      iDummy = minloc( abs(polyID-subPolyID(iPoly)) )
-      iLocal=iDummy(1)
+      iLocal=subPolyID(iPoly)
       select case(trim(data_meta(iVar)%vartype))
         case('integer')
           select case(trim(data_meta(iVar)%vardims))
