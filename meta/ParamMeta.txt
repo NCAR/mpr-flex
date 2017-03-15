@@ -7,7 +7,7 @@
 ! (1) lines starting with "!" are treated as comment lines -- there is no limit on the number of comment lines
 ! (2) the format definition defines the format of the file, which can be changed
 ! (3) the format definition must be the first non-comment line
-! (4) the delimiters "| " must be present (format a2), as these are used to check the integrety of the file
+! (4) the delimiters " | " must be present (format (1x,a1,1x)) before the following variable, as these are used to check the integrety of the file
 ! columns are:
 ! 1:  gamma or beta parameter name 
 ! 2:  default value 
@@ -94,53 +94,53 @@ lai1gamma1       |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | lai     |    1 |
 ! -----------------------                                                                                                                     
 uhshape          |  1.00000E+00 |  0.10000E+00 |  3.00000E+00 | beta    | -999 | route | F | na      | -9.99000E+00 | na      | -9.99000E+00 | F
 uhscale          |  1.00000E+00 |  0.50000E+00 |  3.00000E+00 | beta    | -999 | route | F | na      | -9.99000E+00 | na      | -9.99000E+00 | F
-ks               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   | -1.00000E+00 | pnorm   | -1.00000E+00 | T
-bd               |  1.00000E+00 |  0.90000E+00 |  1.10000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-sd               |  1.00000E+00 |  0.90000E+00 |  1.10000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-psis             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-b                |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-phi              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-fc               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-wp               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-myu              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-binfilt          |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | F
-D1               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   | -1.00000E+00 | pnorm   | -1.00000E+00 | F
-D2               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   | -1.00000E+00 | pnorm   | -1.00000E+00 | F
-D3               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | F
-D4               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | F
-c                |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | F
-Dsmax            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   | -1.00000E+00 | pnorm   | -1.00000E+00 | F
-Ds               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   | -1.00000E+00 | pnorm   | -1.00000E+00 | F
-Ws               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | F
-expt             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-bbl              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-z                |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-h1               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-h2               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-h3               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-h4               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-h5               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-WcrFrac          |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-WpwpFrac         |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-twm              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-fwm              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-fsm              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-fpm              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-zk               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   | -1.00000E+00 | pnorm   | -1.00000E+00 | T
-zsk              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   | -1.00000E+00 | pnorm   | -1.00000E+00 | T
-zpk              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   | -1.00000E+00 | pnorm   | -1.00000E+00 | T
-pfree            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-zperc            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-rexp             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  soil | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
-rmin             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  vege | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-lai              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  vege | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-scf              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  snow | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-mfmax            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  snow | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-mfmin            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  snow | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-uadj             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  snow | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-si               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  snow | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-pxtemp           |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  snow | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-nmf              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  snow | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-tipm             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  snow | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-plwhc            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  snow | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
-daygm            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 |  snow | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+ks               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   | -1.00000E+00 | pnorm   | -1.00000E+00 | T
+bd               |  1.00000E+00 |  0.90000E+00 |  1.10000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+sd               |  1.00000E+00 |  0.90000E+00 |  1.10000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+psis             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+b                |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+phi              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+fc               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+wp               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+myu              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+binfilt          |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | F
+D1               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   | -1.00000E+00 | pnorm   | -1.00000E+00 | F
+D2               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   | -1.00000E+00 | pnorm   | -1.00000E+00 | F
+D3               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | F
+D4               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | F
+c                |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | F
+Dsmax            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   | -1.00000E+00 | pnorm   | -1.00000E+00 | F
+Ds               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   | -1.00000E+00 | pnorm   | -1.00000E+00 | F
+Ws               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | F
+expt             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+bbl              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+z                |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+h1               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+h2               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+h3               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+h4               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+h5               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+WcrFrac          |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+WpwpFrac         |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+twm              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+fwm              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+fsm              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+fpm              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+zk               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   | -1.00000E+00 | pnorm   | -1.00000E+00 | T
+zsk              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   | -1.00000E+00 | pnorm   | -1.00000E+00 | T
+zpk              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   | -1.00000E+00 | pnorm   | -1.00000E+00 | T
+pfree            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+zperc            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+rexp             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | soil  | F | pnorm   |  1.00000E+00 | pnorm   |  1.00000E+00 | T
+rmin             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | veg   | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+lai              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | veg   | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+scf              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | snow  | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+mfmax            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | snow  | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+mfmin            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | snow  | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+uadj             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | snow  | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+si               |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | snow  | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+pxtemp           |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | snow  | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+nmf              |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | snow  | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+tipm             |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | snow  | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+plwhc            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | snow  | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F
+daygm            |  1.00000E+00 |  0.80000E+00 |  1.20000E+00 | beta    | -999 | snow  | F | pnorm   |  1.00000E+00 | na      | -9.99000E+00 | F

@@ -152,7 +152,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   character(len=strLen),intent(out)  :: message                  ! error message 
   ! local
   character(len=strLen)              :: cmessage                 ! error message from downward subroutine
-  integer,     parameter             :: iHruPrint = 5            ! model hru id (index) for which everything is printed for checking
+  integer,     parameter             :: iHruPrint = 1            ! model hru id (index) for which everything is printed for checking
   integer(i4b),parameter             :: nSub=11                  ! max. number of Soil layer within Model layer
   integer(i4b)                       :: iLocal                   ! index of hru array in mapping file that match hru id of interest 
   integer(i4b)                       :: iGamma                   ! index loop
