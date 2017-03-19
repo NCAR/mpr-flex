@@ -18,13 +18,13 @@ contains
 !************************************
 function objfn( calParam )
   use mpr_routine,   only: mpr
-  use globalData,    only: betaCalScale, parMaster, parSubset, gammaSubset, nBetaGamma, nSoilParModel, nVegParModel
+  use globalData,    only: betaCalScale, betaMaster, parSubset, gammaSubset, nBetaGammaCal, nSoilParModel, nVegParModel
   use model_wrapper, only: read_hru_id, read_soil_param, adjust_param, replace_param, write_soil_param, read_sim
   implicit none
   !input variables
   real(dp),             intent(in)  :: calParam(:)                   ! parameter in namelist, not necessarily all parameters are calibrated
   !local variables
-  type(var_d)                       :: calParStr(nBetaGamma)         ! parameter storage converted from parameter array 
+  type(var_d)                       :: calParStr(nBetaGammaCal)         ! parameter storage converted from parameter array 
   type(var_d)                       :: pnormCoef(size(betaCalScale)) ! parameter storage converted from parameter array 
   real(dp)                          :: objfn                         ! object function value 
   integer(i2b)                      :: iPar                          ! loop index for parameter 
@@ -52,7 +52,7 @@ function objfn( calParam )
   allocate(simBasin(nbasin,sim_len))
   allocate(simBasinRouted(nbasin,sim_len))
   idx=1
-  do iPar=1,nBetaGamma ! put calpar vector from optimization routine output parameter data strucure 
+  do iPar=1,nBetaGammaCal ! put calpar vector from optimization routine output parameter data strucure 
     if (parSubset(iPar)%perLyr)then
       allocate(calParStr(iPar)%var(nLyr))
       calParStr(iPar)%var=calParam(idx:idx+nLyr-1)
@@ -87,7 +87,7 @@ function objfn( calParam )
     do iPar=1,nVegParModel
       allocate(vegParMxy(iPar)%varData(nMonth,nHru),stat=err)
     enddo
-    allocate(mask(nBetaGamma))
+    allocate(mask(nBetaGammaCal))
     mask=parSubset(:)%beta/="beta"
     allocate(paramGammaStr(count(mask)))
     paramGammaStr=pack(calParStr,mask)
@@ -109,9 +109,9 @@ function objfn( calParam )
   call agg_hru_to_basin(sim, simBasin, err, cmessage) ! aggregate hru sim to basin total sim 
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   ! route sim for each basin
-  ushape=parMaster(ixPar%uhshape)%val
-  uscale=parMaster(ixPar%uhscale)%val
-  do iPar=1,nBetaGamma
+  ushape=betaMaster(ixBeta%uhshape)%val
+  uscale=betaMaster(ixBeta%uhscale)%val
+  do iPar=1,nBetaGammaCal
     select case( parSubset(iPar)%pname )
       case('uhshape');  ushape = calParStr( iPar )%var(1)
       case('uhscale');  uscale = calParStr( iPar )%var(1)

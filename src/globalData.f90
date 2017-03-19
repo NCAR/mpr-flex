@@ -31,6 +31,6 @@ integer(i2b),         save,            public   :: nVegParModel                 
 type(var_meta),       save,            public   :: map_meta  (nVarMapData)
 type(var_meta),       save,            public   :: sdata_meta(nVarSoilData)
 type(var_meta),       save,            public   :: vdata_meta(nVarVegData)
-type(var_meta),       save,                  public   :: vprp_meta (nPrpVeg)
+type(var_meta),       save,            public   :: vprp_meta (nPrpVeg)
 
 end module globalData

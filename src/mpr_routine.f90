@@ -18,7 +18,7 @@ contains
 ! ************************************************************************************************
 ! this subroutine is used for opt = 2 in namelist (run only mpr and output parameters)
 subroutine run_mpr( calParam, restartFile, err, message ) 
-  use globalData,    only: betaCalScale, parSubset, gammaSubset, nBetaGamma, nSoilParModel, nVegParModel
+  use globalData,    only: betaCalScale, parSubset, gammaSubset, nBetaGammaCal, nSoilParModel, nVegParModel
   use model_wrapper, only: read_hru_id
   use write_param_nc,only: write_nc_soil,write_nc_veg
   implicit none
@@ -29,7 +29,7 @@ subroutine run_mpr( calParam, restartFile, err, message )
   integer(i4b),         intent(out) :: err                           ! error id 
   character(len=strLen),intent(out) :: message                       ! error message
   ! local
-  type(var_d)                       :: calParStr(nBetaGamma)         ! parameter storage including perLayr values converted from parameter array 
+  type(var_d)                       :: calParStr(nBetaGammaCal)      ! parameter storage including perLayr values converted from parameter array 
   type(var_d)                       :: pnormCoef(size(betaCalScale)) ! parameter storage converted from parameter array 
   type(var_d),          allocatable :: paramGammaStr(:)              ! calibratin gamma parameter storage extracted from calParStr
   integer(i4b)                      :: idummy                        ! dummy vaiable
@@ -53,11 +53,11 @@ subroutine run_mpr( calParam, restartFile, err, message )
       print*, 'read restart file'
       open(unit=70,file=trim(adjustl(restartFile)), action='read', status = 'unknown')
       read(70,*) idummy ! restart file include iStart  
-      read(70,*) (params(iPar),iPar=1,nBetaGamma)    
+      read(70,*) (params(iPar),iPar=1,nBetaGammaCal)    
       close(70)
     endif
     idx=1
-    do iPar=1,nBetaGamma
+    do iPar=1,nBetaGammaCal
       if (parSubset(iPar)%perLyr)then
         allocate(calParStr(iPar)%var(nLyr))
         calParStr(iPar)%var=params(idx:idx+nLyr-1)
@@ -84,7 +84,7 @@ subroutine run_mpr( calParam, restartFile, err, message )
     do iPar=1,nVegParModel
       allocate(vegParMxy(iPar)%varData(nMonth,nHru),stat=err)
     enddo
-    allocate(mask(nBetaGamma))
+    allocate(mask(nBetaGammaCal))
     mask=parSubset(:)%beta/="beta"
     allocate(paramGammaStr(count(mask)))
     paramGammaStr=pack(calParStr,mask)
@@ -96,9 +96,11 @@ subroutine run_mpr( calParam, restartFile, err, message )
     !! Write parameter derived from MPR in netCDF 
     if (nSoilParModel>0_i2b)then
       call write_nc_soil(trim(mpr_output_dir)//trim(soil_param_nc), hruID, hModel, parMxyMz, err, cmessage)
+      if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     endif
     if (nVegParModel>0_i2b)then
       call write_nc_veg(trim(mpr_output_dir)//trim(veg_Param_nc), hruID, vegParMxy, err, cmessage)
+      if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     endif
   else  
     print*,trim(message)//'there is no gamma pamameters in parameter input file to perform MPR';stop
@@ -119,9 +121,9 @@ subroutine mpr(hruID,             &     ! input: hruID
                err, message)            ! output: error id and message
   use model_wrapper,        only:read_hru_id
   use popMeta,              only:popMprMeta
-  use globalData,           only:parMaster, soilBetaInGamma, vegBetaInGamma, betaCalScale 
+  use globalData,           only:betaMaster, gammaMaster, soilBetaInGamma, vegBetaInGamma, betaCalScale 
   use globalData,           only:sdata_meta,vdata_meta, map_meta, nSoilParModel, nVegParModel
-  use get_ixname,           only:get_ixPar
+  use get_ixname,           only:get_ixGamma, get_ixBeta
   use tf,                   only:comp_model_param              ! Including Soil model parameter transfer function
   use modelLayer,           only:comp_model_depth              ! Including model layr depth computation routine 
   use modelLayer,           only:map_slyr2mlyr                 ! Including model layr computation routine 
@@ -131,7 +133,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   use read_vegdata,         only:getVegClassLookup             ! routine to read veg calss-property lookupu table 
   use read_soildata,        only:getData                       ! routine to read soil data into data structures
   use read_soildata,        only:mod_hslyrs                    ! routine to modify soil layer thickness and updata soil data structure
-  use var_lookup,           only:ixPar,nPar                    ! 
+  use var_lookup,           only:ixBeta, ixGamma               ! 
   USE var_lookup,           only:ixVarSoilData,nVarSoilData    ! index of soil data variables and number of variables 
   USE var_lookup,           only:ixVarVegData,nVarVegData      ! index of vege data variables and number of variables
   USE var_lookup,           only:ixVarMapData,nVarMapData      ! index of map data variables and number of variables
@@ -166,7 +168,8 @@ subroutine mpr(hruID,             &     ! input: hruID
   integer(i4b)                       :: iSub                     ! Loop index of multiple soi layers in model layer
   logical(lgc),allocatable           :: mask(:)                  ! mask for 1D array 
   logical(lgc),allocatable           :: vmask(:)                 ! TO BE DELETED: mask for vpolIdSub array 
-  type(par_meta),allocatable         :: gammaParMasterMeta(:)
+  type(par_meta),allocatable         :: gammaMasterMeta(:)
+  type(par_meta),allocatable         :: betaMasterMeta(:)
   integer(i4b)                       :: nSpoly                   ! number of soil polygon in entire soil data domain 
   integer(i4b)                       :: nSlyrs                   ! number of soil layers
   integer(i4b)                       :: nVpoly                   ! TO BE DELETED: number of vege polygon (grid box) in entire vege data domain 
@@ -201,15 +204,17 @@ subroutine mpr(hruID,             &     ! input: hruID
   ! initialize error control
   err=0; message='mpr/'
   !(0) Preparation
-  allocate(gammaParMasterMeta, source=parMaster) ! copy master parameter metadata
-  ! Swap gammaParMasterMeta%val with gammaPar value
+  allocate(gammaMasterMeta, source=gammaMaster) ! copy master gamma parameter metadata
+  allocate(betaMasterMeta, source=betaMaster) ! copy master beta parameter metadata
+  ! Swap gammaMasterMeta%val with adjusted gammaPar value
   do iGamma=1,size(gammaParStr)
-    gammaParMasterMeta(gammaParMeta(iGamma)%ixMaster)%val=gammaParStr(iGamma)%var(1)
+    gammaMasterMeta(gammaParMeta(iGamma)%ixMaster)%val=gammaParStr(iGamma)%var(1)
   enddo
+  ! Swap betaMasterMeta%hpnorm and vpnorm with adjusted pnorm coefficient value
   do iParm=1,size(pnormCoefStr)
-    associate(ix=>get_ixPar(betaCalScale(iParm)%betaname))
-    gammaParMasterMeta(ix)%hpnorm=pnormCoefStr(iParm)%var(1)
-    gammaParMasterMeta(ix)%vpnorm=pnormCoefStr(iParm)%var(2)
+    associate(ix=>get_ixBeta(betaCalScale(iParm)%betaname))
+    betaMasterMeta(ix)%hpnorm=pnormCoefStr(iParm)%var(1)
+    betaMasterMeta(ix)%vpnorm=pnormCoefStr(iParm)%var(2)
     end associate
   enddo 
   call popMprMeta( err, cmessage)   !for sdata_meta, vdata_meta, map_meta
@@ -235,7 +240,7 @@ subroutine mpr(hruID,             &     ! input: hruID
                nSlyrs,                               & ! output: number of dimension (i.e. number of soil layer)
                err, cmessage)
   if(err/=0)then; message=trim(message)//cmessage; return; endif 
-  call mod_hslyrs(sdata, gammaParMasterMeta(ixPar%z1gamma1)%val, err,cmessage) ! modify soil layer thickness in sdata data structure
+  call mod_hslyrs(sdata, gammaMasterMeta(ixGamma%z1gamma1)%val, err,cmessage) ! modify soil layer thickness in sdata data structure
   if(err/=0)then; message=trim(message)//cmessage; return; endif 
   ! *****
   ! (1.2)  veg class - properties lookup table ...
@@ -384,7 +389,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   ! (3.4) Compute model parameters using transfer function
   ! *********************************************************
     ! compute model soil parameters
-    call comp_model_param(parSxySz, parVxy, sdataLocal, vdataLocal, gammaParMasterMeta, nSlyrs, nSpolyLocal, nVpolyLocal, err, cmessage)
+    call comp_model_param(parSxySz, parVxy, sdataLocal, vdataLocal, gammaMasterMeta, nSlyrs, nSpolyLocal, nVpolyLocal, err, cmessage)
     if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
     if ( iHru == iHruPrint ) then
       print*,'(2) Print Model parameter at native resolution'
@@ -452,13 +457,13 @@ subroutine mpr(hruID,             &     ! input: hruID
             end associate third
           enddo
           do iParm = 1,nSoilParModel
-            forth: associate( ix=>get_ixPar(trim(soilBetaInGamma(iParm))) )
-            if ( trim(gammaParMasterMeta(ix)%vups)/='na' )then
+            forth: associate( ix=>get_ixBeta(trim(soilBetaInGamma(iParm))) )
+            if ( trim(betaMasterMeta(ix)%vups)/='na' )then
               call aggreg(parSxyMz(iParm)%varData(iMLyr,iPoly),         &
                           soil2model_map(iPoly)%layer(iMLyr)%weight(:), &
                           soilParVec(iParm)%var(:),                     &
-                          gammaParMasterMeta(ix)%vups,                  &
-                          gammaParMasterMeta(ix)%vpnorm,                &
+                          betaMasterMeta(ix)%vups,                      &
+                          betaMasterMeta(ix)%vpnorm,                    &
                           err, cmessage)
                if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
             endif
@@ -486,18 +491,18 @@ subroutine mpr(hruID,             &     ! input: hruID
         enddo
         call aggreg(hModel(iMLyr,iHru), swgtsub(:), hModelLocal(iMLyr,:),'pnorm', 1.0_dp, err, cmessage)
         do iParm = 1,nSoilParModel
-          fifth: associate( ix=>get_ixPar(trim(soilBetaInGamma(iParm))) )
-          if ( trim(gammaParMasterMeta(ix)%hups)/='na' )then
+          fifth: associate( ix=>get_ixBeta(trim(soilBetaInGamma(iParm))) )
+          if ( trim(betaMasterMeta(ix)%hups)/='na' )then
             call aggreg(parMxyMz(iParm)%varData(iMLyr,iHru), &
                         swgtsub(:),                          &
                         soilParVec(iParm)%var(:),            &
-                        gammaParMasterMeta(ix)%hups,         &
-                        gammaParMasterMeta(ix)%hpnorm,       &
+                        betaMasterMeta(ix)%hups,             &
+                        betaMasterMeta(ix)%hpnorm,           &
                         err, cmessage)
             if ( iHru == iHruPrint ) then
               print*,'-----------------------------------'
               print*,'Aggregated soil parameter '
-              write(*,"(1X,A17,'(layer ',I2,') = ',100f9.3)") gammaParMasterMeta(ix)%pname,iMLyr ,parMxyMz(iParm)%varData(iMLyr,iHru)
+              write(*,"(1X,A17,'(layer ',I2,') = ',100f9.3)") betaMasterMeta(ix)%pname,iMLyr ,parMxyMz(iParm)%varData(iMLyr,iHru)
             endif
           endif
           end associate fifth
@@ -526,17 +531,17 @@ subroutine mpr(hruID,             &     ! input: hruID
           enddo
         enddo
         do iParm = 1,nVegParModel
-          sixth: associate( ix=>get_ixPar(trim(vegBetaInGamma(iParm))) )
+          sixth: associate( ix=>get_ixBeta(trim(vegBetaInGamma(iParm))) )
           call aggreg(vegParMxy(iParm)%varData(iMon, iHru), &
                       vwgtSub(:),                           &
                       vegParVec(iParm)%var,                 &
-                      gammaParMasterMeta(ix)%hups,          &
-                      gammaParMasterMeta(ix)%hpnorm,        &
+                      betaMasterMeta(ix)%hups,              &
+                      betaMasterMeta(ix)%hpnorm,            &
                       err,cmessage)
           if ( iHru == iHruPrint ) then
             print*,'-----------------------------------'
             print*,'Aggregated vege parameter '
-            write(*,"(1X,A17,'(Month ',I2,') = ',100f9.3)") gammaParMasterMeta(ix)%pname, iMon ,parMxyMz(iParm)%varData(iMon,iHru)
+            write(*,"(1X,A17,'(Month ',I2,') = ',100f9.3)") betaMasterMeta(ix)%pname, iMon ,parMxyMz(iParm)%varData(iMon,iHru)
           endif
           end associate sixth
         enddo

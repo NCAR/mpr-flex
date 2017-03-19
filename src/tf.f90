@@ -3,7 +3,7 @@ module tf
 use nrtype                                        ! variable types, etc.
 use data_type                                     ! Including custum data structure definition
 use public_var                                     ! Including common constant (physical constant, other e.g., missingVal, etc.)
-use var_lookup, only:ixVarSoilData, ixVarVegData, ixPar, nPar
+use var_lookup, only:ixVarSoilData, ixVarVegData, ixBeta, ixGamma, nBeta
 
 implicit none
 
@@ -26,8 +26,8 @@ subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter va
                             nVPoly,            &  ! input: number of vege polygons (to be deleted as nVpoly=nSpoly)
                             err,message) 
 
-  use globalData, only:parMaster,soilBetaInGamma, vegBetaInGamma, betaNeeded
-  use get_ixname, only:get_ixPar
+  use globalData, only:betaMaster, soilBetaInGamma, vegBetaInGamma, betaNeeded
+  use get_ixname, only:get_ixBeta
   implicit none
   ! in/out
   type(namedvar2),      intent(inout) :: parSxySz(:)            ! soil parameter values for ParSxySz(:)%varDat(lyr,poly) 
@@ -43,11 +43,11 @@ subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter va
   integer(i4b),         intent(out)   :: err                   ! error code
   character(len=strLen),intent(out)   :: message                ! error message for current routine
   ! Local 
-  type(namedvar2)                     :: parTemp(nPar)          ! soil parameter values for ParSxySz(:)%dat(lyr,poly) 
+  type(namedvar2)                     :: parTemp(nBeta)          ! soil parameter values for ParSxySz(:)%dat(lyr,poly) 
   integer(i4b)                        :: ix                     ! index of gamma parameter 
   integer(i4b)                        :: idBeta                 ! id of beta parameter array 
   integer(i4b)                        :: iParm                  ! Loop index of model parameters (e.g., VIC)
-  logical(lgc)                        :: checkDone(nPar)        ! used to check if the VIC parameter is processed
+  logical(lgc)                        :: checkDone(nBeta)        ! used to check if the VIC parameter is processed
 
   err=0; message="comp_model_param/"
   first: associate(sclass  => sdata(ixVarSoilData%soilclass)%ivar2,   &
@@ -62,175 +62,175 @@ subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter va
                    monLai  => vdata(ixVarVegData%lai)%dvar2,          &
                    gammaPar=> gammaParMasterMeta(:)%val)
   do iParm = 1,size(betaNeeded)
-    ix = get_ixPar(betaNeeded(iParm)) 
-    if (trim(parMaster(ix)%ptype)=='soil')then
+    ix = get_ixBeta(betaNeeded(iParm)) 
+    if (trim(betaMaster(ix)%ptype)=='soil')then
       allocate(parTemp(ix)%varData(nSLyr,nSPoly) ,stat=err); if(err/=0)then;message=trim(message)//'error allocating parTemp';stop;endif
-    elseif (parMaster(ix)%ptype=='veg')then 
+    elseif (betaMaster(ix)%ptype=='veg')then 
       allocate(parTemp(ix)%varData(nMonth,nVPoly) ,stat=err); if(err/=0)then;message=trim(message)//'error allocating parTemp';stop;endif
     endif
     second: associate (xPar => parTemp(ix)%varData, &
-                       tfid => gammaParMasterMeta(ix)%tftype)
+                       tfid => betaMaster(ix)%tftype)
     if (tfid==-999_i2b) tfid=1_i2b
     select case(ix)
-      case(ixPar%ks)
+      case(ixBeta%ks)
         checkDone(ix)=.true.
         xPar = ks( sand, clay, gammaPar, tfid)
-      case(ixPar%bd)
+      case(ixBeta%bd)
         checkDone(ix)=.true.
         xPar  = bd( bulkd, gammaPar,tfid )
-      case(ixPar%phi)
-        if(.not.checkDone(ixPar%bd)) then;err=10;message=trim(message)//'need to process bd before phi';return;endif
+      case(ixBeta%phi)
+        if(.not.checkDone(ixBeta%bd)) then;err=10;message=trim(message)//'need to process bd before phi';return;endif
         checkDone(ix)=.true.
-        xPar = phi( sand, clay, parTemp(ixPar%bd)%varData,gammaPar, tfid)
-      case(ixPar%b)
+        xPar = phi( sand, clay, parTemp(ixBeta%bd)%varData,gammaPar, tfid)
+      case(ixBeta%b)
         checkDone(ix)=.true.
         xPar = ret_curve( sand, clay, gammaPar, tfid)
-      case(ixPar%psis)
+      case(ixBeta%psis)
         checkDone(ix)=.true.
         xPar = psis( sand, silt, gammaPar, tfid)
-      case(ixPar%fc)
-        if(.not.checkDone(ixPar%psis)) then;err=10;message=trim(message)//'need to process psis before fc';return;endif
-        if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before fc';return;endif
-        if(.not.checkDone(ixPar%b))    then;err=10;message=trim(message)//'need to process b before fc';return;endif
+      case(ixBeta%fc)
+        if(.not.checkDone(ixBeta%psis)) then;err=10;message=trim(message)//'need to process psis before fc';return;endif
+        if(.not.checkDone(ixBeta%phi))  then;err=10;message=trim(message)//'need to process phi before fc';return;endif
+        if(.not.checkDone(ixBeta%b))    then;err=10;message=trim(message)//'need to process b before fc';return;endif
         checkDone(ix)=.true.
-        xPar = fc(sand, parTemp(ixPar%phi)%varData, parTemp(ixPar%psis)%varData, parTemp(ixPar%b)%varData,gammaPar, tfid)
-      case(ixPar%wp)
-        if(.not.checkDone(ixPar%psis)) then;err=10;message=trim(message)//'need to process psis before wp';return;endif
-        if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before wp';return;endif
-        if(.not.checkDone(ixPar%b))    then;err=10;message=trim(message)//'need to process b before wp';return;endif
+        xPar = fc(sand, parTemp(ixBeta%phi)%varData, parTemp(ixBeta%psis)%varData, parTemp(ixBeta%b)%varData,gammaPar, tfid)
+      case(ixBeta%wp)
+        if(.not.checkDone(ixBeta%psis)) then;err=10;message=trim(message)//'need to process psis before wp';return;endif
+        if(.not.checkDone(ixBeta%phi))  then;err=10;message=trim(message)//'need to process phi before wp';return;endif
+        if(.not.checkDone(ixBeta%b))    then;err=10;message=trim(message)//'need to process b before wp';return;endif
         checkDone(ix)=.true.
-        xPar = wp( parTemp(ixPar%phi)%varData, parTemp(ixPar%psis)%varData, parTemp(ixPar%b)%varData, gammaPar, tfid) 
-      case(ixPar%myu)
-        if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before myu';return;endif
-        if(.not.checkDone(ixPar%fc))   then;err=10;message=trim(message)//'need to process fc before myu';return;endif
+        xPar = wp( parTemp(ixBeta%phi)%varData, parTemp(ixBeta%psis)%varData, parTemp(ixBeta%b)%varData, gammaPar, tfid) 
+      case(ixBeta%myu)
+        if(.not.checkDone(ixBeta%phi))  then;err=10;message=trim(message)//'need to process phi before myu';return;endif
+        if(.not.checkDone(ixBeta%fc))   then;err=10;message=trim(message)//'need to process fc before myu';return;endif
         checkDone(ix)=.true.
-        xPar= myu( parTemp(ixPar%phi)%varData, parTemp(ixPar%fc)%varData, gammaPar, tfid)
-      case(ixPar%binfilt)
+        xPar= myu( parTemp(ixBeta%phi)%varData, parTemp(ixBeta%fc)%varData, gammaPar, tfid)
+      case(ixBeta%binfilt)
         checkDone(ix)=.true.
         xPar=spread( infilt( elestd, gammaPar, tfid), 1, nSLyr)
-      case(ixPar%D1)
-        if(.not.checkDone(ixPar%ks))  then;err=10;message=trim(message)//'need to process "ks" before "D1"';return;endif
-        if(.not.checkDone(ixPar%phi)) then;err=10;message=trim(message)//'need to process "phi" before "D1"';return;endif
+      case(ixBeta%D1)
+        if(.not.checkDone(ixBeta%ks))  then;err=10;message=trim(message)//'need to process "ks" before "D1"';return;endif
+        if(.not.checkDone(ixBeta%phi)) then;err=10;message=trim(message)//'need to process "phi" before "D1"';return;endif
         checkDone(ix)=.true. 
         xPar=D1( slpmean,                    &
-                 parTemp(ixPar%ks)%varData,  &
-                 parTemp(ixPar%phi)%varData, & 
+                 parTemp(ixBeta%ks)%varData,  &
+                 parTemp(ixBeta%phi)%varData, & 
                  hslyrs,                     &
                  gammaPar,                   &
                  tfid)
-      case(ixPar%Ds)
-        if(.not.checkDone(ixPar%D1))    then;err=10;message=trim(message)//'need to process "D1" before "Ds"';return;endif
-        if(.not.checkDone(ixPar%D3))    then;err=10;message=trim(message)//'need to process "D3" before "Ds"';return;endif
-        if(.not.checkDone(ixPar%Dsmax)) then;err=10;message=trim(message)//'need to process "Dsmax" before "Ds"';return;endif
+      case(ixBeta%Ds)
+        if(.not.checkDone(ixBeta%D1))    then;err=10;message=trim(message)//'need to process "D1" before "Ds"';return;endif
+        if(.not.checkDone(ixBeta%D3))    then;err=10;message=trim(message)//'need to process "D3" before "Ds"';return;endif
+        if(.not.checkDone(ixBeta%Dsmax)) then;err=10;message=trim(message)//'need to process "Dsmax" before "Ds"';return;endif
         checkDone(ix)=.true. 
-        xPar=Ds( parTemp(ixPar%D1)%varData, parTemp(ixPar%D3)%varData, parTemp(ixPar%Dsmax)%varData, tfid)
-      case(ixPar%D4)
+        xPar=Ds( parTemp(ixBeta%D1)%varData, parTemp(ixBeta%D3)%varData, parTemp(ixBeta%Dsmax)%varData, tfid)
+      case(ixBeta%D4)
         checkDone(ix)=.true.
         xPar=D4(gammaPar, tfid)
-      case(ixPar%c)
-        if(.not.checkDone(ixPar%D4)) then;err=10;message=trim(message)//'need to process "D4" before "c"';return;endif
+      case(ixBeta%c)
+        if(.not.checkDone(ixBeta%D4)) then;err=10;message=trim(message)//'need to process "D4" before "c"';return;endif
         checkDone(ix)=.true.
-        xPar=cexpt(parTemp(ixPar%D4)%varData, tfid)
-      case(ixPar%SD)
+        xPar=cexpt(parTemp(ixBeta%D4)%varData, tfid)
+      case(ixBeta%SD)
         checkDone(ix)=.true.
-        xPar=soilDensity(parTemp(ixPar%sd)%varData, gammaPar ,tfid)
-      case(ixPar%expt)
-        if(.not.checkDone(ixPar%b)) then;err=10;message=trim(message)//'need to process "b" before "expt"';return;endif
+        xPar=soilDensity(parTemp(ixBeta%sd)%varData, gammaPar ,tfid)
+      case(ixBeta%expt)
+        if(.not.checkDone(ixBeta%b)) then;err=10;message=trim(message)//'need to process "b" before "expt"';return;endif
         checkDone(ix)=.true.
-        xPar=expt( parTemp(ixPar%b)%varData, gammaPar ,tfid)
-      case(ixPar%D2)
-        if(.not.checkDone(ixPar%ks)) then;err=10;message=trim(message)//'need to process "ksat" before "D2"';return;endif
-        if(.not.checkDone(ixPar%D4)) then;err=10;message=trim(message)//'need to process "D4" before "D2"';return;endif
+        xPar=expt( parTemp(ixBeta%b)%varData, gammaPar ,tfid)
+      case(ixBeta%D2)
+        if(.not.checkDone(ixBeta%ks)) then;err=10;message=trim(message)//'need to process "ksat" before "D2"';return;endif
+        if(.not.checkDone(ixBeta%D4)) then;err=10;message=trim(message)//'need to process "D4" before "D2"';return;endif
         checkDone(ix)=.true.
-        xPar=D2( slpmean, parTemp(ixPar%ks)%varData, parTemp(ixPar%D4)%varData, gammaPar, tfid )
-      case(ixPar%Dsmax)
-        if(.not.checkDone(ixPar%D1)) then;err=10;message=trim(message)//'need to process "D1" before "Dsmax"';return;endif
-        if(.not.checkDone(ixPar%D2)) then;err=10;message=trim(message)//'need to process "D2" before "Dsmax"';return;endif
-        if(.not.checkDone(ixPar%D3)) then;err=10;message=trim(message)//'need to process "D3" before "Dsmax"';return;endif
-        if(.not.checkDone(ixPar%c))  then;err=10;message=trim(message)//'need to process "c" before "Dsmax"';return;endif
+        xPar=D2( slpmean, parTemp(ixBeta%ks)%varData, parTemp(ixBeta%D4)%varData, gammaPar, tfid )
+      case(ixBeta%Dsmax)
+        if(.not.checkDone(ixBeta%D1)) then;err=10;message=trim(message)//'need to process "D1" before "Dsmax"';return;endif
+        if(.not.checkDone(ixBeta%D2)) then;err=10;message=trim(message)//'need to process "D2" before "Dsmax"';return;endif
+        if(.not.checkDone(ixBeta%D3)) then;err=10;message=trim(message)//'need to process "D3" before "Dsmax"';return;endif
+        if(.not.checkDone(ixBeta%c))  then;err=10;message=trim(message)//'need to process "c" before "Dsmax"';return;endif
         checkDone(ix)=.true. 
-        xPar=Dsmax( parTemp(ixPar%D1)%varData,   &
-                    parTemp(ixPar%D2)%varData,   & 
-                    parTemp(ixPar%D3)%varData,   & 
-                    parTemp(ixPar%c)%varData,    & 
-                    parTemp(ixPar%phi)%varData,  &
+        xPar=Dsmax( parTemp(ixBeta%D1)%varData,   &
+                    parTemp(ixBeta%D2)%varData,   & 
+                    parTemp(ixBeta%D3)%varData,   & 
+                    parTemp(ixBeta%c)%varData,    & 
+                    parTemp(ixBeta%phi)%varData,  &
                     hslyrs,                      &
                     tfid)
-      case(ixPar%bbl)
-        if(.not.checkDone(ixPar%expt)) then;err=10;message=trim(message)//'need to process "expt" before "bubble"';return;endif
+      case(ixBeta%bbl)
+        if(.not.checkDone(ixBeta%expt)) then;err=10;message=trim(message)//'need to process "expt" before "bubble"';return;endif
         checkDone(ix)=.true.
-        xPar=bubble( parTemp(ixPar%expt)%varData, gammaPar, tfid)
-      case(ixPar%WcrFrac)
-        if(.not.checkDone(ixPar%fc))then;err=10;message=trim(message)//'need to process "fc" before "WcrFrac"';return;endif 
-        if(.not.checkDone(ixPar%phi))then;err=10;message=trim(message)//'need to process "phi" before "WcrFrac"';return;endif 
+        xPar=bubble( parTemp(ixBeta%expt)%varData, gammaPar, tfid)
+      case(ixBeta%WcrFrac)
+        if(.not.checkDone(ixBeta%fc))then;err=10;message=trim(message)//'need to process "fc" before "WcrFrac"';return;endif 
+        if(.not.checkDone(ixBeta%phi))then;err=10;message=trim(message)//'need to process "phi" before "WcrFrac"';return;endif 
         checkDone(ix)=.true.
-        xPar=WcrFrac( parTemp(ixPar%fc)%varData,parTemp(ixPar%phi)%varData,gammaPar , tfid)
-      case(ixPar%WpwpFrac)
-        if(.not.checkDone(ixPar%wp))then;err=10;message=trim(message)//'need to process "wp" before "WpwpFrac"';return;endif 
-        if(.not.checkDone(ixPar%phi))then;err=10;message=trim(message)//'need to process "phi" before "WpwpFrac"';return;endif 
+        xPar=WcrFrac( parTemp(ixBeta%fc)%varData,parTemp(ixBeta%phi)%varData,gammaPar , tfid)
+      case(ixBeta%WpwpFrac)
+        if(.not.checkDone(ixBeta%wp))then;err=10;message=trim(message)//'need to process "wp" before "WpwpFrac"';return;endif 
+        if(.not.checkDone(ixBeta%phi))then;err=10;message=trim(message)//'need to process "phi" before "WpwpFrac"';return;endif 
         checkDone(ix)=.true.
-        xPar=WpwpFrac( parTemp(ixPar%wp)%varData, parTemp(ixPar%phi)%varData, gammaPar, tfid)
-      case(ixPar%D3)
-        if(.not.checkDone(ixPar%fc))   then;err=10;message=trim(message)//'need to process fc before D3';return;endif
+        xPar=WpwpFrac( parTemp(ixBeta%wp)%varData, parTemp(ixBeta%phi)%varData, gammaPar, tfid)
+      case(ixBeta%D3)
+        if(.not.checkDone(ixBeta%fc))   then;err=10;message=trim(message)//'need to process fc before D3';return;endif
         checkDone(ix)=.true.
-        xPar=D3( parTemp(ixPar%fc)%varData, hslyrs, gammaPar , tfid)
-      case(ixPar%Ws)
-        if(.not.checkDone(ixPar%D3))then;err=10;message=trim(message)//'need to process "D3" before "Dsmax"';return;endif 
+        xPar=D3( parTemp(ixBeta%fc)%varData, hslyrs, gammaPar , tfid)
+      case(ixBeta%Ws)
+        if(.not.checkDone(ixBeta%D3))then;err=10;message=trim(message)//'need to process "D3" before "Dsmax"';return;endif 
         checkDone(ix)=.true. 
-        xPar=Ws( parTemp(ixPar%D3)%varData, parTemp(ixPar%phi)%varData,hslyrs , tfid)
-      case(ixPar%twm)
-        if(.not.checkDone(ixPar%fc))   then;err=10;message=trim(message)//'need to process fc before twm';return;endif
-        if(.not.checkDone(ixPar%wp))   then;err=10;message=trim(message)//'need to process wp before twm';return;endif
+        xPar=Ws( parTemp(ixBeta%D3)%varData, parTemp(ixBeta%phi)%varData,hslyrs , tfid)
+      case(ixBeta%twm)
+        if(.not.checkDone(ixBeta%fc))   then;err=10;message=trim(message)//'need to process fc before twm';return;endif
+        if(.not.checkDone(ixBeta%wp))   then;err=10;message=trim(message)//'need to process wp before twm';return;endif
         checkDone(ix)=.true. 
-        xPar= twm( parTemp(ixPar%fc)%varData,parTemp(ixPar%wp)%varData,hslyrs , tfid)
-      case(ixPar%fwm)
-        if(.not.checkDone(ixPar%fc))   then;err=10;message=trim(message)//'need to process fc before fwm';return;endif
-        if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before fwm';return;endif
+        xPar= twm( parTemp(ixBeta%fc)%varData,parTemp(ixBeta%wp)%varData,hslyrs , tfid)
+      case(ixBeta%fwm)
+        if(.not.checkDone(ixBeta%fc))   then;err=10;message=trim(message)//'need to process fc before fwm';return;endif
+        if(.not.checkDone(ixBeta%phi))  then;err=10;message=trim(message)//'need to process phi before fwm';return;endif
         checkDone(ix)=.true. 
-        xPar= fwm( parTemp(ixPar%phi)%varData,parTemp(ixPar%fc)%varData,hslyrs, tfid )
-      case(ixPar%fsm)
-        if(.not.checkDone(ixPar%fwm))then;err=10;message=trim(message)//'need to process "fwm" before "fsm"';return;endif 
+        xPar= fwm( parTemp(ixBeta%phi)%varData,parTemp(ixBeta%fc)%varData,hslyrs, tfid )
+      case(ixBeta%fsm)
+        if(.not.checkDone(ixBeta%fwm))then;err=10;message=trim(message)//'need to process "fwm" before "fsm"';return;endif 
         checkDone(ix)=.true. 
-        xPar= fsm( parTemp(ixPar%fwm)%varData,parTemp(ixPar%phi)%varData,parTemp(ixPar%wp)%varData,gammaPar, tfid )
-      case(ixPar%fpm)
-        if(.not.checkDone(ixPar%fwm))then;err=10;message=trim(message)//'need to process "fwm" before "fpm"';return;endif 
-        if(.not.checkDone(ixPar%fsm))then;err=10;message=trim(message)//'need to process "fsm" before "fpm"';return;endif 
+        xPar= fsm( parTemp(ixBeta%fwm)%varData,parTemp(ixBeta%phi)%varData,parTemp(ixBeta%wp)%varData,gammaPar, tfid )
+      case(ixBeta%fpm)
+        if(.not.checkDone(ixBeta%fwm))then;err=10;message=trim(message)//'need to process "fwm" before "fpm"';return;endif 
+        if(.not.checkDone(ixBeta%fsm))then;err=10;message=trim(message)//'need to process "fsm" before "fpm"';return;endif 
         checkDone(ix)=.true. 
-        xPar= fpm( parTemp(ixPar%fwm)%varData, parTemp(ixPar%fsm)%varData, tfid )
-      case(ixPar%zk)
-        if(.not.checkDone(ixPar%fc))   then;err=10;message=trim(message)//'need to process fc before zk';return;endif
-        if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before zk';return;endif
+        xPar= fpm( parTemp(ixBeta%fwm)%varData, parTemp(ixBeta%fsm)%varData, tfid )
+      case(ixBeta%zk)
+        if(.not.checkDone(ixBeta%fc))   then;err=10;message=trim(message)//'need to process fc before zk';return;endif
+        if(.not.checkDone(ixBeta%phi))  then;err=10;message=trim(message)//'need to process phi before zk';return;endif
         checkDone(ix)=.true. 
-        xPar= zk( parTemp(ixPar%phi)%varData,parTemp(ixPar%fc)%varData,gammaPar, tfid )
-      case(ixPar%zsk)
-        if(.not.checkDone(ixPar%fc))   then;err=10;message=trim(message)//'need to process fc before zsk';return;endif
-        if(.not.checkDone(ixPar%wp))   then;err=10;message=trim(message)//'need to process wp before zsk';return;endif
-        if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before zsk';return;endif
+        xPar= zk( parTemp(ixBeta%phi)%varData,parTemp(ixBeta%fc)%varData,gammaPar, tfid )
+      case(ixBeta%zsk)
+        if(.not.checkDone(ixBeta%fc))   then;err=10;message=trim(message)//'need to process fc before zsk';return;endif
+        if(.not.checkDone(ixBeta%wp))   then;err=10;message=trim(message)//'need to process wp before zsk';return;endif
+        if(.not.checkDone(ixBeta%phi))  then;err=10;message=trim(message)//'need to process phi before zsk';return;endif
         checkDone(ix)=.true. 
-        xPar= zsk( parTemp(ixPar%phi)%varData,parTemp(ixPar%fc)%varData,parTemp(ixPar%wp)%varData,gammaPar, tfid )
-      case(ixPar%zpk)
-        if(.not.checkDone(ixPar%ks))   then;err=10;message=trim(message)//'need to process ks before zpk';return;endif
-        if(.not.checkDone(ixPar%myu))  then;err=10;message=trim(message)//'need to process myu before zpk';return;endif
+        xPar= zsk( parTemp(ixBeta%phi)%varData,parTemp(ixBeta%fc)%varData,parTemp(ixBeta%wp)%varData,gammaPar, tfid )
+      case(ixBeta%zpk)
+        if(.not.checkDone(ixBeta%ks))   then;err=10;message=trim(message)//'need to process ks before zpk';return;endif
+        if(.not.checkDone(ixBeta%myu))  then;err=10;message=trim(message)//'need to process myu before zpk';return;endif
         checkDone(ix)=.true. 
-        xPar= zpk( parTemp(ixPar%ks)%varData,parTemp(ixPar%myu)%varData,hslyrs,gammaPar, tfid )
-      case(ixPar%pfree)
-        if(.not.checkDone(ixPar%phi))  then;err=10;message=trim(message)//'need to process phi before pfree';return;endif
-        if(.not.checkDone(ixPar%wp))   then;err=10;message=trim(message)//'need to process wp before pfree';return;endif
+        xPar= zpk( parTemp(ixBeta%ks)%varData,parTemp(ixBeta%myu)%varData,hslyrs,gammaPar, tfid )
+      case(ixBeta%pfree)
+        if(.not.checkDone(ixBeta%phi))  then;err=10;message=trim(message)//'need to process phi before pfree';return;endif
+        if(.not.checkDone(ixBeta%wp))   then;err=10;message=trim(message)//'need to process wp before pfree';return;endif
         checkDone(ix)=.true. 
-        xPar= pfree( parTemp(ixPar%phi)%varData,parTemp(ixPar%wp)%varData,gammaPar, tfid )
-      case(ixPar%zperc)
-        if(.not.checkDone(ixPar%twm))then;err=10;message=trim(message)//'need to process "twm" before "pfree"';return;endif 
-        if(.not.checkDone(ixPar%fsm))then;err=10;message=trim(message)//'need to process "fsm" before "pfree"';return;endif 
-        if(.not.checkDone(ixPar%zsk))then;err=10;message=trim(message)//'need to process "zsk" before "pfree"';return;endif 
-        if(.not.checkDone(ixPar%fpm))then;err=10;message=trim(message)//'need to process "fpm" before "pfree"';return;endif 
-        if(.not.checkDone(ixPar%zpk))then;err=10;message=trim(message)//'need to process "zpk" before "pfree"';return;endif 
+        xPar= pfree( parTemp(ixBeta%phi)%varData,parTemp(ixBeta%wp)%varData,gammaPar, tfid )
+      case(ixBeta%zperc)
+        if(.not.checkDone(ixBeta%twm))then;err=10;message=trim(message)//'need to process "twm" before "pfree"';return;endif 
+        if(.not.checkDone(ixBeta%fsm))then;err=10;message=trim(message)//'need to process "fsm" before "pfree"';return;endif 
+        if(.not.checkDone(ixBeta%zsk))then;err=10;message=trim(message)//'need to process "zsk" before "pfree"';return;endif 
+        if(.not.checkDone(ixBeta%fpm))then;err=10;message=trim(message)//'need to process "fpm" before "pfree"';return;endif 
+        if(.not.checkDone(ixBeta%zpk))then;err=10;message=trim(message)//'need to process "zpk" before "pfree"';return;endif 
         checkDone(ix)=.true. 
-        xPar= zperc(parTemp(ixPar%twm)%varData,parTemp(ixPar%fsm)%varData,parTemp(ixPar%zsk)%varData,parTemp(ixPar%fpm)%varData,parTemp(ixPar%zsk)%varData, tfid)
-      case(ixPar%rexp)
-        if(.not.checkDone(ixPar%wp))then;err=10;message=trim(message)//'need to process "wp" before "rexp"';return;endif 
+        xPar= zperc(parTemp(ixBeta%twm)%varData,parTemp(ixBeta%fsm)%varData,parTemp(ixBeta%zsk)%varData,parTemp(ixBeta%fpm)%varData,parTemp(ixBeta%zsk)%varData, tfid)
+      case(ixBeta%rexp)
+        if(.not.checkDone(ixBeta%wp))then;err=10;message=trim(message)//'need to process "wp" before "rexp"';return;endif 
         checkDone(ix)=.true. 
-        xPar= rexp( parTemp(ixPar%wp)%varData,gammaPar, tfid )
-      case(ixPar%lai)
+        xPar= rexp( parTemp(ixBeta%wp)%varData,gammaPar, tfid )
+      case(ixBeta%lai)
         xPar= lai( monLai, gammaPar, tfid )
     end select ! end of parameter case
     end associate second
@@ -238,11 +238,11 @@ subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter va
   end associate first
   ! extract beta parameters in 'CalPar' list
   do iParm=1,size(soilBetaInGamma)
-    idBeta=get_ixPar(trim(soilBetaInGamma(iParm)))
+    idBeta=get_ixBeta(trim(soilBetaInGamma(iParm)))
     parSxySz(iParm)%varData=parTemp(idBeta)%varData 
   enddo
   do iParm=1,size(vegBetaInGamma)
-    idBeta=get_ixPar(trim(vegBetaInGamma(iParm)))
+    idBeta=get_ixBeta(trim(vegBetaInGamma(iParm)))
     parVxy(iParm)%varData=parTemp(idBeta)%varData 
   enddo
   return
@@ -282,8 +282,8 @@ function infilt(elestd_in, gammaPar, opt)
   character(len=strLen)   :: message                           
   
   message="infilt/"
-  associate(g1=>gammaPar(ixPar%binfilt1gamma1), &
-            g2=>gammaPar(ixPar%binfilt1gamma2))
+  associate(g1=>gammaPar(ixGamma%binfilt1gamma1), &
+            g2=>gammaPar(ixGamma%binfilt1gamma2))
   select case(opt)
     case(1); 
       where ( elestd_in /= dmiss ) 
@@ -353,7 +353,7 @@ function D1(slope_in, ks_in, phi_in, h_in, gammaPar, opt)
   S=phi_in*h_in
   S=1.0_dp
   slope2d=spread(slope_in,1,n1)
-  associate(g1=>gammaPar(ixPar%D11gamma1))
+  associate(g1=>gammaPar(ixGamma%D11gamma1))
   ! compute parameters 
   select case(opt)
     case(1); 
@@ -435,7 +435,7 @@ function D2(slope_in, ks_in, D4_in, gammaPar, opt)
   S=1.0_dp
   slope2d=spread(slope_in,1,n1)
  ! compute parameters 
-  associate(g1=>gammaPar(ixPar%D21gamma1))
+  associate(g1=>gammaPar(ixGamma%D21gamma1))
   select case(opt)
     case(1); 
        where ( slope2d /= dmiss .and. Ks_in /= dmiss )
@@ -512,7 +512,7 @@ function D3( fc_in, h_in, gammaPar, opt)
   character(len=strLen)   :: message                           
 
   message="D3/"
-  associate(g1=>gammaPar(ixPar%D31gamma1))
+  associate(g1=>gammaPar(ixGamma%D31gamma1))
   select case(opt)
     case(1); 
       where ( fc_in /= dmiss .and. h_in /= dmiss ) 
@@ -579,7 +579,7 @@ function D4( gammaPar,opt )
   character(len=strLen)   :: message                           
   
   message="D4/"
-  associate(g1=>gammaPar(ixPar%D41gamma1))
+  associate(g1=>gammaPar(ixGamma%D41gamma1))
   select case(opt)
     case(1); 
       D4 = g1 
@@ -626,8 +626,8 @@ function expt( b_in, gammaPar, opt )
   character(len=strLen)   :: message                           
 
   message="expt/"
-  associate(g1=>gammaPar(ixPar%exp1gamma1), &
-            g2=>gammaPar(ixPar%exp1gamma2))
+  associate(g1=>gammaPar(ixGamma%exp1gamma1), &
+            g2=>gammaPar(ixGamma%exp1gamma2))
   select case(opt)
     case(1); 
       where ( b_in /= dmiss ) 
@@ -683,8 +683,8 @@ function bubble( expt_in, gammaPar, opt)
   character(len=strLen)   :: message                           
   
   message="bubble/"
-  associate(g1=>gammaPar(ixPar%bbl1gamma1), &
-            g2=>gammaPar(ixPar%bbl1gamma2))
+  associate(g1=>gammaPar(ixGamma%bbl1gamma1), &
+            g2=>gammaPar(ixGamma%bbl1gamma2))
   select case(opt)
     case(1); 
       where ( expt_in /= dmiss ) 
@@ -713,7 +713,7 @@ function soilDensity( srho_in, gammaPar, opt )
   character(len=strLen)   :: message                           
   
   message="soilDensity/"
-  associate(g1=>gammaPar(ixPar%sd1gamma1))
+  associate(g1=>gammaPar(ixGamma%sd1gamma1))
   select case(opt)
     case(1); 
       where ( srho_in /= dmiss ) 
@@ -743,7 +743,7 @@ function WcrFrac(fc_in, phi_in, gammaPar, opt)
   character(len=strLen)   :: message                           
   
   message="WcrFrac/"
-  associate(g1=>gammaPar(ixPar%WcrFrac1gamma1))
+  associate(g1=>gammaPar(ixGamma%WcrFrac1gamma1))
   select case(opt)
     case(1); 
       where ( fc_in /= dmiss .and. phi_in /= dmiss ) 
@@ -773,7 +773,7 @@ function WpwpFrac( wp_in, phi_in, gammaPar, opt)
   character(len=strLen)   :: message                           
   
   message="WpwFrac/"
-  associate(g1=>gammaPar(ixPar%WpwpFrac1gamma1))
+  associate(g1=>gammaPar(ixGamma%WpwpFrac1gamma1))
   select case(opt)
     case(1); 
       where ( wp_in /= dmiss .and. phi_in /= dmiss ) 
@@ -857,7 +857,7 @@ function fsm( fwm_in, phi_in, wp_in, gammaPar ,opt)
   character(len=strLen)   :: message                           
 
   message="fsm/"
-  associate(g1=>gammaPar(ixPar%fsm1gamma1))
+  associate(g1=>gammaPar(ixGamma%fsm1gamma1))
   select case(opt)
     case(1); 
       where ( phi_in/=dmiss .and. wp_in/=dmiss .and. fwm_in/=dmiss ) 
@@ -912,7 +912,7 @@ function zk( phi_in, fc_in, gammaPar,opt)
   character(len=strLen)   :: message                           
 
   message="zk/"
-  associate(g1=>gammaPar(ixPar%zk1gamma1))
+  associate(g1=>gammaPar(ixGamma%zk1gamma1))
   select case(opt)
     case(1); 
       where ( phi_in/=dmiss .and. fc_in/=dmiss ) 
@@ -942,8 +942,8 @@ function zsk( phi_in, fc_in, wp_in, gammaPar, opt)
   character(len=strLen)   :: message                           
 
   message="zsk/"
-  associate(g1=>gammaPar(ixPar%zsk1gamma1),&
-            g2=>gammaPar(ixPar%zsk1gamma2))
+  associate(g1=>gammaPar(ixGamma%zsk1gamma1),&
+            g2=>gammaPar(ixGamma%zsk1gamma2))
   select case(opt)
     case(1); 
       where ( phi_in/=dmiss .and. fc_in/=dmiss .and. wp_in/=dmiss ) 
@@ -975,7 +975,7 @@ function zpk( ks_in, h_in, myu_in, gammaPar,opt)
 
   message="zpk/"
   dt=24.0_dp ! unit: hr
-  associate(g1=>gammaPar(ixPar%zpk1gamma1))
+  associate(g1=>gammaPar(ixGamma%zpk1gamma1))
   select case(opt)
     case(1); 
       where ( ks_in/=dmiss .and. myu_in/=dmiss .and. h_in/= dmiss ) 
@@ -1004,7 +1004,7 @@ function pfree( phi_in, wp_in, gammaPar, opt)
   character(len=strLen)   :: message                           
 
   message="pfree/"
-  associate(g1=>gammaPar(ixPar%pfree1gamma1))
+  associate(g1=>gammaPar(ixGamma%pfree1gamma1))
   select case(opt)
     case(1); 
       where ( phi_in/=dmiss .and. wp_in/=dmiss ) 
@@ -1063,7 +1063,7 @@ function rexp( wp_in, gammaPar, opt)
   character(len=strLen)    :: message                           
   
   message="rexp/"
-  associate(g1=>gammaPar(ixPar%rexp1gamma1))
+  associate(g1=>gammaPar(ixGamma%rexp1gamma1))
   select case(opt)
     case(1); 
       where ( wp_in/=dmiss ) 
@@ -1094,12 +1094,12 @@ function ks( sand_in, clay_in, gammaPar, opt)
   message="ks/"
   ! opt 1: Cosby et al. WRR 1984
   ! opt 2: campbell & shiozawa 1994 
-  associate(g1=>gammaPar(ixPar%ks1gamma1), &
-            g2=>gammaPar(ixPar%ks1gamma2), &
-            g3=>gammaPar(ixPar%ks1gamma3), &
-            g4=>gammaPar(ixPar%ks2gamma1), &
-            g5=>gammaPar(ixPar%ks2gamma2), &
-            g6=>gammaPar(ixPar%ks2gamma3) )
+  associate(g1=>gammaPar(ixGamma%ks1gamma1), &
+            g2=>gammaPar(ixGamma%ks1gamma2), &
+            g3=>gammaPar(ixGamma%ks1gamma3), &
+            g4=>gammaPar(ixGamma%ks2gamma1), &
+            g5=>gammaPar(ixGamma%ks2gamma2), &
+            g6=>gammaPar(ixGamma%ks2gamma3) )
   select case(opt)
     case(1); 
       where ( sand_in /= dmiss .or. clay_in /= dmiss ) 
@@ -1140,14 +1140,14 @@ function bd( bd_in, gammaPar,opt )
   integer(i4b)          :: n2                  ! number of 2nd dimension 
   character(len=strLen) :: message                           
 
-  message="db/"
+  message="bd/"
   n1=size(bd_in,1)
   n2=size(bd_in,2)
   allocate(bdslope(n1,n2))
   allocate(bd_temp(n1,n2))
   bdslope=0.0_dp
   bd_temp=0.0_dp
-  associate(g1=>gammaPar(ixPar%bd1gamma1))
+  associate(g1=>gammaPar(ixGamma%bd1gamma1))
   select case(opt)
     case(1);  ! 
       where ( bd_in /= dmiss ) 
@@ -1184,15 +1184,15 @@ function phi(sand_in, clay_in, db_in, gammaPar, opt)
   ! opt 2: Zacharias & Wessolek 2007
   message="comp_porosity/"
 
-  associate(g1=>gammaPar(ixPar%phi1gamma1), &
-            g2=>gammaPar(ixPar%phi1gamma2), &
-            g3=>gammaPar(ixPar%phi1gamma3), &
-            g4=>gammaPar(ixPar%phi2gamma1), &
-            g5=>gammaPar(ixPar%phi2gamma2), &
-            g6=>gammaPar(ixPar%phi2gamma3), &
-            g7=>gammaPar(ixPar%phi2gamma4), &
-            g8=>gammaPar(ixPar%phi2gamma5), &
-            g9=>gammaPar(ixPar%phi2gamma6))
+  associate(g1=>gammaPar(ixGamma%phi1gamma1), &
+            g2=>gammaPar(ixGamma%phi1gamma2), &
+            g3=>gammaPar(ixGamma%phi1gamma3), &
+            g4=>gammaPar(ixGamma%phi2gamma1), &
+            g5=>gammaPar(ixGamma%phi2gamma2), &
+            g6=>gammaPar(ixGamma%phi2gamma3), &
+            g7=>gammaPar(ixGamma%phi2gamma4), &
+            g8=>gammaPar(ixGamma%phi2gamma5), &
+            g9=>gammaPar(ixGamma%phi2gamma6))
     select case(opt)
       case(1);  ! Cosby
         where ( sand_in /= dmiss .or. clay_in /= dmiss ) 
@@ -1243,7 +1243,7 @@ function fc(sand_in, phi_in, psis_in, b_in, gammaPar, opt)
   nSLyr=size(phi_in,2)
   allocate(psi_fc(nSpoly,nSLyr))
   psi_fc(:,:)=-20
-  associate(g1=>gammaPar(ixPar%fc1gamma1))
+  associate(g1=>gammaPar(ixGamma%fc1gamma1))
   where (sand_in > 69) psi_fc=-10
   select case(opt)
     case(1);  !campbell
@@ -1283,7 +1283,7 @@ function wp( phi_in, psis_in, b_in, gammaPar, opt)
   nSLyr=size(phi_in,2)
   allocate(psi_wp(nSpoly,nSLyr))
   psi_wp(:,:)=-1500
-  associate(g1=>gammaPar(ixPar%wp1gamma1))
+  associate(g1=>gammaPar(ixGamma%wp1gamma1))
   select case(opt)
     case(1);  !Cosby et al. 
       where ( phi_in /= dmiss .and. b_in /= dmiss .and. psis_in /= dmiss ) 
@@ -1313,9 +1313,9 @@ function ret_curve(sand_in, clay_in, gammaPar, opt)
 
   ! opt 1: Cosby et al. WRR 1984
   message="ret_curve/"
-  associate(g1=>gammaPar(ixPar%b1gamma1), &
-            g2=>gammaPar(ixPar%b1gamma2), &
-            g3=>gammaPar(ixPar%b1gamma2))
+  associate(g1=>gammaPar(ixGamma%b1gamma1), &
+            g2=>gammaPar(ixGamma%b1gamma2), &
+            g3=>gammaPar(ixGamma%b1gamma2))
     select case(opt)
       case(1); 
         where ( sand_in /= dmiss .and. clay_in /= dmiss ) 
@@ -1345,9 +1345,9 @@ function psis( sand_in, silt_in, gammaPar, opt)
 
   ! opt 1: Cosby et al. WRR 1984
   message="psis/"
-  associate(g1=>gammaPar(ixPar%psis1gamma1), &
-            g2=>gammaPar(ixPar%psis1gamma2), &
-            g3=>gammaPar(ixPar%psis1gamma2))
+  associate(g1=>gammaPar(ixGamma%psis1gamma1), &
+            g2=>gammaPar(ixGamma%psis1gamma2), &
+            g3=>gammaPar(ixGamma%psis1gamma2))
     select case(opt)
       case(1);  !Cosby et al. 
         where ( sand_in /= dmiss .and. silt_in /= dmiss ) 
@@ -1378,8 +1378,8 @@ function myu(phi_in, fc_in, gammaPar, opt)
 
   ! opt 1: Koren et al. 2003
   message="myu/"
-  associate(g1=>gammaPar(ixPar%myu1gamma1), &
-            g2=>gammaPar(ixPar%myu1gamma2))
+  associate(g1=>gammaPar(ixGamma%myu1gamma1), &
+            g2=>gammaPar(ixGamma%myu1gamma2))
   select case(opt)
     case(1);  ! koren
       where ( phi_in /= dmiss .and. fc_in /= dmiss ) 
@@ -1420,7 +1420,7 @@ function lai( lai_in, gammaPar, opt )
   allocate(lai_temp(n1,n2))
   laislope=0.0_dp
   lai_temp=0.0_dp
-  associate(g1=>gammaPar(ixPar%lai1gamma1))
+  associate(g1=>gammaPar(ixGamma%lai1gamma1))
   select case(opt)
     case(1);  ! 
       where ( lai_in /= dmiss ) 
