@@ -32,11 +32,19 @@ type,extends(par_meta), public  :: cpar_meta
 endtype cpar_meta
 
 ! ***********************************************************************************************************
+! Define data structure of beta parameters 
+! ***********************************************************************************************************
+type, public :: beta_meta
+  integer(i4b),allocatable     :: depend(:)         ! list of idex of dependent beta parameter 
+  integer(i4b)                 :: order=-999_i4b    ! computing order 
+endtype beta_meta
+
+! ***********************************************************************************************************
 ! Define data structure of input parameter metadata 
 ! ***********************************************************************************************************
 type,public :: scale_meta
   character(len=strLen)            :: betaname=''        ! Beta name
-  real(dp)                         :: pdefault(2)        ! default P values 
+  real(dp)                         :: pdefault(2)        ! default P exponent values 
   logical(lgc)                     :: mask(2)            ! logical to tell scaling parameter is calibrated or not 
 endtype scale_meta 
 
