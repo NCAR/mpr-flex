@@ -82,13 +82,13 @@ MODULE var_lookup
    integer(i4b)     :: myu             = imiss  ! 
    integer(i4b)     :: binfilt         = imiss  ! 
    integer(i4b)     :: D1              = imiss  ! 
-   integer(i4b)     :: D4              = imiss  ! 
    integer(i4b)     :: D2              = imiss  ! 
    integer(i4b)     :: D3              = imiss  ! 
-   integer(i4b)     :: c               = imiss  ! 
-   integer(i4b)     :: Dsmax           = imiss  ! 
+   integer(i4b)     :: D4              = imiss  ! 
    integer(i4b)     :: Ds              = imiss  ! 
+   integer(i4b)     :: Dsmax           = imiss  ! 
    integer(i4b)     :: Ws              = imiss  ! 
+   integer(i4b)     :: c               = imiss  ! 
    integer(i4b)     :: expt            = imiss  ! 
    integer(i4b)     :: bbl             = imiss  ! 
    integer(i4b)     :: h1              = imiss  ! top layer thickness

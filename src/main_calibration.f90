@@ -5,7 +5,8 @@ program main_calibration
   use read_config,          only: read_nml 
   use popMeta,              only: paramMaster
   use globaldata,           only: parSubset, betaInGamma,gammaSubset, betaNeeded
-  use process_meta,         only: read_calPar, get_parm_meta, betaCollection, total_calParam, param_setup, check_gammaZ, check_gammaH
+  use process_meta,         only: read_calPar, get_parm_meta, total_calParam, param_setup, check_gammaZ, check_gammaH
+  use tf,                   only: betaDependency, betaCompOrder
   use mo_dds,               only: dds
   use mo_opt_run,           only: opt_run
   use eval_model,           only: objfn
@@ -32,8 +33,10 @@ program main_calibration
   ! check if MPR is used, z and h gamma parameters are required
   call check_gammaZ( ierr, cmessage); call handle_err(ierr,cmessage)
   call check_gammaH( ierr, cmessage); call handle_err(ierr,cmessage)
-  ! Identify all the beta parameters to be estimated - 'betaNeeded' incluging betaInGamma
-  call betaCollection( ierr, cmessage); call handle_err(ierr,cmessage)
+  ! compute beta parameter dependency 
+  call betaDependency (ierr, cmessage); call handle_err(ierr,cmessage)
+  ! compute computing order of beta parameters including dependent parameters
+  call betaCompOrder (betaInGamma, ierr, cmessage); call handle_err(ierr,cmessage)
   ! print out list of gamma/beta parameters
   print*,"!-- Beta and Gamma parameters ----"
   write(*,*) (trim(adjustl(parSubset(i)%pname)),new_line('a'), i=1,size(parSubset))
