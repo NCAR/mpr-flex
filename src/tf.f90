@@ -76,7 +76,7 @@ subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter va
           call phi( err, message, sdata=sdata, gammaPar=gammaPar, phi_out=xPar, opt=tfid ) 
         case(ixBeta%b)
           checkDone(ix)=.true.
-          call ret_curve( err, message, sdata=sdata, gammaPar=gammaPar, retcurve_out=xPar, opt=tfid )
+          call retcurve( err, message, sdata=sdata, gammaPar=gammaPar, retcurve_out=xPar, opt=tfid )
         case(ixBeta%psis)
           checkDone(ix)=.true.
           call psis( err, message, sdata=sdata, gammaPar=gammaPar, psis_out=xPar, opt=tfid )
@@ -251,84 +251,45 @@ subroutine betaDependency( err, message )
   err=0; message="parDependcy/"
   do iParm=1,nBeta
     select case(iParm)
-      case(ixBeta%ks)
-        call ks      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%bd)
-        call bd      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%sd)
-        call sd      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%psis)
-        call psis    (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
-      case(ixBeta%b)
-        call ret_curve(err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
-      case(ixBeta%phi)
-        call phi     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
-      case(ixBeta%fc)
-        call fc      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%wp)
-        call wp      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%myu)
-        call myu     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%binfilt)
-        call binfilt (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%D1)
-        call D1      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%D2)
-        call D2      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%D3)
-        call D3      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%D4)
-        call D4      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%Ds)
-        call Ds      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%Dsmax)
-        call Dsmax   (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%Ws)
-        call Ws      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%c)
-        call cexpt   (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%expt)
-        call expt    (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%bbl)
-        call bubble  (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%WcrFrac)
-        call WcrFrac (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%WpwpFrac)
-        call WpwpFrac(err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%twm)
-        call twm     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%fwm)
-        call fwm     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%fsm)
-        call fsm     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%fpm)
-        call fpm     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%zk)
-        call zk      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%zsk)
-        call zsk     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%zpk)
-        call zpk     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%pfree)
-        call pfree   (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%zperc)
-        call zperc   (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%rexp)
-        call rexp    (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%lai)
-        call lai     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%z)
-        allocate(ixDepend(1), stat=err); ixDepend=-999_i2b
-      case(ixBeta%h1)
-        allocate(ixDepend(1), stat=err); ixDepend=-999_i2b
-      case(ixBeta%h2)
-        allocate(ixDepend(1), stat=err); ixDepend=-999_i2b
-      case(ixBeta%h3)
-        allocate(ixDepend(1), stat=err); ixDepend=-999_i2b
-      case(ixBeta%h4)
-        allocate(ixDepend(1), stat=err); ixDepend=-999_i2b
-      case(ixBeta%h5)
-        allocate(ixDepend(1), stat=err); ixDepend=-999_i2b
+      case(ixBeta%ks);      call ks      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%bd);      call bd      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%sd);      call sd      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%psis);    call psis    (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
+      case(ixBeta%b);       call retcurve(err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
+      case(ixBeta%phi);     call phi     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
+      case(ixBeta%fc);      call fc      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%wp);      call wp      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%myu);     call myu     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%binfilt); call binfilt (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%D1);      call D1      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%D2);      call D2      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%D3);      call D3      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%D4);      call D4      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%Ds);      call Ds      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%Dsmax);   call Dsmax   (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%Ws);      call Ws      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%c);       call cexpt   (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%expt);    call expt    (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%bbl);     call bubble  (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%WcrFrac); call WcrFrac (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%WpwpFrac);call WpwpFrac(err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%twm);     call twm     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%fwm);     call fwm     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%fsm);     call fsm     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%fpm);     call fpm     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%zk);      call zk      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%zsk);     call zsk     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%zpk);     call zpk     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%pfree);   call pfree   (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%zperc);   call zperc   (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%rexp);    call rexp    (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%lai);     call lai     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%z); allocate(ixDepend(1), stat=err); ixDepend=-999_i2b
+      case(ixBeta%h1);allocate(ixDepend(1), stat=err); ixDepend=-999_i2b
+      case(ixBeta%h2);allocate(ixDepend(1), stat=err); ixDepend=-999_i2b
+      case(ixBeta%h3);allocate(ixDepend(1), stat=err); ixDepend=-999_i2b
+      case(ixBeta%h4);allocate(ixDepend(1), stat=err); ixDepend=-999_i2b
+      case(ixBeta%h5);allocate(ixDepend(1), stat=err); ixDepend=-999_i2b
     end select
     if ( allocated(ixDepend) )then
       allocate(beta(iParm)%depend(size(ixDepend)),stat=err);if(err/=0)then;message=trim(message)//'error allocating beta%ixDepend for '//trim(betaMaster(iParm)%pname);return;endif 
@@ -343,7 +304,7 @@ end subroutine
 ! public subroutine: Determin computing order of beta parameters including depedent parameters 
 ! *********************************************************************
 subroutine betaCompOrder( betaList, err, message)
-  use globalData, only:beta, betaOrder
+  use globalData, only:beta, betaOrder, nBetaNeed
   use get_ixname, only:get_ixBeta
   implicit none
   ! input
@@ -355,7 +316,6 @@ subroutine betaCompOrder( betaList, err, message)
   integer(i2b)                      :: iParm,jParm,kParm  ! loop index for betar parameter 
   logical(lgc)                      :: parFlag(nBeta)     ! logical array to check order assignment 
   integer(i2b)                      :: nassign            ! counter for order assigned 
-  integer(i2b)                      :: iOrder             ! parameter counter 
   integer(i2b)                      :: idx,jdx            ! parameter index 
   integer(i2b)                      :: iDeps              ! loop index for dependent parameters 
   integer(i2b)                      :: nDeps              ! number of dependant parameters of the parameter 
@@ -364,7 +324,7 @@ subroutine betaCompOrder( betaList, err, message)
   parFlag = .false.
   nassign = 0
   betaOrder=-999
-  iOrder=0
+  nBetaNeed=0
   do  ! do until all beta parameters are assigned
     nassign = 0
     do iParm=1,size(betaList)
@@ -376,10 +336,10 @@ subroutine betaCompOrder( betaList, err, message)
       do  ! do until get to a "most uplevel" parameters that is not assigned
         if ( beta(jParm)%depend(1) .eq. -999_i2b ) then     ! (if nDeps = 0, then the parameter is independent of any others )
           ! assign jParm
-          iOrder=iOrder+1
+          nBetaNeed=nBetaNeed+1
           parFlag(jParm) = .true.
-          beta(jParm)%order = iOrder 
-          betaOrder(iOrder)=jParm
+          beta(jParm)%order = nBetaNeed 
+          betaOrder(nBetaNeed)=jParm
           exit 
         else    ! if the parameter has any dependent parameters 
           kParm = jParm   ! the parameter under investigation 
@@ -392,10 +352,10 @@ subroutine betaCompOrder( betaList, err, message)
           ! check if all upstream reaches are already assigned (only if kParm=jParm)
           if (jParm .eq. kParm) then 
             ! assign jParm
-            iOrder=iOrder+1
+            nBetaNeed=nBetaNeed+1
             parFlag(jParm) = .true.
-            beta(jParm)%order = iOrder 
-            betaOrder(iOrder)=jParm
+            beta(jParm)%order = nBetaNeed
+            betaOrder(nBetaNeed)=jParm
             exit 
           endif  
           cycle   ! if jrch changes, keep looping (move upstream)
@@ -558,7 +518,7 @@ subroutine D1( err, message, ixDepend, sdata, ks_in, phi_in, gammaPar, D1_out, o
     ! compute parameters 
     select case(tfopt)
       case(1); 
-        where ( slope2d /= dmiss .and. ks_in /= dmiss )
+        where ( slope2d /= dmiss .or. ks_in /= dmiss )
           D1_out = S**(-1)*10**(-1*g1)*ks_in*(60*60*24)*(slope2d*0.01)
         else where
           D1_out = dmiss
@@ -711,7 +671,7 @@ subroutine Dsmax( err, message, ixDepend, sdata, D1_in, D2_in, D3_in, c_in, phi_
     associate(h_in => sdata(ixVarSoilData%hslyrs)%dvar2 )
     select case(tfopt)
       case(1); 
-        where ( phi_in /= dmiss .and. h_in /= dmiss )
+        where ( phi_in /= dmiss .or. h_in /= dmiss )
           Dsmax_out = D2_in*(phi_in*h_in*1000-D3_in)**c_in+D1_in*(phi_in*h_in*1000)
         else where
           Dsmax_out = dmiss
@@ -758,7 +718,7 @@ subroutine D3( err, message, ixDepend, sdata, fc_in, gammaPar, D3_out, opt )
               h_in => sdata(ixVarSoilData%hslyrs)%dvar2 )
     select case(tfopt)
       case(1); 
-        where ( fc_in /= dmiss .and. h_in /= dmiss ) 
+        where ( fc_in /= dmiss .or. h_in /= dmiss ) 
           D3_out = g1* fc_in * (h_in*1000)
         else where
           D3_out = dmiss
@@ -1815,7 +1775,7 @@ subroutine wp( err, message, ixDepend, phi_in, psis_in, b_in, gammaPar, wp_out, 
     associate(g1=>gammaPar(ixGamma%wp1gamma1))
     select case(tfopt)
       case(1);  !Cosby et al. 
-        where ( phi_in /= dmiss .and. b_in /= dmiss .and. psis_in /= dmiss ) 
+        where ( phi_in /= dmiss .or. b_in /= dmiss .or. psis_in /= dmiss ) 
           wp_out = g1*phi_in*(psi_wp/psis_in)**(-1/b_in)
         else where
           wp_out = dmiss 
@@ -1830,7 +1790,7 @@ end subroutine
 ! *********************************************************************
 ! pedo-transfer function for b (slope of retention curve in log space)
 ! *********************************************************************
-subroutine ret_curve( err, message, ixDepend, sdata, gammaPar, retcurve_out, opt )
+subroutine retcurve( err, message, ixDepend, sdata, gammaPar, retcurve_out, opt )
   implicit none
   ! input
   type(namevar),optional,intent(in)   :: sdata(:)         ! storage of soil data strucuture
@@ -1845,7 +1805,7 @@ subroutine ret_curve( err, message, ixDepend, sdata, gammaPar, retcurve_out, opt
   integer(i2b)                        :: tfopt              ! option for transfer function form used
   integer(i2b),         parameter     :: nDepend=0          ! D2 parameter depends on two beta parameters (ks and D4)
 
-  err=0;message="ret_curve/"
+  err=0;message="retcurve/"
   if ( present(ixDepend) ) then ! setup dependency
     allocate(ixDepend(1),stat=err); if(err/=0)then;message=trim(message)//'error allocating ixDepend';return;endif
     ixDepend=-999_i2b
@@ -1860,7 +1820,7 @@ subroutine ret_curve( err, message, ixDepend, sdata, gammaPar, retcurve_out, opt
               clay_in => sdata(ixVarSoilData%clay_frc)%dvar2 )
       select case(tfopt)
         case(1); 
-          where ( sand_in /= dmiss .and. clay_in /= dmiss ) 
+          where ( sand_in /= dmiss .or. clay_in /= dmiss ) 
             retcurve_out = g1+g2*sand_in+g3*clay_in
           else where
             retcurve_out = dmiss 
@@ -1924,15 +1884,15 @@ end subroutine
 subroutine myu( err, message, ixDepend, phi_in, fc_in, gammaPar, myu_out, opt )
   implicit none
   ! input
-  real(dp),                optional,intent(in)   :: phi_in(:,:)   ! input: porosity [fraction]  
-  real(dp),                optional,intent(in)   :: fc_in(:,:)    ! input: saturation matric potential [kPa]  
-  real(dp),                optional,intent(in)   :: gammaPar(:)   ! input: gamma parameter array 
-  integer(i2b),            optional,intent(in)   :: opt           ! input: option for transfer function form
+  real(dp),                optional,intent(in)   :: phi_in(:,:)   ! input(optional): porosity [fraction]  
+  real(dp),                optional,intent(in)   :: fc_in(:,:)    ! input(optional): saturation matric potential [kPa]  
+  real(dp),                optional,intent(in)   :: gammaPar(:)   ! input(optional): gamma parameter array 
+  integer(i2b),            optional,intent(in)   :: opt           ! input(optional): option for transfer function form
   ! output
   integer(i4b),                     intent(out)  :: err           ! output: error id 
   character(len=strLen),            intent(out)  :: message       ! output: error message   
-  integer(i2b),allocatable,optional,intent(out)  :: ixDepend(:)   ! Optional output: id of dependent beta parameters 
-  real(dp),                optional,intent(out)  :: myu_out(:,:)  ! output: specific yield [-]  
+  integer(i2b),allocatable,optional,intent(out)  :: ixDepend(:)   ! output(optional): id of dependent beta parameters 
+  real(dp),                optional,intent(out)  :: myu_out(:,:)  ! output(optional): specific yield [-]  
   ! local 
   integer(i2b)                                   :: tfopt         ! option for transfer function form used
   integer(i2b),parameter                         :: nDepend=2     ! myu parameter depends on two beta parameters (phi and fc)

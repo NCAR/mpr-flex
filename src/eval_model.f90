@@ -24,7 +24,7 @@ function objfn( calParam )
   !input variables
   real(dp),             intent(in)  :: calParam(:)                   ! parameter in namelist, not necessarily all parameters are calibrated
   !local variables
-  type(var_d)                       :: calParStr(nBetaGammaCal)         ! parameter storage converted from parameter array 
+  type(var_d)                       :: calParStr(nBetaGammaCal)      ! parameter storage converted from parameter array 
   type(var_d)                       :: pnormCoef(size(betaCalScale)) ! parameter storage converted from parameter array 
   real(dp)                          :: objfn                         ! object function value 
   integer(i2b)                      :: iPar                          ! loop index for parameter 

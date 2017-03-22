@@ -9,10 +9,7 @@ module process_meta
 
   public::read_calPar
   public::get_parm_meta
-  public::total_calParam
   public::param_setup 
-  public::check_gammaZ
-  public::check_gammaH
 
 contains
 
@@ -87,7 +84,7 @@ end subroutine
 subroutine get_parm_meta( err, message)
   ! Process calParMeta along with betaMaster and gammaMaster (popMeta.f90) 
   ! Saved data:  parSubset, gammaSubset, betaInGamma data structure 
-  use data_type,  only:par_meta,cpar_meta
+  use data_type,  only:par_meta, cpar_meta, scale_meta
   use globalData, only:calParMeta,     & ! meta for beta parameter listed in 'calPar' input
                        gammaMaster,    & ! meta for all gamma parameters
                        betaMaster,     & ! meta for all beta parameters
@@ -96,10 +93,11 @@ subroutine get_parm_meta( err, message)
                        betaInGamma,    & ! list of beta parameters calibrated with MPR 
                        betaCalScale,   & ! meta for beta parameter whose scaling operator(s) is calibrated
                        nBetaGammaCal,  & ! sum of beta and gamma parameters to be calibrated 
-                       nBetaCal,       & ! number of beta parameters to be calibrated directly
+                       nBetaDirCal,    & ! number of beta parameters to be calibrated "directly"
                        nGammaCal,      & ! number of gamma parameters to be calibrated 
-                       nSoilParModel,  & ! number of soil beta parameters to be calibrated 
-                       nVegParModel,   & ! number of veg beta parameters to be calibrated 
+                       nSoilParModel,  & ! number of soil beta parameters to be calibrated via MPR  
+                       nVegParModel,   & ! number of veg beta parameters to be calibrated via MPR
+                       nParCalSum,     & ! number of total calibrating parameters going to optimization routine
                        soilBetaInGamma,& ! list of Soil parameters to be estimated via MPR
                        vegBetaInGamma    ! list of vege parameters to be estimated via MPR
   use get_ixname, only:get_ixBeta, get_ixGamma
@@ -122,10 +120,10 @@ subroutine get_parm_meta( err, message)
     if(ivar<=0)then; err=40; message=trim(message)//"1.variableNotFound[var="//trim(calParMeta(iBeta)%betaname)//"]"; return; endif
     betaMaster(ivar)%tftype=calParMeta(iBeta)%TF
   enddo
-  call get_parMetaSubset      ( err, cmessage ); if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
-  call get_betaInGamma        ( err, cmessage ); if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
-  call get_betaCalScale       ( err, cmessage ); if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
-
+  call get_parMetaSubset( err, cmessage ); if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
+  call get_betaInGamma  ( err, cmessage ); if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
+  call get_betaCalScale ( err, cmessage ); if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
+  call total_calParam   ( err, cmessage ); if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
   ! check that all elements are populated
   if(any(parSubset(:)%pname==''))then
     do iPar=1,size(parSubset)
@@ -139,7 +137,7 @@ subroutine get_parm_meta( err, message)
 
   ! Private subroutine:   
   subroutine get_parMetaSubset( err, message )
-  ! Saved data:  parSubset, gammaSubset, nBetaGammaCal, nBetaCal, nGammaCal
+   ! Saved data:  parSubset, gammaSubset, nBetaGammaCal, nBetaDirCal, nGammaCal
     !input
     !output
     character(len=strLen),intent(out)   :: message           ! error message for current routine
@@ -158,7 +156,7 @@ subroutine get_parm_meta( err, message)
     nBetaGammaCal=0 ! Count and Save number of sum of beta (directly) and gamma parameters to be calibrated
     nGammaCal=0     ! Count and Save number of gamma parameter to be calibrated
     do iBeta=1,size(calParMeta)
-      if(calParMeta(iBeta)%calMethod==1) then !if calMethod is MPR
+      if(calParMeta(iBeta)%calMethod==1 .or. calParMeta(iBeta)%calMethod==2) then 
         do iGamma=1,nGamma  ! look for gammma parameters associated with this beta parameter
           if (gammaMaster(iGamma)%beta==calParMeta(iBeta)%betaname .and. gammaMaster(iGamma)%tftype==calParMeta(iBeta)%TF) then
             nBetaGammaCal = nBetaGammaCal+1
@@ -171,7 +169,11 @@ subroutine get_parm_meta( err, message)
             tempParSubset(nBetaGammaCal)%beta     = gammaMaster(iGamma)%beta
             tempParSubset(nBetaGammaCal)%tftype   = gammaMaster(iGamma)%tftype
             tempParSubset(nBetaGammaCal)%ptype    = gammaMaster(iGamma)%ptype
-            tempParSubset(nBetaGammaCal)%flag     = .True.
+            if(calParMeta(iBeta)%calMethod==1) then !if calMethod is MPR
+              tempParSubset(nBetaGammaCal)%flag     = .True.
+            elseif(calParMeta(iBeta)%calMethod==2) then !if calibrating only scale parameters 
+              tempParSubset(nBetaGammaCal)%flag     = .False.
+            endif
             tempParSubset(nBetaGammaCal)%hups     = gammaMaster(iGamma)%hups
             tempParSubset(nBetaGammaCal)%hpnorm   = gammaMaster(iGamma)%hpnorm
             tempParSubset(nBetaGammaCal)%vups     = gammaMaster(iGamma)%vups
@@ -181,7 +183,7 @@ subroutine get_parm_meta( err, message)
             tempGammaMeta(nGammaCal) = tempParSubset(nBetaGammaCal)
           endif
         end do
-      elseif (calParMeta(iBeta)%calMethod==2) then ! if calMethod is direct calibration
+      elseif (calParMeta(iBeta)%calMethod==3) then ! if calMethod is direct calibration
         ivar = get_ixBeta(calParMeta(iBeta)%betaname)
         if(ivar<=0)then; err=40; message=trim(message)//"2.variableNotFound[var="//trim(calParMeta(iBeta)%betaname)//"]"; return; endif
         nBetaGammaCal = nBetaGammaCal+1
@@ -201,19 +203,20 @@ subroutine get_parm_meta( err, message)
         tempParSubset(nBetaGammaCal)%perLyr   = betaMaster(ivar)%perLyr
       endif
     enddo
-    nBetaCal=nBetaGammaCal-nGammaCal      ! Save number of beta parameter to be directly calibrated
-    if (nBetaGammaCal > 0_i2b) then ! Save 'parSubset'
+    nBetaDirCal=nBetaGammaCal-nGammaCal      ! Save number of beta parameter to be directly calibrated
+    if (nBetaGammaCal > 0_i2b) then          ! Save 'parSubset'
       allocate(parSubset(nBetaGammaCal))
       parSubset=tempParSubset(1:nBetaGammaCal) 
     endif
-    if (nGammaCal > 0_i2b) then     ! Save'gammaSubset'
+    if (nGammaCal > 0_i2b) then              ! Save'gammaSubset'
       allocate(gammaSubset(nGammaCal))
       gammaSubset=tempGammaMeta(1:nGammaCal) 
     endif
     return
   end subroutine
 
-  ! Private subroutine:   
+  ! Private subroutine: Get list of beta parameters (excluding z and h) computed with MPR.  
+  ! populated global data: betaInGamma, soilBetaInGamma, vegBetaInGamma
   subroutine get_betaInGamma( err, message )
     !input
     !output
@@ -230,8 +233,8 @@ subroutine get_parm_meta( err, message)
     character(len=strLen),allocatable    :: tempVegBetaInGamma(:)  ! 
     character(len=strLen),allocatable    :: res(:)                 ! 
     integer(i4b)                         :: i,j,k                  ! loop index
-    err=0; message="get_betaInGamma/"
 
+    err=0; message="get_betaInGamma/"
     if ( allocated(gammaSubset) ) then ! get beta parameter associated with gamma parameters (excluding soil depth, layer thickness)
       allocate(res(size(gammaSubset)))
       k = 1
@@ -287,9 +290,9 @@ subroutine get_parm_meta( err, message)
     return
   end subroutine
 
-  ! Private subroutine:   
+  ! Private subroutine: to populate scaling parameter meta for beta parameter calibrated with MPR
+  ! populated global data: betaCalScale
   subroutine get_betaCalScale( err, message ) 
-    use data_type,  only:scale_meta
     !input
     !output
     character(len=strLen),intent(out)   :: message                ! error message for current routine
@@ -301,15 +304,29 @@ subroutine get_parm_meta( err, message)
     err=0; message="get_scaleInBeta/"
     allocate(tempBetaCalScale(size(calParMeta)),stat=err);if(err/=0)then;message=trim(message)//'error allocating tempBetaCalScale';return;endif
     nScaleBeta=0 
-    do iPar=1,size(calParMeta)
-      if (calParMeta(iPar)%calMethod==1) then  ! if beta parameter is estimated with MPR, potentially calibrate pnorm value
-        associate( ix=> get_ixBeta(calParMeta(iPar)%betaname))
+    do iPar=1,size(calParMeta)!if beta parameter is estimated with MPR or even not calibrated, calibrate scaling parameter
+      if ( calParMeta(iPar)%calMethod==1 .or. calParMeta(iPar)%calMethod==2 ) then  
+        associate( hups      => betaMaster(get_ixBeta(calParMeta(iPar)%betaname))%hups,   &
+                   vups      => betaMaster(get_ixBeta(calParMeta(iPar)%betaname))%vups,   &
+                   hpower    => betaMaster(get_ixBeta(calParMeta(iPar)%betaname))%hpnorm, &
+                   vpower    => betaMaster(get_ixBeta(calParMeta(iPar)%betaname))%vpnorm, &
+                   hscaleMask=> calParMeta(iPar)%isScaleCalH, &
+                   vscaleMask=> calParMeta(iPar)%isScaleCalV )
         nScaleBeta=nScaleBeta+1
         tempBetaCalScale(nScaleBeta)%betaname    = calParMeta(iPar)%betaname  
-        tempBetaCalScale(nScaleBeta)%pdefault(1) = betaMaster(ix)%hpnorm
-        tempBetaCalScale(nScaleBeta)%pdefault(2) = betaMaster(ix)%vpnorm
-        tempBetaCalScale(nScaleBeta)%mask(1)     = calParMeta(iPar)%isScaleCalH
-        tempBetaCalScale(nScaleBeta)%mask(2)     = calParMeta(iPar)%isScaleCalV
+        tempBetaCalScale(nScaleBeta)%pdefault(1) = hpower 
+        tempBetaCalScale(nScaleBeta)%pdefault(2) = vpower 
+        tempBetaCalScale(nScaleBeta)%mask(1)     = hscaleMask 
+        tempBetaCalScale(nScaleBeta)%mask(2)     = vscaleMask 
+        ! Check beta meta data for scaling and if value is -999 or na, turns off calibration 
+        if (hscaleMask .and. (hpower==-999.0_dp .or. hups=='na'))then 
+          print*,'Switch horizontal upscale calibration to False for',calParMeta(iPar)%betaname
+          tempBetaCalScale(nScaleBeta)%mask(1)=.False.
+        endif
+        if (vscaleMask .and. (vpower==-999.0_dp .or. vups=='na'))then
+          print*,'Switch vertical upscale calibration to False for',calParMeta(iPar)%betaname
+          tempBetaCalScale(nScaleBeta)%mask(2)=.False.
+        endif
         end associate
       endif
     enddo
@@ -317,39 +334,85 @@ subroutine get_parm_meta( err, message)
     betaCalScale=tempBetaCalScale(1:nScaleBeta)
     return
   end subroutine
+  
+  ! Private subroutine: to count calibrating parameters including:
+  ! beta parameters (direct calibration) per layer, gamma parameters, scaling parameters (V and H) 
+  ! save nParCalSum in public_var
+  subroutine total_calParam( err, message )
+    implicit none
+    !output variables
+    integer(i4b),         intent(out) :: err         ! error code
+    character(*),         intent(out) :: message     ! error message
+    ! local variables
+    integer(i4b)                 :: iPar          ! loop indices
+    
+    ! initialize error control
+    err=0; message='total_calParam/'
+    nParCalSum=0_i4b
+    do iPar=1,nBetaGammaCal        ! cound number of calibration beta (per layer) and gamma
+      if (parSubset(iPar)%perLyr)then
+        nParCalSum=nParCalSum+nLyr
+      else
+        nParCalSum=nParCalSum+1
+      endif
+    enddo  
+    do iPar=1,size(calParMeta) ! Add number of calibration pnorm value - make False if value is -999 or nan
+      if (calParMeta(iPar)%calMethod==1 .or. calParMeta(iPar)%calMethod==2 ) nParCalSum=nParCalSum+2
+    enddo
+    print*, nParCalSum
+    return
+  end subroutine
 
 end subroutine
 
-!**********************************
-! Public subroutine: check if z parameters exist in gamma parameter
-!**********************************
-subroutine check_gammaZ( err, message)
-  use globalData,   only: gammaSubset
+! ************************************************************************************************
+! Public subroutine: convert parameter data structure to simple arrays 
+! ************************************************************************************************
+subroutine param_setup( err, message )
+  use globalData,  only:parArray, parMask, parSubset, nBetaGammaCal, betaCalScale, nParCalSum 
   implicit none
   !output variables
-  integer(i4b),                      intent(out)   :: err         ! error code
-  character(*),                      intent(out)   :: message     ! error message
-  !local variables
-  logical(lgc)                                     :: checkZ 
-  integer(i4b)                                     :: i           ! loop index
-
+  integer(i4b),     intent(out) :: err                    ! error code
+  character(*),     intent(out) :: message                ! error message
+  ! local variables
+  integer(i2b)                  :: iPar                   ! loop indices
+  integer(i2b)                  :: idx                    ! count of calibrating parameter including per layer parameter 
+  integer(i2b)                  :: ixHV                   ! count of calibrating parameter including per layer parameter 
+  
   ! initialize error control
-  err=0; message='check_gammaZ/'
-  checkZ=.false.
-  if ( allocated(gammaSubset) )then
-    !check z parameter
-    do i=1,size(gammaSubset)
-      if (gammaSubset(i)%pname=="z1gamma1") checkZ=.true.
-    end do
-    if ( .not. checkZ )then;err=40;message=trim(message)//"Calibrating gamma parameter require z1gamma1 parameter"; return;endif
-  else
-    print*, 'No gamma parameters listed in CalPar->No MPR computation'
-  endif
+  err=0; message='param_setput/'
+  allocate(parArray(nParCalSum,3),stat=err);if(err/=0)then;message=trim(message)//'error allocating parArray';return;endif
+  allocate(parMask(nParCalSum),stat=err);if(err/=0)then;message=trim(message)//'error allocating parMask';return;endif
+  idx=0_i2b
+  do iPar=1,nBetaGammaCal
+    if (parSubset(iPar)%perLyr)then
+      idx=idx+nLyr
+      parArray(idx-nLyr+1:idx,1) = parSubset(iPar)%val
+      parArray(idx-nLyr+1:idx,2) = parSubset(iPar)%lwr
+      parArray(idx-nLyr+1:idx,3) = parSubset(iPar)%upr
+      parMask (idx-nLyr+1:idx)   = parSubset(iPar)%flag
+    else
+      idx=idx+1
+      parArray(idx,1) = parSubset(iPar)%val
+      parArray(idx,2) = parSubset(iPar)%lwr
+      parArray(idx,3) = parSubset(iPar)%upr
+      parMask (idx)   = parSubset(iPar)%flag
+    endif
+  enddo  
+  do iPar=1,size(betaCalScale) 
+    do ixHV=1,2
+      idx=idx+1
+      parArray(idx,1) = betaCalScale(iPar)%pdefault(ixHV)        ! default value of pnorm value
+      parArray(idx,2) = -100.0_dp                                ! lower bound or pnorm value
+      parArray(idx,3) =  100.0_dp                                ! upper bound of pnorm value
+      parMask (idx)   = betaCalScale(iPar)%mask(ixHV)
+    enddo
+  enddo
   return
 end subroutine
 
 !**********************************
-! Public subroutine: check if h parameters exist in gamma parameter
+! Not Used---  Public subroutine: check if h parameters exist in gamma parameter
 !**********************************
 subroutine check_gammaH( err, message)
   use globalData,   only: gammaSubset
@@ -381,76 +444,6 @@ subroutine check_gammaH( err, message)
   else
     print*, 'No gamma parameters listed in CalPar->No MPR computation'
   endif
-  return
-end subroutine
-
-! ************************************************************************************************
-! Public subroutine: Count total number of calibrating parameters 
-! ************************************************************************************************
-! Calibrating parameters including:
-! beta parameters (direct calibration) per layer, gamma parameters, pnorm parameters (V and H) 
-subroutine total_calParam( )
-  ! save nParCalSum in public_var
-  use globalData,  only: parSubset, nBetaGammaCal, calParMeta
-  implicit none
-  ! local variables
-  integer(i4b)                 :: iPar          ! loop indices
-  
-  nParCalSum=0_i4b
-  do iPar=1,nBetaGammaCal        ! cound number of calibration beta (per layer) and gamma
-    if (parSubset(iPar)%perLyr)then
-      nParCalSum=nParCalSum+nLyr
-    else
-      nParCalSum=nParCalSum+1
-    endif
-  enddo  
-  do iPar=1,size(calParMeta) ! Add number of calibration pnorm value
-    if (calParMeta(iPar)%calMethod==1) nParCalSum=nParCalSum+2
-  enddo
-  return
-end subroutine
-
-! ************************************************************************************************
-! Public subroutine: convert parameter data structure to simple arrays 
-! ************************************************************************************************
-subroutine param_setup( param, mask )
-  use globalData,  only:parSubset, nBetaGammaCal, betaCalScale 
-  implicit none
-  ! output variables
-  real(dp),dimension(:,:),   intent(out)     :: param 
-  logical,dimension(:),      intent(out)     :: mask
-  ! local variables
-  integer(i2b)                               :: iPar    ! loop indices
-  integer(i2b)                               :: idx     ! count of calibrating parameter including per layer parameter 
-  integer(i2b)                               :: ixHV    ! count of calibrating parameter including per layer parameter 
-  
-  idx=0_i2b
-  do iPar=1,nBetaGammaCal
-    if (parSubset(iPar)%perLyr)then
-      idx=idx+nLyr
-      param(idx-nLyr+1:idx,1) = parSubset(iPar)%val
-      param(idx-nLyr+1:idx,2) = parSubset(iPar)%lwr
-      param(idx-nLyr+1:idx,3) = parSubset(iPar)%upr
-      mask (idx-nLyr+1:idx)   = parSubset(iPar)%flag
-    else
-      idx=idx+1
-      param(idx,1) = parSubset(iPar)%val
-      param(idx,2) = parSubset(iPar)%lwr
-      param(idx,3) = parSubset(iPar)%upr
-      mask (idx)   = parSubset(iPar)%flag
-    endif
-  enddo  
-
-  do iPar=1,size(betaCalScale) 
-    do ixHV=1,2
-      idx=idx+1
-      param(idx,1)=betaCalScale(iPar)%pdefault(ixHV)        ! default value of pnorm value
-      param(idx,2)=-100                                     ! lower bound or pnorm value
-      param(idx,3)=100                                      ! upper bound of pnorm value
-      mask(idx)=betaCalScale(iPar)%mask(ixHV)
-    enddo
-  enddo
-
   return
 end subroutine
 

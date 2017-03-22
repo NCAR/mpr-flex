@@ -168,7 +168,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   integer(i4b)                       :: iSub                     ! Loop index of multiple soi layers in model layer
   logical(lgc),allocatable           :: mask(:)                  ! mask for 1D array 
   logical(lgc),allocatable           :: vmask(:)                 ! TO BE DELETED: mask for vpolIdSub array 
-  type(par_meta),allocatable         :: gammaMasterMeta(:)
+  type(par_meta),allocatable         :: gammaUpdateMeta(:)
   type(par_meta),allocatable         :: betaMasterMeta(:)
   integer(i4b)                       :: nSpoly                   ! number of soil polygon in entire soil data domain 
   integer(i4b)                       :: nSlyrs                   ! number of soil layers
@@ -204,11 +204,11 @@ subroutine mpr(hruID,             &     ! input: hruID
   ! initialize error control
   err=0; message='mpr/'
   !(0) Preparation
-  allocate(gammaMasterMeta, source=gammaMaster) ! copy master gamma parameter metadata
+  allocate(gammaUpdateMeta, source=gammaMaster) ! copy master gamma parameter metadata
   allocate(betaMasterMeta, source=betaMaster) ! copy master beta parameter metadata
-  ! Swap gammaMasterMeta%val with adjusted gammaPar value
+  ! Swap gammaUpdateMeta%val with adjusted gammaPar value
   do iGamma=1,size(gammaParStr)
-    gammaMasterMeta(gammaParMeta(iGamma)%ixMaster)%val=gammaParStr(iGamma)%var(1)
+    gammaUpdateMeta(gammaParMeta(iGamma)%ixMaster)%val=gammaParStr(iGamma)%var(1)
   enddo
   ! Swap betaMasterMeta%hpnorm and vpnorm with adjusted pnorm coefficient value
   do iParm=1,size(pnormCoefStr)
@@ -219,7 +219,8 @@ subroutine mpr(hruID,             &     ! input: hruID
   enddo 
   call popMprMeta( err, cmessage)   !for sdata_meta, vdata_meta, map_meta
   if(err/=0)then; message=trim(message)//cmessage; return; endif
-  call pop_hfrac(gammaParStr, gammaParMeta, hfrac, err, cmessage) ! to get hfrac 
+  !call pop_hfrac(gammaParStr, gammaParMeta, hfrac, err, cmessage) ! to get hfrac 
+  call pop_hfrac( gammaUpdateMeta, hfrac, err, cmessage) ! to get hfrac 
   if(err/=0)then; message=trim(message)//cmessage; return; endif
   ! Memory allocation
   allocate(parSxySz(nSoilParModel),stat=err);  if(err/=0)then; message=trim(message)//'error allocating parSxySz'; return; endif
@@ -240,7 +241,7 @@ subroutine mpr(hruID,             &     ! input: hruID
                nSlyrs,                               & ! output: number of dimension (i.e. number of soil layer)
                err, cmessage)
   if(err/=0)then; message=trim(message)//cmessage; return; endif 
-  call mod_hslyrs(sdata, gammaMasterMeta(ixGamma%z1gamma1)%val, err,cmessage) ! modify soil layer thickness in sdata data structure
+  call mod_hslyrs(sdata, gammaUpdateMeta(ixGamma%z1gamma1)%val, err,cmessage) ! modify soil layer thickness in sdata data structure
   if(err/=0)then; message=trim(message)//cmessage; return; endif 
   ! *****
   ! (1.2)  veg class - properties lookup table ...
@@ -389,7 +390,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   ! (3.4) Compute model parameters using transfer function
   ! *********************************************************
     ! compute model soil parameters
-    call comp_model_param(parSxySz, parVxy, sdataLocal, vdataLocal, gammaMasterMeta, nSlyrs, nSpolyLocal, nVpolyLocal, err, cmessage)
+    call comp_model_param(parSxySz, parVxy, sdataLocal, vdataLocal, gammaUpdateMeta, nSlyrs, nSpolyLocal, nVpolyLocal, err, cmessage)
     if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
     if ( iHru == iHruPrint ) then
       print*,'(2) Print Model parameter at native resolution'
@@ -648,33 +649,36 @@ subroutine subsetData(entireData, subPolyID, localData, data_name, err, message)
 end subroutine 
 
 ! private subroutine:
-subroutine pop_hfrac(gammaParStr, gammaParMeta,hfrac, err, message)
-  use globalData,   only: gammaSubset
+subroutine pop_hfrac( gammaUpdateMeta, hfrac, err, message)
+  use var_lookup,           only: ixGamma 
   implicit none
   !input variables
-  type(var_d),          intent(in)  :: gammaParStr(:)
-  type(cpar_meta),      intent(in)  :: gammaParMeta(:)
+  type(par_meta),       intent(in)  :: gammaUpdateMeta(:)
   !output variables
   real(dp),             intent(out) :: hfrac(:)
   integer(i4b),         intent(out) :: err         ! error code
   character(*),         intent(out) :: message     ! error message
   !local variables
   real(dp)                          :: dummy(20) 
-  logical(lgc)                      :: mask(20) 
-  integer(i4b)                      :: i
+  !logical(lgc)                      :: mask(20) 
+  !integer(i4b)                      :: i
 
   err=0; message='pop_hfrac/'
   dummy=-999
+  dummy(1)=gammaUpdateMeta(ixGamma%h1gamma1)%val
+  dummy(2)=gammaUpdateMeta(ixGamma%h2gamma1)%val
+  hfrac=dummy(1:nLyr-1)
+  
   !check h parameters - now can chcek up to 5 layers
-  do i=1,size(gammaSubset)
-    if (gammaParMeta(i)%pname=="h1gamma1")then;dummy(1)=gammaParStr(i)%var(1);cycle;endif 
-    if (gammaParMeta(i)%pname=="h2gamma1")then;dummy(2)=gammaParStr(i)%var(1);cycle;endif
-    if (gammaParMeta(i)%pname=="h3gamma1")then;dummy(3)=gammaParStr(i)%var(1);cycle;endif
-    if (gammaParMeta(i)%pname=="h4gamma1")then;dummy(4)=gammaParStr(i)%var(1);cycle;endif
-  enddo
-  mask=(dummy>0)
-  if ( count(mask)/=nLyr-1 ) stop 'number of h1gamma prameters mismatch with nLyr'
-  hfrac=pack(dummy,mask)
+  !do i=1,size(gammaSubset)
+  !  if (gammaParMeta(i)%pname=="h1gamma1")then;dummy(1)=gammaParStr(i)%var(1);cycle;endif 
+  !  if (gammaParMeta(i)%pname=="h2gamma1")then;dummy(2)=gammaParStr(i)%var(1);cycle;endif
+  !  if (gammaParMeta(i)%pname=="h3gamma1")then;dummy(3)=gammaParStr(i)%var(1);cycle;endif
+  !  if (gammaParMeta(i)%pname=="h4gamma1")then;dummy(4)=gammaParStr(i)%var(1);cycle;endif
+  !enddo
+  !mask=(dummy>0)
+  !if ( count(mask)/=nLyr-1 ) stop 'number of h1gamma prameters mismatch with nLyr'
+  !#hfrac=pack(dummy,mask)
   return
 end subroutine 
 
