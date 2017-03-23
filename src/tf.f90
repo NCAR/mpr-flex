@@ -1963,7 +1963,7 @@ subroutine lai( err, message, ixDepend, vdata, gammaPar, lai_out, opt )
     select case(tfopt)
       case(1);  ! 
         where ( lai_in /= dmiss ) 
-          lai_temp = g1*lai_in
+          lai_temp = g1*lai_in*0.1
           laislope=(lai_temp-lai_min)/(lai_max-lai_min)
           where ( laislope > 1.0_dp) laislope=1.0_dp
           where ( laislope < 0.0_dp) laislope=0.0_dp

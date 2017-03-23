@@ -359,7 +359,6 @@ subroutine get_parm_meta( err, message)
     do iPar=1,size(calParMeta) ! Add number of calibration pnorm value - make False if value is -999 or nan
       if (calParMeta(iPar)%calMethod==1 .or. calParMeta(iPar)%calMethod==2 ) nParCalSum=nParCalSum+2
     enddo
-    print*, nParCalSum
     return
   end subroutine
 

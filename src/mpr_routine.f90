@@ -113,8 +113,8 @@ end subroutine
 ! ************************************************************************************************
 subroutine mpr(hruID,             &     ! input: hruID
                pnormCoefStr,      &     ! input: list of pnorm coefficients
-               gammaParStr,       &     ! input: array of gamma parameter 
-               gammaParMeta,      &     ! input: array of gamma parameter metadata
+               gammaParStr,       &     ! input: array of gamma parameter (including h and z)
+               gammaParMeta,      &     ! input: array of gamma parameter metadata (including h and z)
                hModel,            &     ! output: Model layer thickness
                parMxyMz,          &     ! output: MPR derived soil parameter
                vegParMxy,         &     ! output: MPR derived veg parameter

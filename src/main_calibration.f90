@@ -11,6 +11,7 @@ program main_calibration
   use mo_opt_run,           only: opt_run
   use eval_model,           only: objfn
   use mpr_routine,          only: run_mpr
+  use read_soildata,        only: check_polyID 
 
   implicit none
  
@@ -45,11 +46,10 @@ program main_calibration
   else
     write(*,*) "No beta parameters estimated with MPR" 
   endif
+  call check_polyID(trim(mpr_input_dir)//trim(fname_soil), dname_spoly , ierr, cmessage); call handle_err(ierr, cmessage)
   ! initialize parameter and mask arrays 
   call param_setup( ierr, cmessage )
-  do i=1,size(parArray,1)
-    print*,parArray(i,1),parMask(i)
-  enddo
+  write(*,*) (parArray(i,1),parMask(i), new_line('a'), i=1,size(parArray,1))
   ! main routine starts depending on option
   select case (opt)
     case (0)     ! just run model and output ascii of sim and obs series (parameter values use default or ones specified in restart file)
