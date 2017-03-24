@@ -36,7 +36,7 @@ subroutine read_calPar(infile, err, message)
   integer(i4b)                         :: unt               ! DK: need to either define units globally, or use getSpareUnit
   character(LEN=strLen)                :: temp              ! single lime of information
   character(LEN=strLen)                :: ffmt              ! file format
-  character(len=1)                     :: dLim(3)           ! column delimiter
+  character(len=1)                     :: dLim(4)           ! column delimiter
   integer(i4b)                         :: iline             ! loop through lines in the file 
 
   ! initialize error handling 

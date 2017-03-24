@@ -128,8 +128,9 @@ MODULE var_lookup
 ! ***********************************************************************************************************
  type, public  ::  iLook_VarMapData
   integer(i4b)     :: hru_id         = imiss        ! hru id 
-  integer(i4b)     :: weight         = imiss        ! Areal weight of overlapping polygon for hru 
-  integer(i4b)     :: overlapPolyId  = imiss        ! Id of overlapping polygon for hru 
+  integer(i4b)     :: weight         = imiss        ! areal weight of intersecting geophysical data polygon for hru 
+  integer(i4b)     :: overlapPolyId  = imiss        ! id (=index of polygon in geophysical data) of intersecting geophysical data polygon for hru 
+  integer(i4b)     :: overlaps       = imiss        ! number of ntersecting geophysical data polygon for hru 
  endtype iLook_varMapData
 
 ! ***********************************************************************************************************
@@ -189,7 +190,7 @@ MODULE var_lookup
                                                                                  31,32,33,34,35,36,37,38,39,40,&
                                                                                  41,42,43,44,45,46,47,48,49,50,&
                                                                                  51,52)
- type(iLook_VarMapData),  public,parameter :: ixVarMapData   = iLook_VarMapData  (1,2,3)
+ type(iLook_VarMapData),  public,parameter :: ixVarMapData   = iLook_VarMapData  (1,2,3,4)
  type(iLook_VarSoilData), public,parameter :: ixVarSoilData  = iLook_VarSoilData (1,2,3,4,5,6,7,8,9,10)
  type(iLook_VarVegData),  public,parameter :: ixVarVegData   = iLook_VarVegData  (1,2,3,4)
  type(iLook_PrpVeg),      public,parameter :: ixPrpVeg       = iLook_PrpVeg      (1,2,3,4,5,6,7,8,9,10,&
@@ -201,7 +202,7 @@ MODULE var_lookup
 ! Number of vairables defined
  integer(i4b),parameter,public    :: nGamma = 50 
  integer(i4b),parameter,public    :: nBeta = 52 
- integer(i4b),parameter,public    :: nVarMapData=3
+ integer(i4b),parameter,public    :: nVarMapData=4
  integer(i4b),parameter,public    :: nVarSoilData=10
  integer(i4b),parameter,public    :: nVarVegData=4
  integer(i4b),parameter,public    :: nPrpVeg=11

@@ -163,8 +163,9 @@ contains
    ! get the index of the named variables
    select case(trim(varName))
      case('hru_id');         get_ixDataMap = ixVarMapData%hru_id         ! hru ID 
-     case('weight');         get_ixDataMap = ixVarMapData%weight         ! weight of overlapping polygon
-     case('overlapPolyId');  get_ixDataMap = ixVarMapData%overlapPolyId  ! overlapping polygon ID 
+     case('weight');         get_ixDataMap = ixVarMapData%weight         ! weight of intersecting geophysical polygon
+     case('overlapPolyId');  get_ixDataMap = ixVarMapData%overlapPolyId  ! ID of intersecting geophysical polygon
+     case('overlaps');       get_ixDataMap = ixVarMapData%overlaps       ! number of intersecting geophysical polygon
      ! get to here if cannot find the variable
      case default;           get_ixDataMap = imiss
    end select

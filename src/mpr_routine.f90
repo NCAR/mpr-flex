@@ -154,7 +154,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   character(len=strLen),intent(out)  :: message                  ! error message 
   ! local
   character(len=strLen)              :: cmessage                 ! error message from downward subroutine
-  integer,     parameter             :: iHruPrint = 5            ! model hru id (index) for which everything is printed for checking
+  integer,     parameter             :: iHruPrint = 1            ! model hru id (index) for which everything is printed for checking
   integer(i4b),parameter             :: nSub=11                  ! max. number of Soil layer within Model layer
   integer(i4b)                       :: iLocal                   ! index of hru array in mapping file that match hru id of interest 
   integer(i4b)                       :: iGamma                   ! index loop
@@ -166,6 +166,8 @@ subroutine mpr(hruID,             &     ! input: hruID
   integer(i4b)                       :: iMon                     ! Loop index of month 
   integer(i4b)                       :: iHru                     ! loop index of hrus 
   integer(i4b)                       :: iSub                     ! Loop index of multiple soi layers in model layer
+  integer(i4b)                       :: ixStart                  ! starting index of subset geophysical polygons in the entire dataset 
+  integer(i4b)                       :: ixEnd                    ! ending index of subset geophysical polygons in the entire dataset 
   logical(lgc),allocatable           :: mask(:)                  ! mask for 1D array 
   logical(lgc),allocatable           :: vmask(:)                 ! TO BE DELETED: mask for vpolIdSub array 
   type(par_meta),allocatable         :: gammaUpdateMeta(:)
@@ -291,13 +293,15 @@ subroutine mpr(hruID,             &     ! input: hruID
   if (err/=0)then; message=message//cmessage; return; endif
   if ( nShru /= nVhru )then;err=10;message=trim(message)//'Different number of hru in vege and soil mapping file';return;endif  
   if ( opt==2 .and. nHru /= nShru )then;err=10;message=trim(message)//'nHru= '//trim(int2str(nShru))//' NOT '//trim(int2str(nHru));return;endif
-  associate( hruMap      => mapdata(1)%var(ixVarMapData%hru_id)%ivar1,        &
-             hruMapVege  => mapdata(2)%var(ixVarMapData%hru_id)%ivar1,        &
-             swgt        => mapdata(1)%var(ixVarMapData%weight)%dvar2,        &
-             vwgt        => mapdata(2)%var(ixVarMapData%weight)%dvar2,        &
-             overVpolyID => mapdata(2)%var(ixVarMapData%overlapPolyId)%ivar2, & 
-             overSpolyID => mapdata(1)%var(ixVarMapData%overlapPolyId)%ivar2 )
-  if ( minval(abs(hruMap-hruMapVege)) /= 0 )then;err=11;message=trim(message)//'different hru id in vege and soil mapping file';return;endif
+  associate( hruMap        => mapdata(1)%var(ixVarMapData%hru_id)%ivar1(1:nShru),  &
+             hruMapVeg     => mapdata(2)%var(ixVarMapData%hru_id)%ivar1(1:nVhru),  &
+             swgt          => mapdata(1)%var(ixVarMapData%weight)%dvar1,           &
+             vwgt          => mapdata(2)%var(ixVarMapData%weight)%dvar1,           &
+             nSoilOverPoly => mapdata(1)%var(ixVarMapData%overlaps)%ivar1,         & 
+             nVegOverPoly  => mapdata(2)%var(ixVarMapData%overlaps)%ivar1,         & 
+             overVpolyID   => mapdata(2)%var(ixVarMapData%overlapPolyId)%ivar1,    & 
+             overSpolyID   => mapdata(1)%var(ixVarMapData%overlapPolyId)%ivar1 )
+  if ( minval(abs(hruMap-hruMapVeg)) /= 0 )then;err=11;message=trim(message)//'different hru id in vege and soil mapping file';return;endif
   !!! ---------------------------------------------
   !!! Start of model hru loop (from mapping file) !!!
   !!! ---------------------------------------------
@@ -305,21 +309,21 @@ subroutine mpr(hruID,             &     ! input: hruID
     ! Get index (iLocal) of hru id that matches with current hru from hru id array in mapping file
     call findix(hruID(iHru), hruMap, iLocal, err, cmessage); if(err/=0)then; message=trim(cmessage)//cmessage; return; endif
     ! Select list of soil polygons contributing a current hru
-    allocate(mask(nOverSpoly))
-    mask = ( overSpolyID(:,iLocal) /= imiss )
-    allocate(polySub(count(mask)))
-    allocate(swgtSub(count(mask)))
-    nSpolyLocal = size(polySub)                    ! number of contributing soil polygons to current hru
-    polySub     = pack(overSpolyID(:,iLocal),mask) ! id of soil polygons contributing to current hru
-    swgtSub     = pack(swgt(:,iLocal),mask)        ! weight of soil polygons contributing to current hru
+    ixEnd       = sum(nSoilOverPoly(1:iLocal));
+    ixStart     = ixEnd-nSoilOverPoly(iLocal)+1
+    nSpolyLocal = nSoilOverPoly(iLocal)
+    allocate(polySub(nSpolyLocal),stat=err); if(err/=0)then;message=message//'error allocating polySub';return;endif
+    allocate(swgtSub(nSpolyLocal),stat=err); if(err/=0)then;message=message//'error allocating swgtSub';return;endif
+    polySub = overSpolyId(ixStart:ixEnd) ! id of soil polygons contributing to current hru
+    swgtSub = swgt(ixStart:ixEnd)        ! weight of soil polygons contributing to current hru
     ! Select list of veg polygon ID contributing a current hru 
-    allocate(vmask(nOverVpoly),stat=err); if(err/=0)then;message=message//'error allocating vmask';return;endif
-    vmask       = ( overVpolyID(:,iLocal) /= imiss )
-    allocate(vPolySub(count(vmask)),stat=err); if(err/=0)then;message=message//'error allocating vPolySub';return;endif
-    allocate(vwgtSub(count(vmask)),stat=err); if(err/=0)then;message=message//'error allocating vwgtSub';return;endif
-    nVpolyLocal = size(vPolySub)
-    vPolySub    = pack(overVpolyID(:,iLocal),vmask)
-    vwgtSub     = pack(vwgt(:,iLocal),vmask)
+    ixEnd       = sum(nVegOverPoly(1:iLocal));
+    ixStart     = ixEnd-nVegOverPoly(iLocal)+1
+    nVpolyLocal = nVegOverPoly(iLocal)
+    allocate(vPolySub(nVpolyLocal),stat=err); if(err/=0)then;message=message//'error allocating vPolySub';return;endif
+    allocate(vwgtSub(nVpolyLocal),stat=err);  if(err/=0)then;message=message//'error allocating vwgtSub';return;endif
+    vPolySub = overVpolyID(ixStart:ixEnd) ! id of soil polygons contributing to current hru
+    vwgtSub  = vwgt(ixStart:ixEnd)        ! weight of soil polygons contributing to current hru
     ! allocate memmory
     if (nSoilParModel>0_i2b)then !if at least one soil parameter is included 
       do iParm=1,nSoilParModel
@@ -555,10 +559,8 @@ subroutine mpr(hruID,             &     ! input: hruID
       enddo
     endif
     ! deallocate memmory
-    deallocate(mask,stat=err);           if(err/=0)then; message=trim(message)//'error deallocating mask'; return; endif
     deallocate(polySub,stat=err);        if(err/=0)then; message=trim(message)//'error deallocating polyIdSub'; return; endif
     deallocate(swgtSub,stat=err);        if(err/=0)then; message=trim(message)//'error deallocating swgtSub'; return; endif
-    deallocate(vmask,stat=err);          if(err/=0)then; message=trim(message)//'error deallocating vmask'; return; endif
     deallocate(vpolySub,stat=err);       if(err/=0)then; message=trim(message)//'error deallocating vpolySub'; return; endif
     deallocate(vwgtSub,stat=err);        if(err/=0)then; message=trim(message)//'error deallocating vwgtSub'; return; endif
   enddo hru

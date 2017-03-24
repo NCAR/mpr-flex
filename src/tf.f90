@@ -49,7 +49,6 @@ subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter va
   integer(i4b)                        :: ix                     ! index of gamma parameter 
   integer(i4b)                        :: idBeta                 ! id of beta parameter array 
   integer(i4b)                        :: iParm                  ! Loop index of model parameters (e.g., VIC)
-  logical(lgc)                        :: checkDone(nBeta)       ! used to check if the VIC parameter is processed
 
   err=0; message="comp_model_param/"
   first: associate(gammaPar=> gammaParMasterMeta(:)%val)
@@ -66,155 +65,72 @@ subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter va
       if (tfid==-999_i2b) tfid=1_i2b
       select case(ix)
         case(ixBeta%ks)
-          checkDone(ix)=.true.
           call ks( err, message, sdata=sdata, gammaPar=gammaPar, ks_out=xPar, opt=tfid )
         case(ixBeta%bd)
-          checkDone(ix)=.true.
           call bd( err, message, sdata=sdata, gammaPar=gammaPar, bd_out=xPar, opt=tfid )
         case(ixBeta%phi)
-          checkDone(ix)=.true.
           call phi( err, message, sdata=sdata, gammaPar=gammaPar, phi_out=xPar, opt=tfid ) 
         case(ixBeta%b)
-          checkDone(ix)=.true.
           call retcurve( err, message, sdata=sdata, gammaPar=gammaPar, retcurve_out=xPar, opt=tfid )
         case(ixBeta%psis)
-          checkDone(ix)=.true.
           call psis( err, message, sdata=sdata, gammaPar=gammaPar, psis_out=xPar, opt=tfid )
         case(ixBeta%fc)
-          if(.not.checkDone(ixBeta%psis)) then;err=10;message=trim(message)//'need to process psis before fc';return;endif
-          if(.not.checkDone(ixBeta%phi))  then;err=10;message=trim(message)//'need to process phi before fc';return;endif
-          if(.not.checkDone(ixBeta%b))    then;err=10;message=trim(message)//'need to process b before fc';return;endif
-          checkDone(ix)=.true.
           call fc( err, message, sdata=sdata, phi_in=parTemp(ixBeta%phi)%varData, psis_in=parTemp(ixBeta%psis)%varData, b_in=parTemp(ixBeta%b)%varData, gammaPar=gammaPar, fc_out=xPar, opt=tfid )
         case(ixBeta%wp)
-          if(.not.checkDone(ixBeta%psis)) then;err=10;message=trim(message)//'need to process psis before wp';return;endif
-          if(.not.checkDone(ixBeta%phi))  then;err=10;message=trim(message)//'need to process phi before wp';return;endif
-          if(.not.checkDone(ixBeta%b))    then;err=10;message=trim(message)//'need to process b before wp';return;endif
-          checkDone(ix)=.true.
           call wp( err, message, phi_in=parTemp(ixBeta%phi)%varData, psis_in=parTemp(ixBeta%psis)%varData, b_in=parTemp(ixBeta%b)%varData, gammaPar=gammaPar, wp_out=xPar, opt=tfid ) 
         case(ixBeta%myu)
-          if(.not.checkDone(ixBeta%phi))  then;err=10;message=trim(message)//'need to process phi before myu';return;endif
-          if(.not.checkDone(ixBeta%fc))   then;err=10;message=trim(message)//'need to process fc before myu';return;endif
-          checkDone(ix)=.true.
           call myu( err, message, phi_in=parTemp(ixBeta%phi)%varData, fc_in=parTemp(ixBeta%fc)%varData, gammaPar=gammaPar, myu_out=xPar, opt=tfid ) 
         case(ixBeta%binfilt)
-          checkDone(ix)=.true.
           call binfilt(err, message, sdata=sdata, gammaPar=gammaPar, binfilt_out=xPar, opt=tfid )
         case(ixBeta%D1)
-          if(.not.checkDone(ixBeta%ks))  then;err=10;message=trim(message)//'need to process "ks" before "D1"';return;endif
-          if(.not.checkDone(ixBeta%phi)) then;err=10;message=trim(message)//'need to process "phi" before "D1"';return;endif
-          checkDone(ix)=.true. 
           call D1( err, message, sdata=sdata, ks_in=parTemp(ixBeta%ks)%varData, phi_in=parTemp(ixBeta%phi)%varData, gammaPar=gammaPar, D1_out=xPar, opt=tfid ) 
         case(ixBeta%D2)
-          if(.not.checkDone(ixBeta%ks)) then;err=10;message=trim(message)//'need to process "ksat" before "D2"';return;endif
-          if(.not.checkDone(ixBeta%D4)) then;err=10;message=trim(message)//'need to process "D4" before "D2"';return;endif
-          checkDone(ix)=.true.
           call D2( err, message, sdata=sdata, ks_in=parTemp(ixBeta%ks)%varData, D4_in=parTemp(ixBeta%D4)%varData, gammaPar=gammaPar, D2_out=xPar, opt=tfid ) 
         case(ixBeta%D3)
-          if(.not.checkDone(ixBeta%fc)) then;err=10;message=trim(message)//'need to process fc before D3';return;endif
-          checkDone(ix)=.true.
           call D3( err, message, sdata=sdata, fc_in=parTemp(ixBeta%fc)%varData, gammaPar=gammaPar, D3_out=xPar, opt=tfid ) 
         case(ixBeta%D4)
-          checkDone(ix)=.true.
           call D4( err, message, gammaPar=gammaPar, D4_out=xPar, opt=tfid ) 
         case(ixBeta%Ds)
-          if(.not.checkDone(ixBeta%D1))    then;err=10;message=trim(message)//'need to process "D1" before "Ds"';return;endif
-          if(.not.checkDone(ixBeta%D3))    then;err=10;message=trim(message)//'need to process "D3" before "Ds"';return;endif
-          if(.not.checkDone(ixBeta%Dsmax)) then;err=10;message=trim(message)//'need to process "Dsmax" before "Ds"';return;endif
-          checkDone(ix)=.true. 
           call Ds( err, message, D1_in=parTemp(ixBeta%D1)%varData, D3_in=parTemp(ixBeta%D3)%varData, Dsmax_in=parTemp(ixBeta%Dsmax)%varData, gammaPar=gammaPar, Ds_out=xPar, opt=tfid )
         case(ixBeta%c)
-          if(.not.checkDone(ixBeta%D4)) then;err=10;message=trim(message)//'need to process "D4" before "c"';return;endif
-          checkDone(ix)=.true.
           call cexpt( err, message, D4_in=parTemp(ixBeta%D4)%varData, gammaPar=gammaPar, cexpt_out=xPar, opt=tfid )
         case(ixBeta%sd)
-          checkDone(ix)=.true.
           call sd( err, message, gammaPar=gammaPar, sd_out=xPar, opt=tfid )
         case(ixBeta%expt)
-          if(.not.checkDone(ixBeta%b)) then;err=10;message=trim(message)//'need to process "b" before "expt"';return;endif
-          checkDone(ix)=.true.
           call expt( err, message, b_in=parTemp(ixBeta%b)%varData, gammaPar=gammaPar, expt_out=xPar, opt=tfid )
         case(ixBeta%Dsmax)
-          if(.not.checkDone(ixBeta%D1)) then;err=10;message=trim(message)//'need to process "D1" before "Dsmax"';return;endif
-          if(.not.checkDone(ixBeta%D2)) then;err=10;message=trim(message)//'need to process "D2" before "Dsmax"';return;endif
-          if(.not.checkDone(ixBeta%D3)) then;err=10;message=trim(message)//'need to process "D3" before "Dsmax"';return;endif
-          if(.not.checkDone(ixBeta%c))  then;err=10;message=trim(message)//'need to process "c" before "Dsmax"';return;endif
-          checkDone(ix)=.true. 
           call Dsmax( err, message, &
                       sdata=sdata, D1_in=parTemp(ixBeta%D1)%varData, D2_in=parTemp(ixBeta%D2)%varData, D3_in=parTemp(ixBeta%D3)%varData, c_in=parTemp(ixBeta%c)%varData, phi_in=parTemp(ixBeta%phi)%varData, &
                       gammaPar=gammaPar, Dsmax_out=xPar ,opt=tfid )          
         case(ixBeta%bbl)
-          if(.not.checkDone(ixBeta%expt)) then;err=10;message=trim(message)//'need to process "expt" before "bubble"';return;endif
-          checkDone(ix)=.true.
           call bubble( err, message, expt_in=parTemp(ixBeta%expt)%varData, gammaPar=gammaPar, bubble_out=xPar, opt=tfid )
         case(ixBeta%WcrFrac)
-          if(.not.checkDone(ixBeta%fc))then;err=10;message=trim(message)//'need to process "fc" before "WcrFrac"';return;endif 
-          if(.not.checkDone(ixBeta%phi))then;err=10;message=trim(message)//'need to process "phi" before "WcrFrac"';return;endif 
-          checkDone(ix)=.true.
           call WcrFrac( err, message, fc_in=parTemp(ixBeta%fc)%varData, phi_in=parTemp(ixBeta%phi)%varData, gammaPar=gammaPar, WcrFrac_out=xPar, opt=tfid )
         case(ixBeta%WpwpFrac)
-          if(.not.checkDone(ixBeta%wp))then;err=10;message=trim(message)//'need to process "wp" before "WpwpFrac"';return;endif 
-          if(.not.checkDone(ixBeta%phi))then;err=10;message=trim(message)//'need to process "phi" before "WpwpFrac"';return;endif 
-          checkDone(ix)=.true.
           call WpwpFrac( err, message, wp_in=parTemp(ixBeta%wp)%varData, phi_in=parTemp(ixBeta%phi)%varData, gammaPar=gammaPar, WpwpFrac_out=xPar, opt=tfid )
         case(ixBeta%Ws)
-          if(.not.checkDone(ixBeta%D3))then;err=10;message=trim(message)//'need to process "D3" before "Dsmax"';return;endif 
-          checkDone(ix)=.true. 
           call Ws( err, message, sdata=sdata, D3_in=parTemp(ixBeta%D3)%varData, phi_in=parTemp(ixBeta%phi)%varData, gammaPar=gammaPar, Ws_out=xPar, opt=tfid)          
         case(ixBeta%twm)
-          if(.not.checkDone(ixBeta%fc))   then;err=10;message=trim(message)//'need to process fc before twm';return;endif
-          if(.not.checkDone(ixBeta%wp))   then;err=10;message=trim(message)//'need to process wp before twm';return;endif
-          checkDone(ix)=.true. 
           call twm( err, message, sdata=sdata, fc_in=parTemp(ixBeta%fc)%varData, wp_in=parTemp(ixBeta%wp)%varData, gammaPar=gammaPar, twm_out=xPar, opt=tfid )
         case(ixBeta%fwm)
-          if(.not.checkDone(ixBeta%fc))   then;err=10;message=trim(message)//'need to process fc before fwm';return;endif
-          if(.not.checkDone(ixBeta%phi))  then;err=10;message=trim(message)//'need to process phi before fwm';return;endif
-          checkDone(ix)=.true. 
           call fwm( err, message, sdata=sdata, phi_in=parTemp(ixBeta%phi)%varData, fc_in=parTemp(ixBeta%fc)%varData, gammaPar=gammaPar, fwm_out=xPar, opt=tfid )
         case(ixBeta%fsm)
-          if(.not.checkDone(ixBeta%fwm))then;err=10;message=trim(message)//'need to process "fwm" before "fsm"';return;endif 
-          checkDone(ix)=.true. 
           call fsm( err, message, fwm_in=parTemp(ixBeta%fwm)%varData, phi_in=parTemp(ixBeta%phi)%varData, wp_in=parTemp(ixBeta%wp)%varData, gammaPar=gammaPar, fsm_out=xPar, opt=tfid )
         case(ixBeta%fpm)
-          if(.not.checkDone(ixBeta%fwm))then;err=10;message=trim(message)//'need to process "fwm" before "fpm"';return;endif 
-          if(.not.checkDone(ixBeta%fsm))then;err=10;message=trim(message)//'need to process "fsm" before "fpm"';return;endif 
-          checkDone(ix)=.true. 
           call fpm( err, message, fwm_in=parTemp(ixBeta%fwm)%varData, fsm_in=parTemp(ixBeta%fsm)%varData, gammaPar=gammaPar, fpm_out=xPar, opt=tfid )
         case(ixBeta%zk)
-          if(.not.checkDone(ixBeta%fc))   then;err=10;message=trim(message)//'need to process fc before zk';return;endif
-          if(.not.checkDone(ixBeta%phi))  then;err=10;message=trim(message)//'need to process phi before zk';return;endif
-          checkDone(ix)=.true. 
           call zk( err, message, phi_in=parTemp(ixBeta%phi)%varData, fc_in=parTemp(ixBeta%fc)%varData, gammaPar=gammaPar, zk_out=xPar, opt=tfid )
         case(ixBeta%zsk)
-          if(.not.checkDone(ixBeta%fc))   then;err=10;message=trim(message)//'need to process fc before zsk';return;endif
-          if(.not.checkDone(ixBeta%wp))   then;err=10;message=trim(message)//'need to process wp before zsk';return;endif
-          if(.not.checkDone(ixBeta%phi))  then;err=10;message=trim(message)//'need to process phi before zsk';return;endif
-          checkDone(ix)=.true. 
           call zsk( err, message, phi_in=parTemp(ixBeta%phi)%varData, fc_in=parTemp(ixBeta%fc)%varData, wp_in=parTemp(ixBeta%wp)%varData, gammaPar=gammaPar, zsk_out=xPar, opt=tfid )
         case(ixBeta%zpk)
-          if(.not.checkDone(ixBeta%ks))   then;err=10;message=trim(message)//'need to process ks before zpk';return;endif
-          if(.not.checkDone(ixBeta%myu))  then;err=10;message=trim(message)//'need to process myu before zpk';return;endif
-          checkDone(ix)=.true. 
           call zpk( err, message, sdata=sdata, ks_in=parTemp(ixBeta%ks)%varData, myu_in=parTemp(ixBeta%myu)%varData, gammaPar=gammaPar, zpk_out=xPar, opt=tfid )
         case(ixBeta%pfree)
-          if(.not.checkDone(ixBeta%phi))  then;err=10;message=trim(message)//'need to process phi before pfree';return;endif
-          if(.not.checkDone(ixBeta%wp))   then;err=10;message=trim(message)//'need to process wp before pfree';return;endif
-          checkDone(ix)=.true. 
           call pfree( err, message, phi_in=parTemp(ixBeta%phi)%varData, wp_in=parTemp(ixBeta%wp)%varData, gammaPar=gammaPar, pfree_out=xPar, opt=tfid )
         case(ixBeta%zperc)
-          if(.not.checkDone(ixBeta%twm))then;err=10;message=trim(message)//'need to process "twm" before "pfree"';return;endif 
-          if(.not.checkDone(ixBeta%fsm))then;err=10;message=trim(message)//'need to process "fsm" before "pfree"';return;endif 
-          if(.not.checkDone(ixBeta%zsk))then;err=10;message=trim(message)//'need to process "zsk" before "pfree"';return;endif 
-          if(.not.checkDone(ixBeta%fpm))then;err=10;message=trim(message)//'need to process "fpm" before "pfree"';return;endif 
-          if(.not.checkDone(ixBeta%zpk))then;err=10;message=trim(message)//'need to process "zpk" before "pfree"';return;endif 
-          checkDone(ix)=.true. 
           call zperc( err, message, twm_in=parTemp(ixBeta%twm)%varData, fsm_in=parTemp(ixBeta%fsm)%varData, zsk_in=parTemp(ixBeta%zsk)%varData, fpm_in=parTemp(ixBeta%fpm)%varData, zpk_in=parTemp(ixBeta%zsk)%varData, gammaPar=gammaPar, zperc_out=xPar, opt=tfid )
         case(ixBeta%rexp)
-          if(.not.checkDone(ixBeta%wp))then;err=10;message=trim(message)//'need to process "wp" before "rexp"';return;endif 
-          checkDone(ix)=.true. 
           call rexp( err, message, wp_in=parTemp(ixBeta%wp)%varData, gammaPar=gammaPar, rexp_out=xPar, opt=tfid )
         case(ixBeta%lai)
-          checkDone(ix)=.true.
           call lai( err, message, vdata=vdata, gammaPar=gammaPar, lai_out=xPar, opt=tfid ) 
       end select ! end of parameter case
       end associate second
@@ -251,39 +167,39 @@ subroutine betaDependency( err, message )
   err=0; message="parDependcy/"
   do iParm=1,nBeta
     select case(iParm)
-      case(ixBeta%ks);      call ks      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%bd);      call bd      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%sd);      call sd      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%psis);    call psis    (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
-      case(ixBeta%b);       call retcurve(err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
-      case(ixBeta%phi);     call phi     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
-      case(ixBeta%fc);      call fc      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%wp);      call wp      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%myu);     call myu     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%binfilt); call binfilt (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%D1);      call D1      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%D2);      call D2      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%D3);      call D3      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%D4);      call D4      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%Ds);      call Ds      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%Dsmax);   call Dsmax   (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%Ws);      call Ws      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%c);       call cexpt   (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%expt);    call expt    (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%bbl);     call bubble  (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%WcrFrac); call WcrFrac (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%WpwpFrac);call WpwpFrac(err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%twm);     call twm     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%fwm);     call fwm     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%fsm);     call fsm     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%fpm);     call fpm     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%zk);      call zk      (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%zsk);     call zsk     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%zpk);     call zpk     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%pfree);   call pfree   (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%zperc);   call zperc   (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%rexp);    call rexp    (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
-      case(ixBeta%lai);     call lai     (err, cmessage, ixDepend=ixDepend);if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
+      case(ixBeta%ks);      call ks      (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%bd);      call bd      (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%sd);      call sd      (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%psis);    call psis    (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif 
+      case(ixBeta%b);       call retcurve(err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif 
+      case(ixBeta%phi);     call phi     (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif 
+      case(ixBeta%fc);      call fc      (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%wp);      call wp      (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%myu);     call myu     (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%binfilt); call binfilt (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%D1);      call D1      (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%D2);      call D2      (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%D3);      call D3      (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%D4);      call D4      (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%Ds);      call Ds      (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%Dsmax);   call Dsmax   (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%Ws);      call Ws      (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%c);       call cexpt   (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%expt);    call expt    (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%bbl);     call bubble  (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%WcrFrac); call WcrFrac (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%WpwpFrac);call WpwpFrac(err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%twm);     call twm     (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%fwm);     call fwm     (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%fsm);     call fsm     (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%fpm);     call fpm     (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%zk);      call zk      (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%zsk);     call zsk     (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%zpk);     call zpk     (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%pfree);   call pfree   (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%zperc);   call zperc   (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%rexp);    call rexp    (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      case(ixBeta%lai);     call lai     (err, cmessage, ixDepend=ixDepend); if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
       case(ixBeta%z); allocate(ixDepend(1), stat=err); ixDepend=-999_i2b
       case(ixBeta%h1);allocate(ixDepend(1), stat=err); ixDepend=-999_i2b
       case(ixBeta%h2);allocate(ixDepend(1), stat=err); ixDepend=-999_i2b
@@ -434,6 +350,8 @@ subroutine binfilt(err, message, ixDepend, sdata, gammaPar, binfilt_out, opt )
     !cap value with upper and lower bounds 
     where ( binfilt_out > infilt_max ) binfilt_out=infilt_max 
     where ( binfilt_out /= dmiss .and. binfilt_out < infilt_min ) binfilt_out=infilt_min 
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -467,6 +385,8 @@ subroutine residMoist(err, message, ixDepend, gammaPar, residMoist_out, opt)
         residMoist_out = 0._dp
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -529,6 +449,8 @@ subroutine D1( err, message, ixDepend, sdata, ks_in, phi_in, gammaPar, D1_out, o
     ! cap value with upper and lower bounds 
     where ( D1_out > D1_max ) D1_out=D1_max 
     where ( D1_out > 0._dp .and. D1_out < D1_min ) D1_out=D1_min 
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -574,6 +496,8 @@ subroutine Ds( err, message, ixDepend, D1_in, D3_in, Dsmax_in, gammaPar, Ds_out,
     ! cap value with upper and lower bounds 
     where ( Ds_out > Ds_max ) Ds_out=Ds_max 
     where ( Ds_out > 0._dp .and. Ds_out < Ds_min ) Ds_out=Ds_min 
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -632,6 +556,8 @@ subroutine D2( err, message, ixDepend, sdata, ks_in, D4_in, gammaPar, D2_out, op
     ! cap value with upper and lower bounds 
     where ( D2_out > D2_max ) D2_out=D2_max
     where ( D2_out > 0._dp .and. D2_out < D2_min ) D2_out=D2_min
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine 
@@ -682,6 +608,8 @@ subroutine Dsmax( err, message, ixDepend, sdata, D1_in, D2_in, D3_in, c_in, phi_
     where ( Dsmax_out > Dsmax_max ) Dsmax_out=Dsmax_max
     where ( Dsmax_out > 0._dp .and. Dsmax_out < Dsmax_min ) Dsmax_out=Dsmax_min
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -729,6 +657,8 @@ subroutine D3( err, message, ixDepend, sdata, fc_in, gammaPar, D3_out, opt )
  !   cap value with upper and lower bounds 
     where ( D3_out > D3_max ) D3_out=D3_max
     where ( D3_out > 0._dp .and. D3_out < D3_min ) D3_out=D3_min 
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -776,6 +706,8 @@ subroutine Ws( err, message, ixDepend, sdata, D3_in, phi_in, gammaPar, Ws_out, o
     where ( Ws_out > Ws_max ) Ws_out=Ws_max
     where ( Ws_out > 0._dp .and. Ws_out < Ws_min ) Ws_out=Ws_min 
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -811,6 +743,8 @@ subroutine D4( err, message, ixDepend, gammaPar, D4_out, opt )
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -845,6 +779,8 @@ subroutine cexpt( err, message, ixDepend, D4_in, gammaPar, cexpt_out, opt )
         cexpt_out = D4_in
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -886,6 +822,8 @@ subroutine expt( err, message, ixDepend, b_in, gammaPar, expt_out, opt )
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -927,6 +865,8 @@ subroutine initMoist( err, message, ixDepend, sdata, phi_in, gammaPar, initMoist
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -968,6 +908,8 @@ subroutine bubble( err, message, ixDepend, expt_in, gammaPar, bubble_out, opt)
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -1004,6 +946,8 @@ subroutine sd( err, message, ixDepend, gammaPar, sd_out, opt )
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -1045,6 +989,8 @@ subroutine WcrFrac( err, message, ixDepend, fc_in, phi_in, gammaPar, WcrFrac_out
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -1086,6 +1032,8 @@ subroutine WpwpFrac( err, message, ixDepend, wp_in, phi_in, gammaPar, WpwpFrac_o
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -1128,6 +1076,8 @@ subroutine twm( err, message, ixDepend, sdata, fc_in, wp_in, gammaPar, twm_out, 
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine 
@@ -1170,6 +1120,8 @@ subroutine fwm( err, message, ixDepend, sdata, phi_in, fc_in, gammaPar, fwm_out,
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine 
@@ -1212,6 +1164,8 @@ subroutine fsm( err, message, ixDepend, fwm_in, phi_in, wp_in, gammaPar, fsm_out
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine 
@@ -1251,8 +1205,10 @@ subroutine fpm( err, message, ixDepend, fwm_in, fsm_in, gammaPar, fpm_out, opt )
         end where
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
-  return
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
+  return
 end subroutine 
 
 ! *********************************************************************
@@ -1292,8 +1248,10 @@ subroutine zk( err, message, ixDepend, phi_in, fc_in, gammaPar, zk_out, opt )
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
     end associate
-  return
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
+  return
 end subroutine 
 
 ! *********************************************************************
@@ -1335,6 +1293,8 @@ subroutine zsk( err, message, ixDepend,  phi_in, fc_in, wp_in, gammaPar, zsk_out
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine 
@@ -1380,6 +1340,8 @@ subroutine zpk( err, message, ixDepend, sdata, ks_in, myu_in, gammaPar, zpk_out,
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine 
@@ -1421,6 +1383,8 @@ subroutine pfree( err, message, ixDepend, phi_in, wp_in, gammaPar, pfree_out, op
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -1464,6 +1428,8 @@ subroutine zperc( err, message, ixDepend, twm_in, fsm_in, zsk_in, fpm_in, zpk_in
         end where
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -1504,6 +1470,8 @@ subroutine rexp( err, message, ixDepend, wp_in, gammaPar, rexp_out, opt )
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -1560,6 +1528,8 @@ subroutine ks( err, message, ixDepend, sdata, gammaPar, ks_out, opt )
       case default; print*,trim(message)//'opt not recognized'; stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -1617,6 +1587,8 @@ subroutine bd( err, message, ixDepend, sdata, gammaPar, bd_out, opt )
       case default;print*,trim(message)//'opt not recognized';stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -1680,6 +1652,8 @@ subroutine phi( err, message, ixDepend, sdata, gammaPar, phi_out, opt )
         case default;print*,trim(message)//'opt not recognized';stop
       end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -1733,6 +1707,8 @@ subroutine fc( err, message, ixDepend, sdata, phi_in, psis_in, b_in, gammaPar, f
       case default; message=trim(message)//'opt not recognized' 
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -1783,6 +1759,8 @@ subroutine wp( err, message, ixDepend, phi_in, psis_in, b_in, gammaPar, wp_out, 
       case default; print*,trim(message)//'opt not recognized';stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -1828,6 +1806,8 @@ subroutine retcurve( err, message, ixDepend, sdata, gammaPar, retcurve_out, opt 
         case default; print*,trim(message)//'opt not recognized';stop
       end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -1874,6 +1854,8 @@ subroutine psis( err, message, ixDepend, sdata, gammaPar, psis_out, opt )
         case default; print*,trim(message)//'opt not recognized';stop
       end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -1917,6 +1899,8 @@ subroutine myu( err, message, ixDepend, phi_in, fc_in, gammaPar, myu_out, opt )
       case default;print*,trim(message)//'opt not recognized';stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine
@@ -1974,6 +1958,8 @@ subroutine lai( err, message, ixDepend, vdata, gammaPar, lai_out, opt )
       case default;print*,trim(message)//'opt not recognized';stop
     end select
     end associate
+  else
+    err=10;message=trim(message)//'WrongOptionalInputs'; return 
   endif
   return
 end subroutine 
