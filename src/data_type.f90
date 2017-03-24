@@ -16,7 +16,7 @@ type,public  :: par_meta
   real(dp)                     :: lwr    =-999.0_dp ! lower and upper bounds
   real(dp)                     :: upr    =-999.0_dp ! lower and upper bounds
   character(len=strLen)        :: beta   =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
-  integer(i2b)                 :: tftype =-999_i2b  ! id of transfer function type 
+  integer(i4b)                 :: tftype =-999_i4b  ! id of transfer function type 
   character(len=strLen)        :: ptype  =''        ! name of parent beta parameter - if parameter is beta parameter, use "beta"
   logical(lgc)                 :: flag   =.False.   ! flag to calibrate or not 
   character(len=strLen)        :: hups   =''        ! scaling operator for horizontal direction 

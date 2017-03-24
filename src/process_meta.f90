@@ -30,7 +30,7 @@ subroutine read_calPar(infile, err, message)
   ! local variables
   type(input_meta),allocatable         :: tempCalParMeta(:) ! temp data structure for calPar input meta
   character(len=strLen)                :: cmessage          ! error message subroutine
-  integer(i2b)                         :: ixLocal           ! index for calibrationg parameter list 
+  integer(i4b)                         :: ixLocal           ! index for calibrationg parameter list 
   integer(i4b),parameter               :: maxLines=1000     ! maximum lines in the file 
   integer(i4b)                         :: iend              ! check for the end of the file
   integer(i4b)                         :: unt               ! DK: need to either define units globally, or use getSpareUnit
@@ -50,14 +50,14 @@ subroutine read_calPar(infile, err, message)
     if (temp(1:1)/='!') exit                             ! assume first line not comment is format code
   end do ! looping through file to find the format code
   read(temp,*)ffmt ! to get format 
-  ixLocal=0_i2b
+  ixLocal=0_i4b
   line:do iline=1,maxLines
     ! read a line of data and exit iif an error code (character read, so only possible error is end of file)
     read(unt,'(a)',iostat=iend)temp; if (iend/=0)exit
     ! check that the line is not a comment
     if (temp(1:1)=='!')cycle
     ! save data into a temporary structure
-    ixLocal = ixLocal+1_i2b
+    ixLocal = ixLocal+1_i4b
     read(temp,trim(ffmt),iostat=err) tempCalParMeta(ixLocal)%betaname,    dLim(1),&    ! beta parameter name
                                      tempCalParMeta(ixLocal)%calMethod,   dLim(2),&    ! Parameter estimation mehtod - 0, skip calibration, 1. MPR or 2. mulitplier,  
                                      tempCalParMeta(ixLocal)%TF,          dLim(3),&    ! Transfer function type
@@ -146,7 +146,6 @@ subroutine get_parm_meta( err, message)
     integer(i4b)                         :: ivar             ! loop index of master parameter  
     integer(i4b)                         :: iBeta            ! loop index of lines in calPar input file 
     integer(i4b)                         :: iGamma           ! loop index of all the gamma parameters in master 
-    logical(lgc),allocatable             :: mask(:)
     type(cpar_meta),allocatable          :: tempParSubset(:)
     type(cpar_meta),allocatable          :: tempGammaMeta(:)
 
@@ -204,11 +203,11 @@ subroutine get_parm_meta( err, message)
       endif
     enddo
     nBetaDirCal=nBetaGammaCal-nGammaCal      ! Save number of beta parameter to be directly calibrated
-    if (nBetaGammaCal > 0_i2b) then          ! Save 'parSubset'
+    if (nBetaGammaCal > 0_i4b) then          ! Save 'parSubset'
       allocate(parSubset(nBetaGammaCal))
       parSubset=tempParSubset(1:nBetaGammaCal) 
     endif
-    if (nGammaCal > 0_i2b) then              ! Save'gammaSubset'
+    if (nGammaCal > 0_i4b) then              ! Save'gammaSubset'
       allocate(gammaSubset(nGammaCal))
       gammaSubset=tempGammaMeta(1:nGammaCal) 
     endif
@@ -374,15 +373,15 @@ subroutine param_setup( err, message )
   integer(i4b),     intent(out) :: err                    ! error code
   character(*),     intent(out) :: message                ! error message
   ! local variables
-  integer(i2b)                  :: iPar                   ! loop indices
-  integer(i2b)                  :: idx                    ! count of calibrating parameter including per layer parameter 
-  integer(i2b)                  :: ixHV                   ! count of calibrating parameter including per layer parameter 
+  integer(i4b)                  :: iPar                   ! loop indices
+  integer(i4b)                  :: idx                    ! count of calibrating parameter including per layer parameter 
+  integer(i4b)                  :: ixHV                   ! count of calibrating parameter including per layer parameter 
   
   ! initialize error control
   err=0; message='param_setput/'
   allocate(parArray(nParCalSum,3),stat=err);if(err/=0)then;message=trim(message)//'error allocating parArray';return;endif
   allocate(parMask(nParCalSum),stat=err);if(err/=0)then;message=trim(message)//'error allocating parMask';return;endif
-  idx=0_i2b
+  idx=0_i4b
   do iPar=1,nBetaGammaCal
     if (parSubset(iPar)%perLyr)then
       idx=idx+nLyr

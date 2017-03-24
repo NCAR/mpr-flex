@@ -27,8 +27,8 @@ function objfn( calParam )
   type(var_d)                       :: calParStr(nBetaGammaCal)      ! parameter storage converted from parameter array 
   type(var_d)                       :: pnormCoef(size(betaCalScale)) ! parameter storage converted from parameter array 
   real(dp)                          :: objfn                         ! object function value 
-  integer(i2b)                      :: iPar                          ! loop index for parameter 
-  integer(i2b)                      :: idx                           ! 
+  integer(i4b)                      :: iPar                          ! loop index for parameter 
+  integer(i4b)                      :: idx                           ! 
   logical(lgc),         allocatable :: mask(:)                       ! 1D mask
   integer(i4b)                      :: hruID(nHru)                   ! Hru ID
   real(dp)                          :: param(nHru,TotNPar)           ! original soil parameter (model hru x parameter)

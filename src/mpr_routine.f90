@@ -94,11 +94,11 @@ subroutine run_mpr( calParam, restartFile, err, message )
     call mpr(hruID, pnormCoef, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
     if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     !! Write parameter derived from MPR in netCDF 
-    if (nSoilParModel>0_i2b)then
+    if (nSoilParModel>0_i4b)then
       call write_nc_soil(trim(mpr_output_dir)//trim(soil_param_nc), hruID, hModel, parMxyMz, err, cmessage)
       if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     endif
-    if (nVegParModel>0_i2b)then
+    if (nVegParModel>0_i4b)then
       call write_nc_veg(trim(mpr_output_dir)//trim(veg_Param_nc), hruID, vegParMxy, err, cmessage)
       if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     endif
@@ -168,8 +168,6 @@ subroutine mpr(hruID,             &     ! input: hruID
   integer(i4b)                       :: iSub                     ! Loop index of multiple soi layers in model layer
   integer(i4b)                       :: ixStart                  ! starting index of subset geophysical polygons in the entire dataset 
   integer(i4b)                       :: ixEnd                    ! ending index of subset geophysical polygons in the entire dataset 
-  logical(lgc),allocatable           :: mask(:)                  ! mask for 1D array 
-  logical(lgc),allocatable           :: vmask(:)                 ! TO BE DELETED: mask for vpolIdSub array 
   type(par_meta),allocatable         :: gammaUpdateMeta(:)
   type(par_meta),allocatable         :: betaMasterMeta(:)
   integer(i4b)                       :: nSpoly                   ! number of soil polygon in entire soil data domain 
@@ -325,7 +323,7 @@ subroutine mpr(hruID,             &     ! input: hruID
     vPolySub = overVpolyID(ixStart:ixEnd) ! id of soil polygons contributing to current hru
     vwgtSub  = vwgt(ixStart:ixEnd)        ! weight of soil polygons contributing to current hru
     ! allocate memmory
-    if (nSoilParModel>0_i2b)then !if at least one soil parameter is included 
+    if (nSoilParModel>0_i4b)then !if at least one soil parameter is included 
       do iParm=1,nSoilParModel
         allocate(parSxySz(iParm)%varData(nSlyrs,nSpolyLocal),stat=err); if(err/=0)then;message=message//'error allocating parSxySz%varData';return;endif 
         allocate(parSxyMz(iParm)%varData(nLyr,nSpolyLocal),stat=err);   if(err/=0)then;message=message//'error allocating parSxyMz%varData';return;endif
@@ -341,7 +339,7 @@ subroutine mpr(hruID,             &     ! input: hruID
         enddo
       enddo
     endif
-    if (nVegParModel>0_i2b)then !if at least one veg parameter is included
+    if (nVegParModel>0_i4b)then !if at least one veg parameter is included
       do iParm=1,nVegParModel
         allocate(parVxy(iParm)%varData(nMonth, nVpolyLocal),stat=err)
       enddo
@@ -398,7 +396,7 @@ subroutine mpr(hruID,             &     ! input: hruID
     if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
     if ( iHru == iHruPrint ) then
       print*,'(2) Print Model parameter at native resolution'
-      if (nSoilParModel>0_i2b)then
+      if (nSoilParModel>0_i4b)then
         write(*,"(' Layer       =',20I9)") (iSLyr, iSlyr=1,nSlyrs)
         do iParm=1,nSoilParModel
           do iPoly = 1,nSpolyLocal
@@ -406,7 +404,7 @@ subroutine mpr(hruID,             &     ! input: hruID
           enddo
         enddo
       endif
-      if (nVegParModel>0_i2b)then
+      if (nVegParModel>0_i4b)then
         do iParm=1,nVegParModel
           do iPoly = 1,nVpolyLocal
             write(*,"(1X,A10,'= ',100f9.3)") vegBetaInGamma(iParm), (parVxy(iParm)%varData(iMon, iPoly), iMon=1,nMonth)
@@ -417,7 +415,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   ! ***********
   ! (4) Spatial aggregation of Model parameter 
   ! *********************************************************************
-    if (nSoilParModel>0_i2b)then
+    if (nSoilParModel>0_i4b)then
       ! **********
       ! (4.1) Aggregate model parameveter vertical direction - soil data layers to model soil layers
       ! *********************************************************************
@@ -483,7 +481,7 @@ subroutine mpr(hruID,             &     ! input: hruID
     ! ************
     ! (4.2) Aggregate model parameveter horizontally - use spatial weight netCDF 
     ! *********************************************************************
-    if (nSoilParModel>0_i2b)then
+    if (nSoilParModel>0_i4b)then
       do iMLyr=1,nLyr
         do iParm = 1,nSoilParModel
           allocate( soilParVec(iParm)%var(nSpolyLocal),stat=err); if(err/=0)then; message=trim(message)//'error allocating soilParVec'; return; endif
@@ -525,7 +523,7 @@ subroutine mpr(hruID,             &     ! input: hruID
         deallocate(parSxyMz(iParm)%varData,stat=err);if(err/=0)then; message=message//'error deallocating parSxyMz%varData'; return; endif
       enddo
     endif
-    if (nVegParModel>0_i2b)then
+    if (nVegParModel>0_i4b)then
       do iMon=1,nMonth
         do iParm = 1,nVegParModel
           allocate( vegParVec(iParm)%var(nVpolyLocal),stat=err); if(err/=0)then; message=trim(message)//'error allocating vegParVec%var'; return; endif
