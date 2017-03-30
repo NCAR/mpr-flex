@@ -2,21 +2,20 @@ program main_calibration
 
   use nrtype 
   use public_var
-  use read_config,          only: read_nml 
-  use popMeta,              only: paramMaster
-  use globaldata,           only: betaMaster, parSubset, betaInGamma, gammaSubset, betaOrder, parMask, parArray, nBetaNeed
-  use process_meta,         only: read_calPar, get_parm_meta, param_setup
-  use tf,                   only: betaDependency, betaCompOrder
-  use mo_dds,               only: dds
-  use mo_opt_run,           only: opt_run
-  use eval_model,           only: objfn
-  use mpr_routine,          only: run_mpr
-  use read_soildata,        only: check_polyID 
+  use read_config,     only: read_nml 
+  use popMeta,         only: paramMaster
+  use globaldata,      only: betaInGamma, parMask, parArray
+  use process_meta,    only: read_calPar, get_parm_meta, param_setup, print_config
+  use tf,              only: betaDependency, betaCompOrder
+  use mo_dds,          only: dds
+  use mo_opt_run,      only: opt_run
+  use eval_model,      only: objfn
+  use mpr_routine,     only: run_mpr
+  use read_soildata,   only: check_polyID 
 
   implicit none
  
   character(len=strLen)             :: nmlfile         ! namelist containing configuration
-  integer(i4b)                      :: i               ! loop index for writing
   integer(i4b)                      :: ierr            ! error code 
   character(len=strLen)             :: cmessage        ! error message from suroutine
 
@@ -32,24 +31,15 @@ program main_calibration
   call get_parm_meta(ierr,cmessage); call handle_err(ierr,cmessage)
   ! Compute beta parameter dependency. Saved data: beta 
   call betaDependency (ierr, cmessage); call handle_err(ierr,cmessage)
-  print*,"!-- Beta and Gamma parameters ----"
-  write(*,*) (trim(adjustl(parSubset(i)%pname)),new_line('a'), i=1,size(parSubset))
-  print*,"!-- Beta parameters to be estimated with MPR excluding z and h----"
   if (size(betaInGamma)/=0)then
-    write(*,*) (trim(adjustl(betaInGamma(i))),new_line('a'), i=1,size(betaInGamma))
-    print*,"!-- List of gamma parameters calibrated----"
-    write(*,*) (trim(adjustl(gammaSubset(i)%pname)),new_line('a'), i=1,size(gammaSubset))
     ! Compute computing order of beta parameters including dependent parameters. Saved data: 'betaOrder', nBetaNeed
     call betaCompOrder (betaInGamma, ierr, cmessage); call handle_err(ierr,cmessage)
-    print*,"!-- All beta parameters to be computed with MPR including dependent beta parameters ----"
-    write(*,*) (trim(adjustl(betaMaster(betaOrder(i))%pname)),new_line('a'), i=1,nBetaNeed)
-  else
-    write(*,*) "No beta parameters estimated with MPR" 
+    call check_polyID(trim(mpr_input_dir)//trim(fname_soil), dname_spoly , ierr, cmessage); call handle_err(ierr, cmessage)
   endif
-  call check_polyID(trim(mpr_input_dir)//trim(fname_soil), dname_spoly , ierr, cmessage); call handle_err(ierr, cmessage)
   ! initialize parameter and mask arrays 
-  call param_setup( ierr, cmessage )
-  write(*,*) (parArray(i,1),parMask(i), new_line('a'), i=1,size(parArray,1))
+  call param_setup( ierr, cmessage ); call handle_err(ierr,cmessage)
+  ! Print out calibration configuration
+  call print_config()
   ! main routine starts depending on option
   select case (opt)
     case (0)     ! just run model and output ascii of sim and obs series (parameter values use default or ones specified in restart file)
@@ -67,7 +57,7 @@ program main_calibration
                maxit=isMax,             & ! minimzation (0) or maximization (1)
                tmp_file=state_file)       !
     case (2)     ! just perform MPR only and output parameters in netCDF
-      call run_mpr( parArray(:,1), restrt_file, ierr, cmessage ); call handle_err(ierr,cmessage)
+      call run_mpr( parArray(:,1), mpr_param_file , ierr, cmessage ); call handle_err(ierr,cmessage)
     case default
       print*, 'integer to specify optimization scheme is not valid' 
   end select 

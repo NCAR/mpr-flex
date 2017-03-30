@@ -14,11 +14,6 @@ module write_param_nc
   public::write_nc_soil
   public::write_nc_veg
   
-  ! define dimension 
-  type(defDim) :: hruDim
-  type(defDim) :: sLyrDim
-  type(defDim) :: monDim
-
 contains
 
   ! *********************************************************************

@@ -18,7 +18,7 @@ contains
 ! ************************************************************************************************
 ! this subroutine is used for opt = 2 in namelist (run only mpr and output parameters)
 subroutine run_mpr( calParam, restartFile, err, message ) 
-  use globalData,    only: betaCalScale, parSubset, gammaSubset, nBetaGammaCal, nSoilParModel, nVegParModel
+  use globalData,    only: betaCalScale, parSubset, gammaSubset, parArray, parMask, nBetaGammaCal, nSoilParModel, nVegParModel
   use model_wrapper, only: read_hru_id
   use write_param_nc,only: write_nc_soil,write_nc_veg
   implicit none
@@ -29,35 +29,27 @@ subroutine run_mpr( calParam, restartFile, err, message )
   integer(i4b),         intent(out) :: err                           ! error id 
   character(len=strLen),intent(out) :: message                       ! error message
   ! local
+  real(dp),             allocatable :: params(:)                     ! parameter vector that is input into mpr
   type(var_d)                       :: calParStr(nBetaGammaCal)      ! parameter storage including perLayr values converted from parameter array 
   type(var_d)                       :: pnormCoef(size(betaCalScale)) ! parameter storage converted from parameter array 
   type(var_d),          allocatable :: paramGammaStr(:)              ! calibratin gamma parameter storage extracted from calParStr
-  integer(i4b)                      :: idummy                        ! dummy vaiable
   integer(i4b)                      :: idx                           ! counter 
   integer(i4b)                      :: iPar                          ! loop index for parameter 
-  logical(lgc),         allocatable :: mask(:)                       ! 1D mask
+  logical(lgc)                      :: mask(nBetaGammaCal)           ! 1D mask
   integer(i4b)                      :: hruID(nHru)                   ! Hru ID
-  real(dp),             allocatable :: hModel(:,:)                   ! storage of model layer thickness at model layer x model hru 
-  real(dp),             allocatable :: params(:)                     ! parameter vector that is input into mpr 
-  type(namedvar2),      allocatable :: parMxyMz(:)                   ! storage of model soil parameter at model layer x model hru 
-  type(namedvar2),      allocatable :: vegParMxy(:)                  ! storage of model vege parameter at month x model hru
-  logical                           :: isExistFile                   ! logical to check if the file exist or not
+  real(dp)                          :: hModel(nLyr,nHru)             ! storage of model layer thickness at model layer x model hru 
+  type(namedvar2)                   :: parMxyMz(nSoilParModel)       ! storage of model soil parameter at model layer x model hru 
+  type(namedvar2)                   :: vegParMxy(nVegParModel)       ! storage of model vege parameter at month x model hru
   character(len=strLen)             :: cmessage                      ! error message from subroutine
 
   err=0; message='run_mpr/' ! to initialize error control
   if ( any(parSubset(:)%beta /= "beta") )then ! calPar need to include min. one gamma parameter to be used for MPR 
     if ( idModel/=0 )then;idModel=0;print*,trim(message)//'idModel is set to zero - model inepenedent';endif
-    allocate(params, source=calParam) ! copy calParameter default 
-    inquire(file=trim(adjustl(restartFile)), exist=isExistFile)
-    if ( isExistFile ) then !  if state file exists, update calParam, otherwise use default value
-      print*, 'read restart file'
-      open(unit=70,file=trim(adjustl(restartFile)), action='read', status = 'unknown')
-      read(70,*) idummy ! restart file include iStart  
-      read(70,*) (params(iPar),iPar=1,nBetaGammaCal)    
-      close(70)
-    endif
+    allocate(params, source=calParam) ! copy calParameter default
+    call restartIO( params, restartFile ) ! check restartFile exist, if it does, update params vector, otherwise wite them in restartFile
+    ! transform parameter vector to custom data type - calParStr and pnormCoef
     idx=1
-    do iPar=1,nBetaGammaCal
+    do iPar=1,nBetaGammaCal !beta and gamma parameter values
       if (parSubset(iPar)%perLyr)then
         allocate(calParStr(iPar)%var(nLyr))
         calParStr(iPar)%var=params(idx:idx+nLyr-1)
@@ -68,29 +60,27 @@ subroutine run_mpr( calParam, restartFile, err, message )
         idx=idx+1
       endif
     end do
-    do iPar=1,size(betaCalScale) ! put calpar vector from optimization routine output pnorm coef. data strucure
+    do iPar=1,size(betaCalScale) ! scaling parameter for beta parameter estimated with MPR
       allocate(pnormCoef(iPar)%var(2))
-      pnormCoef(iPar)%var=calParam(idx:idx+1)
+      pnormCoef(iPar)%var=params(idx:idx+1)
       idx=idx+2
     end do
-    call read_hru_id(idModel, hruID, err, cmessage)    ! to get hruID
+    ! Get hruID from mapping file
+    call read_hru_id(idModel, hruID, err, cmessage)
     if (err/=0)then;message=trim(message)//trim(cmessage);return;endif
-    allocate(hModel(nLyr,nHru),stat=err);      if(err/=0)then;message=trim(message)//'error allocating hModel';return;endif
-    allocate(parMxyMz(nSoilParModel),stat=err);if(err/=0)then;message=trim(message)//'error allocating parMxyMz';return;endif
-    allocate(vegParMxy(nVegParModel),stat=err);if(err/=0)then;message=trim(message)//'error allocating vegParMxy';return;endif
     do iPar=1,nSoilParModel
       allocate(parMxyMz(iPar)%varData(nLyr,nHru),stat=err)
     enddo
     do iPar=1,nVegParModel
       allocate(vegParMxy(iPar)%varData(nMonth,nHru),stat=err)
     enddo
-    allocate(mask(nBetaGammaCal))
     mask=parSubset(:)%beta/="beta"
     allocate(paramGammaStr(count(mask)))
     paramGammaStr=pack(calParStr,mask)
     do iPar=1,size(paramGammaStr)
       if (size(paramGammaStr(iPar)%var)>1)then;message=trim(message)//'gammaParameter should not have perLayer value';return;endif
     enddo
+    !perform MPR
     call mpr(hruID, pnormCoef, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
     if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     !! Write parameter derived from MPR in netCDF 
@@ -106,6 +96,61 @@ subroutine run_mpr( calParam, restartFile, err, message )
     print*,trim(message)//'there is no gamma pamameters in parameter input file to perform MPR';stop
   endif
   return
+
+  contains
+
+  subroutine restartIO( params, restartFile )
+    implicit none
+    character(len=strLen), intent(in)    :: restartFile
+    real(dp),              intent(inout) :: params(:)
+    logical                              :: isExistFile ! logical to check if the file exist or not
+    integer(i4b)                         :: i,j         ! loop index for parameter 
+    integer(i4b)                         :: idummy      ! dummy integer vaiable
+    logical(lgc)                         :: ldummy      ! dummy logical vaiable
+    character(len=strLen)                :: cdummy      ! dummy character vaiable
+
+    inquire(file=trim(restartFile), exist=isExistFile)
+    if ( isExistFile ) then !  if state file exists, read it and update params
+      print*, 'read restart file'
+      open(unit=70,file=trim(adjustl(restartFile)), action='read', status = 'unknown')
+      do i=1,nBetaGammaCal
+        if (parSubset(i)%perLyr)then
+          do j=1,nLyr
+            read(70,*) cdummy, params(i), ldummy, cdummy
+          end do
+        else
+          read(70,*) cdummy, params(i), ldummy, cdummy
+        endif
+      end do
+      do i=1,size(betaCalScale) 
+         read(70,*) cdummy, params(nBetaGammaCal+2*i-1), ldummy, cdummy
+         read(70,*) cdummy, params(nBetaGammaCal+2*i), ldummy, cdummy
+      end do
+      close(70)
+    else          !otherwise write out
+      print*, 'write restart file'
+      open(unit=70,file=trim(adjustl(restartFile)), action='write', status = 'unknown')
+      do i=1,nBetaGammaCal
+        if (parSubset(i)%perLyr)then
+          do j=1,nLyr
+            write(70,100) parSubset(i)%pname(1:20), parArray(i,1), parMask(i), 'Beta-par-perLayer'
+            100 format(1X,A,1X,ES17.10,1X,L9,1X,A20)
+          end do
+        else
+          write(70,200) parSubset(i)%pname(1:20), parArray(i,1), parMask(i), 'Gamma-par'
+          200 format(1X,A,1X,ES17.10,1X,L9,1X,A20)
+        endif
+      enddo  
+      do i=1,size(betaCalScale) 
+         write(70,300) betaCalScale(i)%betaname(1:20), parArray(nBetaGammaCal+2*i-1,1), parMask(nBetaGammaCal+2*i-1), 'H-scaling-par'
+         write(70,300) betaCalScale(i)%betaname(1:20), parArray(nBetaGammaCal+2*i  ,1), parMask(nBetaGammaCal+2*i),   'V-scaling-par'
+         300 format(1X,A,1X,ES17.10,1X,L9,1X,A20)
+      end do
+      close(70)
+    endif
+    return
+  end subroutine
+
 end subroutine
 
 ! ************************************************************************************************
@@ -145,7 +190,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   integer(i4b),         intent(in)   :: hruID(:)                 ! hruID list
   type(var_d),          intent(in)   :: gammaParStr(:)           ! data structure of gamma parameter value adjusted with calibration
   type(var_d),          intent(in)   :: pnormCoefStr(:)          ! data structure of pnorm coefficient value adjusted with calibration
-  type(cpar_meta),      intent(in)   :: gammaParMeta(:)          ! array of calibrating meta data
+  type(cpar_meta),      intent(in)   :: gammaParMeta(:)          ! array of calibrating gamma parameter meta data
   ! output
   real(dp),             intent(out)  :: hModel(:,:)              ! Model layer thickness at model layer x model hru 
   type(namedvar2),      intent(inout):: parMxyMz(:)              ! storage of model soil parameter at model layer x model hru 

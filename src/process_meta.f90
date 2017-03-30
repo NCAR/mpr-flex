@@ -10,6 +10,7 @@ module process_meta
   public::read_calPar
   public::get_parm_meta
   public::param_setup 
+  public::print_config
 
 contains
 
@@ -124,13 +125,7 @@ subroutine get_parm_meta( err, message)
   call get_betaInGamma  ( err, cmessage ); if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
   call get_betaCalScale ( err, cmessage ); if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
   call total_calParam   ( err, cmessage ); if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
-  ! check that all elements are populated
-  if(any(parSubset(:)%pname==''))then
-    do iPar=1,size(parSubset)
-      print*,iPar,' -> ',trim(parSubset(iPar)%pname)
-    end do
-    err=40; message=trim(message)//"parSubset is not filled out completely"; return
-  endif
+
   return
 
   contains
@@ -294,11 +289,11 @@ subroutine get_parm_meta( err, message)
   subroutine get_betaCalScale( err, message ) 
     !input
     !output
-    character(len=strLen),intent(out)   :: message                ! error message for current routine
-    integer(i4b),         intent(out)   :: err                    ! error code
+    character(len=strLen),intent(out)   :: message               ! error message for current routine
+    integer(i4b),         intent(out)   :: err                   ! error code
     !local
-    type(scale_meta),     allocatable    :: tempBetaCalScale(:)   ! 
-    integer(i4b)                         :: nScaleBeta            ! counter 
+    type(scale_meta),     allocatable   :: tempBetaCalScale(:)   ! 
+    integer(i4b)                        :: nScaleBeta            ! counter 
 
     err=0; message="get_scaleInBeta/"
     allocate(tempBetaCalScale(size(calParMeta)),stat=err);if(err/=0)then;message=trim(message)//'error allocating tempBetaCalScale';return;endif
@@ -406,6 +401,81 @@ subroutine param_setup( err, message )
       parMask (idx)   = betaCalScale(iPar)%mask(ixHV)
     enddo
   enddo
+  return
+end subroutine
+
+!*********************************************************
+! Public subroutine: print out calibrating parameter data  
+!*********************************************************
+subroutine print_config()
+  use globaldata,  only: calParMeta,   &
+                         betaMaster,   &
+                         parSubset,    &
+                         betaCalScale, & 
+                         betaInGamma,  &
+                         gammaSubset,  &
+                         betaOrder,    &
+                         parMask,      &
+                         parArray,     &
+                         nBetaGammaCal,&
+                         nBetaNeed
+  implicit none
+
+  integer(i4b) :: i,j   ! loop index for writing
+
+  write(*,*) '!-----------------------------------------------------------'
+  write(*,*) '!    MPR-flex - configurations of parameter estimations     '
+  write(*,*) '!-----------------------------------------------------------'
+  write(*,'(A,1X,A)') new_line(' '),'! Beta parameters listed in input'
+  write(*,*) '!-----------------------------------------------------------'
+  do i=1,size(calParMeta)
+    write(*,*) trim(adjustl(calParMeta(i)%betaname))
+  end do
+  write(*,'(A,1X,A)') new_line(' '),'! Calibrating Beta and Gamma parameters'
+  write(*,*) '!-----------------------------------------------------------'
+  do i=1,size(parSubset)
+    write(*,*) ( trim(adjustl(parSubset(i)%pname)) )
+  end do
+  if (size(betaInGamma)/=0)then
+    write(*,'(A,1X,A)') new_line(' '),'! Beta parameters to be estimated with MPR excluding z and h'
+    write(*,*) '!-----------------------------------------------------------'
+    do i=1,size(betaInGamma)
+      write(*,*) ( trim(adjustl(betaInGamma(i))) )
+    end do
+    write(*,'(A,1X,A)') new_line(' '),'! List of gamma parameters calibrated'
+    write(*,*) '!-----------------------------------------------------------'
+    do i=1,size(gammaSubset)
+      write(*,*) ( trim(adjustl(gammaSubset(i)%pname)) )
+    end do
+    write(*,'(A,1X,A)') new_line(' '),'! All beta parameters computed with MPR including dependent beta parameters'
+    write(*,*) '!-----------------------------------------------------------'
+    do i=1,nBetaNeed
+      write(*,*) ( trim(adjustl(betaMaster(betaOrder(i))%pname)) )
+    end do
+  else
+    write(*,'(A,1X,A)') new_line(' '), '! No beta parameters estimated with MPR' 
+  endif
+  write(*,'(A,1X,A)') new_line(' '),'! Parameter Array input to optimization routine' 
+  write(*,*) '!-----------------------------------------------------------'
+  write(*,*) 'Parameter Name        (initial)value    cal.flag   Note'
+  do i=1,nBetaGammaCal
+    if (parSubset(i)%perLyr)then
+      do j=1,nLyr
+        write(*,100) parSubset(i)%pname(1:20), parArray(i,1), parMask(i), 'layer=', j 
+        100 format(1X,A,1X,ES17.10,1X,L9,1X,'layer=',I2)
+      end do
+    else
+      write(*,200) parSubset(i)%pname(1:20), parArray(i,1), parMask(i)
+      200 format(1X,A,1X,ES17.10,1X,L9)
+    endif
+  enddo  
+  do i=1,size(betaCalScale) 
+     write(*,300) betaCalScale(i)%betaname(1:20), parArray(nBetaGammaCal+2*i-1,1), parMask(nBetaGammaCal+2*i-1), 'Horizontal scaling parameter'
+     write(*,300) betaCalScale(i)%betaname(1:20), parArray(nBetaGammaCal+2*i  ,1), parMask(nBetaGammaCal+2*i),   'Vertical scaling parameter'
+     300 format(1X,A,1X,ES17.10,1X,L9,1X,A30)
+  end do
+  print*,"!-----------------------------------------------------------"
+  print*,"!-----------------------------------------------------------"
   return
 end subroutine
 

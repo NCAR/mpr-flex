@@ -140,7 +140,7 @@ end subroutine
 ! replace VIC soil parameters 
 !***************************
 subroutine replace_soil_param_vic(param, hModel, parMxyMz, adjParam, err, message)
-  use globalData, only: betaMaster, betaInGamma 
+  use globalData, only: betaMaster, betaInGamma, nSoilParModel 
   use get_ixname, only: get_ixBeta
   implicit none
   !input variables
@@ -153,11 +153,9 @@ subroutine replace_soil_param_vic(param, hModel, parMxyMz, adjParam, err, messag
   character(*),     intent(out)  :: message       ! error message
   ! local variables
   integer(i4b)                   :: ipar,iHru     ! loop index
-  integer(i4b)                   :: nSoilParModel ! number of parameters 
 
   ! initialize error control
   err=0; message='replace_soil_param_vic/'
-  nSoilParModel=size(parMxyMz)
   adjParam=param
   hru: do iHru = 1,nHru
   ! replace parameter values

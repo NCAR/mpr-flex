@@ -16,7 +16,8 @@ module public_var
 
   ! Namelist variables
   ! runconfig 
-  integer(i4b),          public   :: opt
+  integer(i4b),         public    :: opt
+  character(len=strLen),public    :: mpr_param_file
   ! mprconfig
   character(len=strLen),public    :: mpr_input_dir 
   character(len=strLen),public    :: mpr_output_dir
