@@ -344,7 +344,7 @@ subroutine binfilt(err, message, ixDepend, sdata, gammaPar, binfilt_out, opt )
         else where
           binfilt_out = dmiss 
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
     !cap value with upper and lower bounds 
@@ -383,7 +383,7 @@ subroutine residMoist(err, message, ixDepend, gammaPar, residMoist_out, opt)
     select case(tfopt)
       case(1); 
         residMoist_out = 0._dp
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
   else
     err=10;message=trim(message)//'WrongOptionalInputs'; return 
@@ -443,7 +443,7 @@ subroutine D1( err, message, ixDepend, sdata, ks_in, phi_in, gammaPar, D1_out, o
         else where
           D1_out = dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate 
     ! cap value with upper and lower bounds 
@@ -491,7 +491,7 @@ subroutine Ds( err, message, ixDepend, D1_in, D3_in, Dsmax_in, gammaPar, Ds_out,
         else where
           Ds_out = dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     ! cap value with upper and lower bounds 
     where ( Ds_out > Ds_max ) Ds_out=Ds_max 
@@ -550,7 +550,7 @@ subroutine D2( err, message, ixDepend, sdata, ks_in, D4_in, gammaPar, D2_out, op
          else where
            D2_out = dmiss
          end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
     ! cap value with upper and lower bounds 
@@ -602,7 +602,7 @@ subroutine Dsmax( err, message, ixDepend, sdata, D1_in, D2_in, D3_in, c_in, phi_
         else where
           Dsmax_out = dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     ! cap value with upper and lower bounds 
     where ( Dsmax_out > Dsmax_max ) Dsmax_out=Dsmax_max
@@ -651,7 +651,7 @@ subroutine D3( err, message, ixDepend, sdata, fc_in, gammaPar, D3_out, opt )
         else where
           D3_out = dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
  !   cap value with upper and lower bounds 
@@ -700,7 +700,7 @@ subroutine Ws( err, message, ixDepend, sdata, D3_in, phi_in, gammaPar, Ws_out, o
         else where
           Ws_out = dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     ! cap value with upper and lower bounds 
     where ( Ws_out > Ws_max ) Ws_out=Ws_max
@@ -740,7 +740,7 @@ subroutine D4( err, message, ixDepend, gammaPar, D4_out, opt )
     select case(tfopt)
       case(1); 
         D4_out = g1 
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
   else
@@ -777,7 +777,7 @@ subroutine cexpt( err, message, ixDepend, D4_in, gammaPar, cexpt_out, opt )
     select case(tfopt)
       case(1); 
         cexpt_out = D4_in
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
   else
     err=10;message=trim(message)//'WrongOptionalInputs'; return 
@@ -819,7 +819,7 @@ subroutine expt( err, message, ixDepend, b_in, gammaPar, expt_out, opt )
         else where
           expt_out = dmiss 
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
   else
@@ -862,7 +862,7 @@ subroutine initMoist( err, message, ixDepend, sdata, phi_in, gammaPar, initMoist
         else where
           initMoist_out = dmiss 
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
   else
@@ -905,7 +905,7 @@ subroutine bubble( err, message, ixDepend, expt_in, gammaPar, bubble_out, opt)
         else where
           bubble_out = dmiss 
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
   else
@@ -943,7 +943,7 @@ subroutine sd( err, message, ixDepend, gammaPar, sd_out, opt )
     select case(tfopt)
       case(1); 
         sd_out = g1*srho
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
   else
@@ -986,7 +986,7 @@ subroutine WcrFrac( err, message, ixDepend, fc_in, phi_in, gammaPar, WcrFrac_out
         else where
           wcrFrac_out = dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
   else
@@ -1029,7 +1029,7 @@ subroutine WpwpFrac( err, message, ixDepend, wp_in, phi_in, gammaPar, WpwpFrac_o
         else where
           wpwpFrac_out = dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
   else
@@ -1073,7 +1073,7 @@ subroutine twm( err, message, ixDepend, sdata, fc_in, wp_in, gammaPar, twm_out, 
         else where
           twm_out=dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
   else
@@ -1117,7 +1117,7 @@ subroutine fwm( err, message, ixDepend, sdata, phi_in, fc_in, gammaPar, fwm_out,
         else where
           fwm_out=dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
   else
@@ -1161,7 +1161,7 @@ subroutine fsm( err, message, ixDepend, fwm_in, phi_in, wp_in, gammaPar, fsm_out
         else where
           fsm_out=dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
   else
@@ -1203,7 +1203,7 @@ subroutine fpm( err, message, ixDepend, fwm_in, fsm_in, gammaPar, fpm_out, opt )
         else where
           fpm_out=dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
   else
     err=10;message=trim(message)//'WrongOptionalInputs'; return 
@@ -1245,7 +1245,7 @@ subroutine zk( err, message, ixDepend, phi_in, fc_in, gammaPar, zk_out, opt )
         else where
           zk_out=dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
   else
@@ -1290,7 +1290,7 @@ subroutine zsk( err, message, ixDepend,  phi_in, fc_in, wp_in, gammaPar, zsk_out
         else where
           zsk_out=dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
   else
@@ -1337,7 +1337,7 @@ subroutine zpk( err, message, ixDepend, sdata, ks_in, myu_in, gammaPar, zpk_out,
         else where
           zpk_out=dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
   else
@@ -1380,7 +1380,7 @@ subroutine pfree( err, message, ixDepend, phi_in, wp_in, gammaPar, pfree_out, op
         else where 
           pfree_out=dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
   else
@@ -1426,7 +1426,7 @@ subroutine zperc( err, message, ixDepend, twm_in, fsm_in, zsk_in, fpm_in, zpk_in
         else where
           zperc_out=dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
   else
     err=10;message=trim(message)//'WrongOptionalInputs'; return 
@@ -1467,7 +1467,7 @@ subroutine rexp( err, message, ixDepend, wp_in, gammaPar, rexp_out, opt )
         else where
           rexp_out=dmiss
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
   else
@@ -1525,7 +1525,7 @@ subroutine ks( err, message, ixDepend, sdata, gammaPar, ks_out, opt )
         else where
           ks_out = dmiss 
         end where
-      case default; print*,trim(message)//'opt not recognized'; stop
+      case default; print*,trim(message)//'OptNotRecognized'; stop
     end select
     end associate
   else
@@ -1584,7 +1584,7 @@ subroutine bd( err, message, ixDepend, sdata, gammaPar, bd_out, opt )
         else where
           bd_out = dmiss 
         end where
-      case default;print*,trim(message)//'opt not recognized';stop
+      case default;print*,trim(message)//'OptNotRecognized';stop
     end select
     end associate
   else
@@ -1649,7 +1649,7 @@ subroutine phi( err, message, ixDepend, sdata, gammaPar, phi_out, opt )
           else where
             phi_out = dmiss 
           end where
-        case default;print*,trim(message)//'opt not recognized';stop
+        case default;print*,trim(message)//'OptNotRecognized';stop
       end select
     end associate
   else
@@ -1704,7 +1704,7 @@ subroutine fc( err, message, ixDepend, sdata, phi_in, psis_in, b_in, gammaPar, f
         else where
           fc_out = dmiss 
         end where
-      case default; message=trim(message)//'opt not recognized' 
+      case default; message=trim(message)//'OptNotRecognized' 
     end select
     end associate
   else
@@ -1756,7 +1756,7 @@ subroutine wp( err, message, ixDepend, phi_in, psis_in, b_in, gammaPar, wp_out, 
         else where
           wp_out = dmiss 
         end where
-      case default; print*,trim(message)//'opt not recognized';stop
+      case default; print*,trim(message)//'OptNotRecognized';stop
     end select
     end associate
   else
@@ -1803,7 +1803,7 @@ subroutine retcurve( err, message, ixDepend, sdata, gammaPar, retcurve_out, opt 
           else where
             retcurve_out = dmiss 
           end where
-        case default; print*,trim(message)//'opt not recognized';stop
+        case default; print*,trim(message)//'OptNotRecognized';stop
       end select
     end associate
   else
@@ -1851,7 +1851,7 @@ subroutine psis( err, message, ixDepend, sdata, gammaPar, psis_out, opt )
           else where
             psis_out = dmiss 
           end where
-        case default; print*,trim(message)//'opt not recognized';stop
+        case default; print*,trim(message)//'OptNotRecognized';stop
       end select
     end associate
   else
@@ -1896,7 +1896,7 @@ subroutine myu( err, message, ixDepend, phi_in, fc_in, gammaPar, myu_out, opt )
         else where
           myu_out = dmiss 
         end where
-      case default;print*,trim(message)//'opt not recognized';stop
+      case default;print*,trim(message)//'OptNotRecognized';stop
     end select
     end associate
   else
@@ -1955,7 +1955,7 @@ subroutine lai( err, message, ixDepend, vdata, gammaPar, lai_out, opt )
         else where
           lai_out = dmiss 
         end where
-      case default;print*,trim(message)//'opt not recognized';stop
+      case default;print*,trim(message)//'OptNotRecognized';stop
     end select
     end associate
   else
