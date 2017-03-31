@@ -3,16 +3,19 @@ Flexible hydrologic model parameter estimation driver. This program includes two
 
 ## General overview
 Three options to run this program (opt in namelist):
-* 0-> Perform model simulation (specified in idModel in namelist) with parameters listed in calPar.txt and restart file (beta multipliers and gamma parameter values) and default for the rest of parameters.
-* 1-> Perform DDS calibration to estimate optimized parameters listed in calPar.txt. 
-* 2-> Perform only MPR to estimate parameters listed in calPar.txt and restart file, and output them in NetCDF.
+* 1-> Perform calibration to estimate optimized parameters listed in calPar.txt<sup>a</sup>. 
+* 2-> Perform model simulation with calibrated beta multipliers and gamma parameters<sup>b</sup>.  
+* 3-> Perform only MPR to estimate beta parameters listed in calPar.txt<sup>c</sup> and output them in NetCDF.
 
-For opt=1, two options to calibrate 1) multiplier based calibration, 2) MPR calibration.
-if model use spatially lumped mode, option 1) is equivalent to direct parameter adjustment 
+ <sup>a</sup> Model specified in "idModel" in ./nml/namelist.opt (See Model Options section). Use Dynamically Dimensional Search algorithm. Two options speficied in the 2nd column ("calMethod" column) in calPar.txt to calibrate I) multiplier of a priori beta parameter (calMethod=3), II) gamma parameter in MPR framework (calMethod=1). if model use spatially lumped mode, calMethod=3 is equivalent to direct parameter adjustment. a priori beta parameter file has to be read from model specific I/O. If only scaling parameter calibration desired, use calMethod=2 to avoild calibrating its gamma parameters.
+ 
+ <sup>b</sup> This is supposed to be used after option 1. The parameter values listed in restart file ("restart_file" in ./nml/namelist.opt) and values read from a priori beta parameter file for the rest of parameters are used for the simulations. The list of parameter values in "restart_file" must be match up with a list of beta and gamma parameters and scaling parameter list expanded from calPar.txt. 
+
+ <sup>c</sup> Only beta parameters with 1 or 2 in "calMethod" in calPar.txt. This option outputs parameter list in a text file specified in "mpr_param_file" in ./nml/namelist.opt. 
 
 Two inputs need to be prepared for all the run options, 1) calPar.txt and 2) namelist.cal
 
-1. list which parameters are calibrated (see input/calPar.txt)
+1. list which parameters are calibrated (see input/calPar.txt for further option)
 2. configure/set run (see nml/namelist.cal)
    see comments for each nml variables for what kind of information need to be provided
 
@@ -29,8 +32,13 @@ Name convention of gamma parameters.
 
 e.g.,ks1gamma1 is 1st gamma parameter for ks (saturated hydraulic conductivity) transfer function type 1 (cosby equation) 
 
+## Model options
+0. No model (used for parameter estimation with gamma parameters specified in "restart_file")
+1. VIC
+2. SAC/SNOW17
+
 ## Model specific I/O implementation
-For run option 2 and 3, VIC and SAC are now implemented (as of 10/26/2016).
+For run option 1 and 2, VIC and SAC are now implemented (as of 10/26/2016).
 
 To use other model 
 You will need to write model specific routines - use model_routines.f90.template
@@ -44,14 +52,12 @@ Using this template, you need to write several subrutines
 5. soil parameter writing routine
 6. Other parameter adjustment routine e.g., snow, vege (for now, no MPR for this)
 
-## Model options
-0. No model (used for parameter estimation with gamma parameters specified in restart file)
-1. VIC
-2. SAC/SNOW17
-
 ## Compiling the program
-Compiled with pgi/15.7 and ifort/2015.2.164 (15.0.1)
+pgi/15.7 or later
+ifort/2015.2.164 (15.0.1) or later
+gfortran 6.0.1 or later
 
 ## Terminologies
-* gamma parameter: parameter of transfer functions used in MPR
-* beta parameters: model parameters
+* gamma parameter: parameter of transfer functions used in MPR.
+* beta parameters: model parameters.
+* scaling parameter: coefficient of power mean. 
