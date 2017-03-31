@@ -119,7 +119,7 @@ function objfn( calParam )
   end do
   call route_q(simBasin, simBasinRouted, ushape, uscale, err, cmessage)
   if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
-  if (opt == 0) then
+  if (opt == 2) then
     call out_opt_sim(simBasinRouted, obs) ! to just output optimal run
   else
     select case( trim(objfntype) )

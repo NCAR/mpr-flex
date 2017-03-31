@@ -16,7 +16,7 @@ contains
 ! ************************************************************************************************
 ! Public subroutine: run MPR and save estimated parameters in netCDF
 ! ************************************************************************************************
-! this subroutine is used for opt = 2 in namelist (run only mpr and output parameters)
+! this subroutine is used for opt=3 in namelist (run only mpr and output parameters)
 subroutine run_mpr( calParam, restartFile, err, message ) 
   use globalData,    only: betaCalScale, parSubset, gammaSubset, parArray, parMask, nBetaGammaCal, nSoilParModel, nVegParModel
   use model_wrapper, only: read_hru_id
@@ -327,7 +327,7 @@ subroutine mpr(hruID,             &     ! input: hruID
                   err,cmessage)                                  ! output: error control
   if (err/=0)then; message=message//cmessage; return; endif
   if ( nShru /= nVhru )then;err=10;message=trim(message)//'Different number of hru in vege and soil mapping file';return;endif  
-  if ( opt==2 .and. nHru /= nShru )then;err=10;message=trim(message)//'nHru= '//trim(int2str(nShru))//' NOT '//trim(int2str(nHru));return;endif
+  if ( opt==3 .and. nHru /= nShru )then;err=10;message=trim(message)//'nHru= '//trim(int2str(nShru))//' NOT '//trim(int2str(nHru));return;endif
   associate( hruMap        => mapdata(1)%var(ixVarMapData%hru_id)%ivar1(1:nShru),  &
              hruMapVeg     => mapdata(2)%var(ixVarMapData%hru_id)%ivar1(1:nVhru),  &
              swgt          => mapdata(1)%var(ixVarMapData%weight)%dvar1,           &

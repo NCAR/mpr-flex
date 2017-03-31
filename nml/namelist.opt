@@ -3,9 +3,9 @@
 !---------------------------------------
 &runconfig
 !> Option to run the program
-!> 0 = only run model with parameters given by restart file or default in param metafile
 !> 1 = calibrate parameters specifided in input with DDS
-!> 2 = estimate parameter with MPR (this option neglect calconfig and dds nml group)
+!> 2 = only run model with parameters given by restart file or default in param metafile
+!> 3 = estimate parameter with MPR (this option neglect calconfig and dds nml group)
 opt                    = 1
 !> List of parameter (name, value, flag) based on input calPar used for only if opt=2, ignored otherwise 
 mpr_param_file         = "/d3/mizukami/hydro_params/vic_regionalization/upscale_hcdn/individual_test_hydropt/01022500/MPR_Param.txt"
