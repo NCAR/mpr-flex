@@ -50,7 +50,7 @@ F_KORE_DIR = $(F_MASTER)src/
 MOD_PATH = $(F_MASTER)src/
 
 # Define the directory for the executables
-EXE_PATH = $(F_MASTER)src/
+EXE_PATH = $(F_MASTER)bin/
 
 #========================================================================
 # PART 1: Assemble all of the sub-routines
@@ -82,8 +82,8 @@ CORE = \
     mo_xor4096.f90 \
     mo_opt_run.f90 \
     mo_dds.f90 \
-    sac_routines.f90 \
     vic_routines.f90 \
+    sac_routines.f90 \
     model_wrapper.f90 \
     tf.f90 \
     modelLayer.f90 \
@@ -111,19 +111,19 @@ EXE = test1.exe
 #========================================================================
 # Define flags
 ifeq "$(FC)" "gfortran"
- FLAGS = -Wall -g -ffree-line-length-none
+ FLAGS = -p -Wall -g -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=all
 endif
 ifeq "$(FC)" "ifort"
  #FLAGS1 = -warn all -noerror_limit -FR -O0 -auto -WB -traceback -g -fltconsistency
- FLAGS = -heap-arrays 10 -debug -warn all -FR -O0 -auto -WB -traceback -g -fltconsistency -fpe0
+ FLAGS = -heap-arrays 10 -debug all -check all -warn all -FR -O2 -auto -WB -traceback -g -fltconsistency -fpe0
 endif
 ifeq "$(FC)" "pgf90"
  #FLAGS1 = -Bstatic -Mbackslash -g -Mchkptr -Mchkstk -Mpgicoff -Minform=inform -Ktrap=divz,inv -Mprof=lines,time
- FLAGS = -Mbackslash -g -Mchkptr -Mchkstk -Mpgicoff -Minform=inform -Ktrap=divz,inv
+ FLAGS = -Mbackslash -Mnobounds -g -Mchkptr -Mchkstk -Mpgicoff -Minform=inform -Ktrap=divz,inv
 endif
 
 # tasks
-all: compile  clean
+all: compile clean install
 
 # compile
 compile:
