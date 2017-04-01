@@ -6,19 +6,19 @@ module public_var
 
   save
 
-  ! some common variables
-  integer,     parameter,public  :: strLen=256             ! length of character string
-  ! some constant variables
-  integer(i4b),parameter,public  :: nMonth=12              ! missing value for integer value
-  integer(i4b),parameter,public  :: imiss=-999             ! missing value for integer value
-  real(dp),    parameter,public  :: dmiss=-999.0_dp        ! missing value for floating value
-  real(dp),    parameter,public  :: verySmall=tiny(1.0_dp) ! a very small number 
-  real(dp),    parameter,public  :: valMin=1.e-10_dp       ! minimum value for positive value
+  ! some common constant variables
+  integer,     parameter,public   :: strLen=256             ! length of character string
+  integer(i4b),parameter,public   :: nMonth=12              ! number of months 
+  integer(i4b),parameter,public   :: imiss=-999             ! missing value for integer value
+  real(dp),    parameter,public   :: dmiss=-999.0_dp        ! missing value for floating value
+  real(dp),    parameter,public   :: verySmall=tiny(1.0_dp) ! a very small number 
+  real(dp),    parameter,public   :: valMin=1.e-10_dp       ! minimum value for positive value
 
   ! Namelist variables
   ! runconfig 
   integer(i4b),public             :: opt
   character(len=strLen),public    :: param_master_meta 
+  character(len=strLen),public    :: mpr_param_file
   ! mprconfig
   character(len=strLen),public    :: mpr_input_dir 
   character(len=strLen),public    :: mpr_output_dir
@@ -51,27 +51,25 @@ module public_var
   character(len=strLen),public    :: executable
   character(len=strLen),public    :: basin_objfun_weight_file
   character(len=strLen),public    :: objfntype 
-  integer(i4b),public             :: agg
-  integer(i4b),public             :: dt
-  integer(i4b),public             :: sim_len 
-  integer(i4b),public             :: start_cal
-  integer(i4b),public             :: end_cal 
-  integer(i4b),public             :: nHru
-  integer(i4b),public             :: nbasin
+  integer(i4b),         public    :: agg
+  integer(i4b),         public    :: dt
+  integer(i4b),         public    :: sim_len 
+  integer(i4b),         public    :: start_cal
+  integer(i4b),         public    :: end_cal 
+  integer(i4b),         public    :: nHru
+  integer(i4b),         public    :: nbasin
   ! modelconfig
-  integer(i4b),public             :: idModel 
-  integer(i4b),public             :: TotNpar  != 54(VIC)
-  integer(i4b),public             :: nLyr     != 3 (VIC)
+  integer(i4b),         public    :: idModel 
+  integer(i4b),         public    :: TotNpar  != 54(VIC)
+  integer(i4b),         public    :: nLyr     != 3 (VIC)
   character(len=strLen),public    :: calpar 
   ! DDS 
-  real(dp),public                 :: rpar           ! search  
-  integer(i8b),public             :: nseed          ! starting seed for random number generator
-  integer(i8b),public             :: maxn           ! maximum number of trials before optimization is terminated
-  logical(lgc),public             :: isMax          ! maximization or minimization
+  real(dp),             public    :: rpar           ! search  
+  integer(i8b),         public    :: nseed          ! starting seed for random number generator
+  integer(i8b),         public    :: maxn           ! maximum number of trials before optimization is terminated
+  logical(lgc),         public    :: isMax          ! maximization or minimization
   character(len=strLen),public    :: state_file     ! state file
   character(len=strLen),public    :: restrt_file    ! restart file
-  logical,public                  :: isRestart      ! ues restart option? 
-
-  integer(i4b)                    :: nParCalSum     ! Total number of calibratin parameters including per layer parameters 
+  logical(lgc),         public    :: isRestart      ! ues restart option? 
 
 end module public_var

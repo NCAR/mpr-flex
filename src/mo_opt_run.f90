@@ -38,7 +38,7 @@ CONTAINS
   !         None.
 
   subroutine opt_run(obj_func, restartFile)
-    use globalData, only:nBetaGamma ! meta for beta parameter listed in 'calPar' input
+    use globalData, only:nBetaGammaCal ! meta for beta parameter listed in 'calPar' input
     implicit none
     ! input
     INTERFACE
@@ -57,14 +57,14 @@ CONTAINS
     real(dp)                                :: rDummy      ! dummy real: intermediate results for objective function values logical                                 
     logical(lgc)                            :: isExistFile ! logical to check if the file exist or not
     
-    allocate ( pval(nBetaGamma) )
+    allocate ( pval(nBetaGammaCal) )
     ! restart option
     print*, 'read restart file'
     inquire(file=trim(adjustl(restartFile)), exist=isExistFile)
     if ( isExistFile ) then !  if state file exists, update iStart and pval, otherwise iteration start with very beginning
       open(unit=70,file=trim(adjustl(restartFile)), action='read', status = 'unknown')
       read(70,*) iDummy
-      read(70,*) (pval(i),i=1,nBetaGamma)    
+      read(70,*) (pval(i),i=1,nBetaGammaCal)    
       close(70)
     else
       stop 'no restart file:do optimization first'

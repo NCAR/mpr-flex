@@ -10,7 +10,8 @@ module read_config
 
 ! Main configuration 
   namelist / runconfig /  opt,                     &
-                          param_master_meta
+                          param_master_meta,       &
+                          mpr_param_file
 ! MPR configuration
   namelist / mprconfig /  mpr_input_dir,           & 
                           mpr_output_dir,          &

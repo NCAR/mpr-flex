@@ -6,7 +6,6 @@ module write_param_nc
   use public_var
   use nrtype
   use data_type                                    ! data strucutre definition
-  use var_lookup,   only: nPar 
   
   implicit none
   
@@ -15,11 +14,6 @@ module write_param_nc
   public::write_nc_soil
   public::write_nc_veg
   
-  ! define dimension 
-  type(defDim) :: hruDim
-  type(defDim) :: sLyrDim
-  type(defDim) :: monDim
-
 contains
 
   ! *********************************************************************
@@ -139,12 +133,13 @@ contains
   !private subroutine
   subroutine defNetCDF(fname,           &  ! input: output nc filename
                        betaNames,       &  ! input: character array for beta parameter name
-                       nDim1,            &  ! input: number of 1st dimension 
-                       nDim2,            &  ! input: number of 2nd dimension 
+                       nDim1,           &  ! input: number of 1st dimension 
+                       nDim2,           &  ! input: number of 2nd dimension 
                        defDim1,         &  ! input: 1st dimension name 
                        defDim2,         &  ! input: 2nd dimension name 
                        err, message)       ! output: error control
-    use globalData,    only: parMaster 
+    use globalData,    only: betaMaster 
+    use var_lookup,    only: nBeta 
     implicit none
     ! input variables
     character(*), intent(in)          :: fname        ! filename
@@ -161,9 +156,9 @@ contains
     integer(i4b)                      :: ncid         ! NetCDF file ID
     integer(i4b)                      :: dim1ID       ! 1st dimension ID (hru)
     integer(i4b)                      :: dim2ID       ! 2nd dimension ID (soil layer, month) 
+    integer(i4b)                      :: nBetaOut     ! number of beta parameter to be output 
     integer(i4b)                      :: iPar         ! variable index
     integer(i4b)                      :: iBeta        ! variable index
-    integer(i4b)                      :: nBeta        ! number of variables
     character(len=strLen)             :: cmessage     ! error message of downwind routine
     
     ! initialize error control
@@ -180,13 +175,11 @@ contains
     ! define coordinate variable - variable name is the same as dimension 
     call defvar(defDim1%dimName,trim(defDim1%dimDesc),'-', (/defDim1%dimName/), nf90_int, err,cmessage)
     call defvar(defDim2%dimName,trim(defDim2%dimDesc),'-', (/defDim2%dimName/), nf90_int, err,cmessage)
-    nBeta=size(betaNames)
-    allocate(betaMeta(nBeta)) 
-    do iBeta=1,nBeta
-      do iPar=1,nPar
-        if ( parMaster(iPar)%pname==betaNames(iBeta) )then
-          betaMeta(iBeta)=parMaster(iPar)
-        endif
+    nBetaOut=size(betaNames)
+    allocate(betaMeta(nBetaOut)) 
+    do iBeta=1,nBetaOut
+      do iPar=1,nBeta
+        if ( betaMaster(iPar)%pname==betaNames(iBeta) )then; betaMeta(iBeta)=betaMaster(iPar); exit; endif
       enddo
       ! define parameter values 
       call defvar(trim(betaMeta(iBeta)%pname),trim(betaMeta(iBeta)%pname),'-',(/defDim2%dimName,defDim1%dimName/),nf90_double,err,cmessage)

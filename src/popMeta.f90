@@ -32,8 +32,9 @@ subroutine popMprMeta(err,message)
   err=0; message='popMprMeta/'
   ! Mapping data meta
   map_meta(ixVarMapData%hru_id)          = var_meta('hru_id'       ,"hru id"                                             ,"-"           ,"1D", "integer")
-  map_meta(ixVarMapData%weight)          = var_meta('weight'       ,"areal weight of intersect polygon"                  ,"-"           ,"1D", "integer")
-  map_meta(ixVarMapData%overlapPolyId)   = var_meta('overlapPolyId',"id of intersect polygo"                             ,"-"           ,"1D", "integer")
+  map_meta(ixVarMapData%weight)          = var_meta('weight'       ,"areal weight of intersecting polygon"               ,"-"           ,"1D", "integer")
+  map_meta(ixVarMapData%overlapPolyId)   = var_meta('overlapPolyId',"id of intersecting polygon"                         ,"-"           ,"1D", "integer")
+  map_meta(ixVarMapData%overlaps)        = var_meta('overlaps'     ,"number of intersecting polygons"                    ,"-"           ,"1D", "integer")
   ! Soil data variables
   sdata_meta(ixVarSoilData%polyid)       = var_meta('polyid'       ,"soil polygon id"                                    ,"-"           ,"1D", "integer")
   sdata_meta(ixVarSoilData%soilclass)    = var_meta('soilclass'    ,"USDA soil class"                                    ,"-"           ,"2D", "integer")

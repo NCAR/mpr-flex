@@ -10,10 +10,10 @@
 ! (4) the delimiters "| " must be present (format a2), as these are used to check the integrety of the file
 ! columns are:
 ! 1:  betaname:    beta parameter name
-! 2:  calMethod:   Calibration method,              0= skip calibration, 1=MPR, 2=Direct  
-! 3:  TF:          TF type,                         Integer if calMethod is 1, otherwise, ingored
-! 4:  isScaleCalH: Scaling operator calibration,    T or F if calMethod is 0 or 1, otherwise ignored
-! 5:  isScaleCalV: Scaling operator calibration,    T or F if calMethod is 0 or 1, otherwise ignored
+! 2:  calMethod:   Calibration method,            0=skip calibration, 1=MPR, 2=MPR but only scaling parameters,3=Direct,
+! 3:  TF:          TF type,                       Integer if calMethod is 1 or 2, otherwise, ingored
+! 4:  isScaleCalH: Scaling operator calibration,  T or F if calMethod is 0 or 1, otherwise ignored
+! 5:  isScaleCalV: Scaling operator calibration,  T or F if calMethod is 0 or 1, otherwise ignored
 ! **************************************************************************************************************
 ! format of the descriptions that follow (must be in single quotes)
 ! **************************************************************************************************************
@@ -21,9 +21,9 @@
 ! **************************************************************************************************************
 ! List of beta parameters 
 ! **************************************************************************************************************
-uhshape         | 2 | 0 | F | F
-uhscale         | 2 | 0 | F | F
-lai             | 2 | 0 | F | F
+uhshape         | 3 | 0 | F | F
+uhscale         | 3 | 0 | F | F
+lai             | 3 | 0 | F | F
 D1              | 1 | 1 | F | F
 D2              | 1 | 1 | F | F
 D3              | 1 | 1 | F | F

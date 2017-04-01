@@ -11,10 +11,9 @@ MODULE var_lookup
  private
 
 ! ***********************************************************************************************************
-! 1.Define indices for gamma (global) parameters
+! 1.Define indices for gamma parameters
 ! ***********************************************************************************************************
- type, public  ::  iLook_Par
-   !Gamma parameter
+ type, public  ::  iLook_gamma
    integer(i4b)     :: ks1gamma1       = imiss  ! 
    integer(i4b)     :: ks1gamma2       = imiss  ! 
    integer(i4b)     :: ks1gamma3       = imiss  ! 
@@ -65,7 +64,11 @@ MODULE var_lookup
    integer(i4b)     :: pfree1gamma1    = imiss  ! 
    integer(i4b)     :: rexp1gamma1     = imiss  ! 
    integer(i4b)     :: lai1gamma1      = imiss  ! 
-   ! Beta parameter
+ endtype iLook_gamma
+! ***********************************************************************************************************
+! 2.Define indices for beta parameters
+! ***********************************************************************************************************
+ type, public  ::  iLook_beta
    integer(i4b)     :: uhshape         = imiss  ! uh gamma pdf shape parameter
    integer(i4b)     :: uhscale         = imiss  ! uh gamma pdf scale parameter
    integer(i4b)     :: ks              = imiss  ! Saturated conductivity 
@@ -79,13 +82,13 @@ MODULE var_lookup
    integer(i4b)     :: myu             = imiss  ! 
    integer(i4b)     :: binfilt         = imiss  ! 
    integer(i4b)     :: D1              = imiss  ! 
-   integer(i4b)     :: D4              = imiss  ! 
    integer(i4b)     :: D2              = imiss  ! 
    integer(i4b)     :: D3              = imiss  ! 
-   integer(i4b)     :: c               = imiss  ! 
-   integer(i4b)     :: Dsmax           = imiss  ! 
+   integer(i4b)     :: D4              = imiss  ! 
    integer(i4b)     :: Ds              = imiss  ! 
+   integer(i4b)     :: Dsmax           = imiss  ! 
    integer(i4b)     :: Ws              = imiss  ! 
+   integer(i4b)     :: c               = imiss  ! 
    integer(i4b)     :: expt            = imiss  ! 
    integer(i4b)     :: bbl             = imiss  ! 
    integer(i4b)     :: h1              = imiss  ! top layer thickness
@@ -118,15 +121,16 @@ MODULE var_lookup
    integer(i4b)     :: tipm            = imiss  !  
    integer(i4b)     :: plwhc           = imiss  !  
    integer(i4b)     :: daygm           = imiss  !  
- endtype iLook_par
+ endtype iLook_beta
 
 ! ***********************************************************************************************************
 !  Define indices for variables for mapping data
 ! ***********************************************************************************************************
  type, public  ::  iLook_VarMapData
   integer(i4b)     :: hru_id         = imiss        ! hru id 
-  integer(i4b)     :: weight         = imiss        ! Areal weight of overlapping polygon for hru 
-  integer(i4b)     :: overlapPolyId  = imiss        ! Id of overlapping polygon for hru 
+  integer(i4b)     :: weight         = imiss        ! areal weight of intersecting geophysical data polygon for hru 
+  integer(i4b)     :: overlapPolyId  = imiss        ! id (=index of polygon in geophysical data) of intersecting geophysical data polygon for hru 
+  integer(i4b)     :: overlaps       = imiss        ! number of ntersecting geophysical data polygon for hru 
  endtype iLook_varMapData
 
 ! ***********************************************************************************************************
@@ -175,18 +179,18 @@ MODULE var_lookup
 ! ***********************************************************************************************************
 ! define data vectors
 ! ***********************************************************************************************************
- type(iLook_par),        public,parameter  :: ixPar          = iLook_Par         (1,2,3,4,5,6,7,8,9,10,&
+ type(iLook_gamma),       public,parameter  :: ixGamma       = iLook_gamma       (1,2,3,4,5,6,7,8,9,10,&
+                                                                                 11,12,13,14,15,16,17,18,19,20,&
+                                                                                 21,22,23,24,25,26,27,28,29,30,&
+                                                                                 31,32,33,34,35,36,37,38,39,40,&
+                                                                                 41,42,43,44,45,46,47,48,49,50)
+ type(iLook_beta),        public,parameter :: ixBeta         = iLook_beta        (1,2,3,4,5,6,7,8,9,10,&
                                                                                  11,12,13,14,15,16,17,18,19,20,&
                                                                                  21,22,23,24,25,26,27,28,29,30,&
                                                                                  31,32,33,34,35,36,37,38,39,40,&
                                                                                  41,42,43,44,45,46,47,48,49,50,&
-                                                                                 51,52,53,54,55,56,57,58,59,60,&
-                                                                                 61,62,63,64,65,66,67,68,69,70,&
-                                                                                 71,72,73,74,75,76,77,78,79,80,&
-                                                                                 81,82,83,84,85,86,87,88,89,90,&
-                                                                                 91,92,93,94,95,96,97,98,99,100,&
-                                                                                 101,102)
- type(iLook_VarMapData),  public,parameter :: ixVarMapData   = iLook_VarMapData  (1,2,3)
+                                                                                 51,52)
+ type(iLook_VarMapData),  public,parameter :: ixVarMapData   = iLook_VarMapData  (1,2,3,4)
  type(iLook_VarSoilData), public,parameter :: ixVarSoilData  = iLook_VarSoilData (1,2,3,4,5,6,7,8,9,10)
  type(iLook_VarVegData),  public,parameter :: ixVarVegData   = iLook_VarVegData  (1,2,3,4)
  type(iLook_PrpVeg),      public,parameter :: ixPrpVeg       = iLook_PrpVeg      (1,2,3,4,5,6,7,8,9,10,&
@@ -196,8 +200,9 @@ MODULE var_lookup
 ! define size of data vectors
 ! ***********************************************************************************************************
 ! Number of vairables defined
- integer(i4b),parameter,public    :: nPar = 102 
- integer(i4b),parameter,public    :: nVarMapData=3
+ integer(i4b),parameter,public    :: nGamma = 50 
+ integer(i4b),parameter,public    :: nBeta = 52 
+ integer(i4b),parameter,public    :: nVarMapData=4
  integer(i4b),parameter,public    :: nVarSoilData=10
  integer(i4b),parameter,public    :: nVarVegData=4
  integer(i4b),parameter,public    :: nPrpVeg=11
