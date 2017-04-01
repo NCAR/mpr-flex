@@ -21,7 +21,7 @@ program main_calibration
   nmlfile='namelist.dds.local'
   ! Read configuration namelists and save variables 
   call read_nml( trim(nmlfile), ierr, cmessage ); call handle_err(ierr,cmessage)
-  ! Read parameter master metadata and populate "parMaster" structure
+  ! Read parameter master metadata and populate "betaMaster and gammaMaster" structure
   call read_parm_master_meta(trim(param_master_meta), ierr, cmessage); call handle_err(ierr,cmessage)
   ! Read 'CalPar' input listing metadata of beta parameters to be estimated. Saved data: 'calParMeta'
   call read_calPar( trim(calpar), ierr,  cmessage ); call handle_err(ierr,cmessage)

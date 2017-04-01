@@ -22,8 +22,8 @@ subroutine read_parm_master_meta(infile, err, message)
   ! used to read metadata from an input file and populate the appropriate metadata structure
   use data_type,  only:par_meta            ! metadata structure
   use ascii_util, only:file_open
-  use get_ixname, only:get_ixPar
-  use globalData, only:parMaster
+  use get_ixname, only:get_ixBeta, get_ixGamma
+  use globalData, only:betaMaster, gammaMaster
 
   implicit none
 
@@ -41,8 +41,10 @@ subroutine read_parm_master_meta(infile, err, message)
   integer(i4b)                         :: iend           ! check for the end of the file
   character(LEN=256)                   :: ffmt           ! file format
   type(par_meta)                       :: parmdTemp      ! temporary metadata structure
-  character(len=1)                     :: dLim(12)        ! column delimiter
+  character(len=1)                     :: dLim(12)       ! column delimiter
   integer(i4b)                         :: ivar           ! index of model variable
+  integer(i4b)                         :: iGamma         ! counter for gamma parameters in master parameter meta file
+  integer(i4b)                         :: iBeta          ! counter for beta parameters in master parameter meta file 
   ! Start procedure here
   err=0; message="read_param_meta/"
   ! open file
@@ -56,6 +58,7 @@ subroutine read_parm_master_meta(infile, err, message)
   ! read in format string
   read(temp,*)ffmt
   ! loop through the lines in the file
+  iGamma=0;iBeta=0
   do iline=1,maxLines
     ! read a line of data and exit iif an error code (character read, so only possible error is end of file)
     read(unt,'(a)',iostat=iend)temp; if (iend/=0)exit
@@ -81,21 +84,40 @@ subroutine read_parm_master_meta(infile, err, message)
      message=trim(message)//'delimiter is not in the correct place; line = ['//trim(temp)//']; filename = '//trim(infile)
      err=32; return
     endif
-    ! identify the index of the named variable
-    ivar = get_ixPar(parmdTemp%pname)
-    if(ivar<=0)then; err=40; message=trim(message)//"variableNotFound[var="//trim(parmdTemp%pname)//"]"; return; endif
-    ! check if index is within range
-    if(ivar>size(parMaster))then; err=50; message=trim(message)//"variableExceedsVectorSize[par="//trim(parmdTemp%pname)//"]"; return; endif
-    ! put data into the metadata vector
-    parMaster(ivar) = parmdTemp 
+    if ( parmdTemp%beta=='beta' )then
+      ! identify the index of the named variable
+      ivar = get_ixBeta(parmdTemp%pname)
+      if(ivar<=0)then; err=40; message=trim(message)//"variableNotFound[var="//trim(parmdTemp%pname)//"]"; return; endif
+      ! check if index is within range
+      if(ivar>size(betaMaster))then; err=50; message=trim(message)//"variableExceedsVectorSize[par="//trim(parmdTemp%pname)//"]"; return; endif
+      ! put data into the global gamma and beta master metadata vector
+      iBeta=iBeta+1
+      betaMaster(iBeta) = parmdTemp
+    else
+      ! identify the index of the named variable
+      ivar = get_ixGamma(parmdTemp%pname)
+      if(ivar<=0)then; err=40; message=trim(message)//"variableNotFound[var="//trim(parmdTemp%pname)//"]"; return; endif
+      ! check if index is within range
+      if(ivar>size(gammaMaster))then; err=50; message=trim(message)//"variableExceedsVectorSize[par="//trim(parmdTemp%pname)//"]"; return; endif
+      ! put data into the global gamma and beta master metadata vector
+      iGamma=iGamma+1
+      gammaMaster(iGamma) = parmdTemp
+    endif
   enddo  ! looping through lines in the file
 
-  ! check that all elements are populated
-  if(any(parMaster(:)%pname==''))then
-   do iline=1,size(parMaster)
-    print*,iline,' -> ',trim(parMaster(iline)%pname)
+  ! check that all elements are populated for betaMaster
+  if(any(betaMaster(:)%pname==''))then
+   do iline=1,size(betaMaster)
+    print*,iline,' -> ',trim(betaMaster(iline)%pname)
    end do
-   err=40; message=trim(message)//"someVariablesNotPopulated"; return
+   err=40; message=trim(message)//"BetaSomeVariablesNotPopulated"; return
+  endif
+  ! check that all elements are populated for gammaMaster
+  if(any(gammaMaster(:)%pname==''))then
+   do iline=1,size(gammaMaster)
+    print*,iline,' -> ',trim(gammaMaster(iline)%pname)
+   end do
+   err=40; message=trim(message)//"GammaSomeVariablesNotPopulated"; return
   endif
   ! close file unit
   close(unt)
