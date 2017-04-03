@@ -244,8 +244,6 @@ subroutine adj_snow_param_sac(multiplier, err, message)
   ! Read original soil parameter file
   do 
     read(unit=50,fmt=*,iostat=io) parName, (paramTemp(iHru), iHru=1,nHru)
-    print*,parName
-    print*,paramTemp
     if (io>0) then
       stop 'something wrong in input'
     elseif (io<0) then
@@ -286,11 +284,33 @@ subroutine adj_snow_param_sac(multiplier, err, message)
       case('si');     param(:,5)=multiplier(iPar)%var(1)*param(:,1) 
       case('pxtemp'); param(:,6)=multiplier(iPar)%var(1)*param(:,1) 
       case('nmf');    param(:,7)=multiplier(iPar)%var(1)*param(:,1) 
-      case('tipm');   param(:,9)=multiplier(iPar)%var(1)*param(:,1) 
-      case('plwhc');  param(:,10)=multiplier(iPar)%var(1)*param(:,1) 
-      case('daygm');  param(:,11)=multiplier(iPar)%var(1)*param(:,1) 
+      case('tipm');   param(:,8)=multiplier(iPar)%var(1)*param(:,1) 
+      case('plwhc');  param(:,9)=multiplier(iPar)%var(1)*param(:,1) 
+      case('daygm');  param(:,10)=multiplier(iPar)%var(1)*param(:,1) 
     end select
   enddo
+  if(    param(iHru, 1) .lt. 0.70_dp) then; param(iHru,1) = 0.70_dp !scf
+  elseif(param(iHru, 1) .gt. 1.40_dp) then; param(iHru,1) = 1.40_dp
+  elseif(param(iHru, 2) .lt. 0.50_dp) then; param(iHru,2) = 0.50_dp !mfmax 
+  elseif(param(iHru, 2) .gt. 2.00_dp) then; param(iHru,2) = 2.00_dp
+  elseif(param(iHru, 3) .lt. 0.05_dp) then; param(iHru,3) = 0.05_dp !mfmin
+  elseif(param(iHru, 3) .gt. 0.49_dp) then; param(iHru,3) = 0.49_dp
+  elseif(param(iHru, 4) .lt. 0.03_dp) then; param(iHru,4) = 0.03_dp !uadj
+  elseif(param(iHru, 4) .gt. 0.19_dp) then; param(iHru,4) = 0.19_dp
+  elseif(param(iHru, 5) .lt. 0.00_dp) then; param(iHru,5) = 0.00_dp !si
+  elseif(param(iHru, 5) .gt. 2000_dp) then; param(iHru,5) = 2000_dp
+  elseif(param(iHru, 6) .lt. -2.0_dp) then; param(iHru,6) = -2.0_dp !pxtemp
+  elseif(param(iHru, 6) .gt. 2.00_dp) then; param(iHru,6) = 2.00_dp
+  elseif(param(iHru, 7) .lt. 0.05_dp) then; param(iHru,7) = 0.05_dp !nmf
+  elseif(param(iHru, 7) .gt. 0.50_dp) then; param(iHru,7) = 0.50_dp
+  elseif(param(iHru, 8) .lt. 0.10_dp) then; param(iHru,8) = 0.10_dp !tipm
+  elseif(param(iHru, 8) .gt. 1.00_dp) then; param(iHru,8) = 1.00_dp
+  elseif(param(iHru, 9) .lt. 0.02_dp) then; param(iHru,9) = 0.02_dp !plwhc
+  elseif(param(iHru, 9) .gt. 0.30_dp) then; param(iHru,9) = 0.30_dp
+  elseif(param(iHru,10) .lt. 0.00_dp) then;param(iHru,10) = 0.00_dp !daygm
+  elseif(param(iHru,10) .gt. 0.30_dp) then;param(iHru,10) = 0.30_dp
+  endif
+
   write(rowfmt,'(A,I3,A)') '(A,',nHru,'(1X,F10.5))' 
   write(51,fmt=trim(rowfmt)) ('scf',    param(iHru,1), iHru=1,nHru )
   write(51,fmt=trim(rowfmt)) ('mfmax',  param(iHru,2), iHru=1,nHru )
