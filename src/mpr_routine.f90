@@ -18,7 +18,7 @@ contains
 ! ************************************************************************************************
 ! this subroutine is used for opt=3 in namelist (run only mpr and output parameters)
 subroutine run_mpr( calParam, restartFile, err, message ) 
-  use globalData,    only: betaCalScale, parSubset, gammaSubset, parArray, parMask, nBetaGammaCal, nSoilParModel, nVegParModel
+  use globalData,    only: calScaleMeta, calParMeta, calGammaMeta, parArray, parMask, nCalPar, nSoilBetaModel, nVegBetaModel
   use model_wrapper, only: read_hru_id
   use write_param_nc,only: write_nc_soil,write_nc_veg
   implicit none
@@ -30,27 +30,27 @@ subroutine run_mpr( calParam, restartFile, err, message )
   character(len=strLen),intent(out) :: message                       ! error message
   ! local
   real(dp),             allocatable :: params(:)                     ! parameter vector that is input into mpr
-  type(var_d)                       :: calParStr(nBetaGammaCal)      ! parameter storage including perLayr values converted from parameter array 
-  type(var_d)                       :: pnormCoef(size(betaCalScale)) ! parameter storage converted from parameter array 
+  type(var_d)                       :: calParStr(nCalPar)            ! parameter storage including perLayr values converted from parameter array 
+  type(var_d)                       :: pnormCoef(size(calScaleMeta)) ! parameter storage converted from parameter array 
   type(var_d),          allocatable :: paramGammaStr(:)              ! calibratin gamma parameter storage extracted from calParStr
   integer(i4b)                      :: idx                           ! counter 
   integer(i4b)                      :: iPar                          ! loop index for parameter 
-  logical(lgc)                      :: mask(nBetaGammaCal)           ! 1D mask
+  logical(lgc)                      :: mask(nCalPar)                 ! 1D mask
   integer(i4b)                      :: hruID(nHru)                   ! Hru ID
   real(dp)                          :: hModel(nLyr,nHru)             ! storage of model layer thickness at model layer x model hru 
-  type(namedvar2)                   :: parMxyMz(nSoilParModel)       ! storage of model soil parameter at model layer x model hru 
-  type(namedvar2)                   :: vegParMxy(nVegParModel)       ! storage of model vege parameter at month x model hru
+  type(namedvar2)                   :: parMxyMz(nSoilBetaModel)      ! storage of model soil parameter at model layer x model hru 
+  type(namedvar2)                   :: vegParMxy(nVegBetaModel)      ! storage of model vege parameter at month x model hru
   character(len=strLen)             :: cmessage                      ! error message from subroutine
 
   err=0; message='run_mpr/' ! to initialize error control
-  if ( any(parSubset(:)%beta /= "beta") )then ! calPar need to include min. one gamma parameter to be used for MPR 
+  if ( any(calParMeta(:)%beta /= "beta") )then ! calPar need to include min. one gamma parameter to be used for MPR 
     if ( idModel/=0 )then;idModel=0;print*,trim(message)//'idModel is set to zero - model inepenedent';endif
     allocate(params, source=calParam) ! copy calParameter default
     call restartIO( params, restartFile ) ! check restartFile exist, if it does, update params vector, otherwise wite them in restartFile
     ! transform parameter vector to custom data type - calParStr and pnormCoef
     idx=1
-    do iPar=1,nBetaGammaCal !beta and gamma parameter values
-      if (parSubset(iPar)%perLyr)then
+    do iPar=1,nCalPar !beta and gamma parameter values
+      if (calParMeta(iPar)%perLyr)then
         allocate(calParStr(iPar)%var(nLyr))
         calParStr(iPar)%var=params(idx:idx+nLyr-1)
         idx=idx+nLyr
@@ -60,7 +60,7 @@ subroutine run_mpr( calParam, restartFile, err, message )
         idx=idx+1
       endif
     end do
-    do iPar=1,size(betaCalScale) ! scaling parameter for beta parameter estimated with MPR
+    do iPar=1,size(calScaleMeta) ! scaling parameter for beta parameter estimated with MPR
       allocate(pnormCoef(iPar)%var(2))
       pnormCoef(iPar)%var=params(idx:idx+1)
       idx=idx+2
@@ -68,27 +68,27 @@ subroutine run_mpr( calParam, restartFile, err, message )
     ! Get hruID from mapping file
     call read_hru_id(idModel, hruID, err, cmessage)
     if (err/=0)then;message=trim(message)//trim(cmessage);return;endif
-    do iPar=1,nSoilParModel
+    do iPar=1,nSoilBetaModel
       allocate(parMxyMz(iPar)%varData(nLyr,nHru),stat=err)
     enddo
-    do iPar=1,nVegParModel
+    do iPar=1,nVegBetaModel
       allocate(vegParMxy(iPar)%varData(nMonth,nHru),stat=err)
     enddo
-    mask=parSubset(:)%beta/="beta"
+    mask=calParMeta(:)%beta/="beta"
     allocate(paramGammaStr(count(mask)))
     paramGammaStr=pack(calParStr,mask)
     do iPar=1,size(paramGammaStr)
       if (size(paramGammaStr(iPar)%var)>1)then;message=trim(message)//'gammaParameter should not have perLayer value';return;endif
     enddo
     !perform MPR
-    call mpr(hruID, pnormCoef, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
+    call mpr(hruID, pnormCoef, paramGammaStr, calGammaMeta, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
     if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     !! Write parameter derived from MPR in netCDF 
-    if (nSoilParModel>0_i4b)then
+    if (nSoilBetaModel>0_i4b)then
       call write_nc_soil(trim(mpr_output_dir)//trim(soil_param_nc), hruID, hModel, parMxyMz, err, cmessage)
       if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     endif
-    if (nVegParModel>0_i4b)then
+    if (nVegBetaModel>0_i4b)then
       call write_nc_veg(trim(mpr_output_dir)//trim(veg_Param_nc), hruID, vegParMxy, err, cmessage)
       if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     endif
@@ -113,8 +113,8 @@ subroutine run_mpr( calParam, restartFile, err, message )
     if ( isExistFile ) then !  if state file exists, read it and update params
       print*, 'read restart file'
       open(unit=70,file=trim(adjustl(restartFile)), action='read', status = 'unknown')
-      do i=1,nBetaGammaCal
-        if (parSubset(i)%perLyr)then
+      do i=1,nCalPar
+        if (calParMeta(i)%perLyr)then
           do j=1,nLyr
             read(70,*) cdummy, params(i), ldummy, cdummy
           end do
@@ -122,28 +122,28 @@ subroutine run_mpr( calParam, restartFile, err, message )
           read(70,*) cdummy, params(i), ldummy, cdummy
         endif
       end do
-      do i=1,size(betaCalScale) 
-         read(70,*) cdummy, params(nBetaGammaCal+2*i-1), ldummy, cdummy
-         read(70,*) cdummy, params(nBetaGammaCal+2*i), ldummy, cdummy
+      do i=1,size(calScaleMeta) 
+         read(70,*) cdummy, params(nCalPar+2*i-1), ldummy, cdummy
+         read(70,*) cdummy, params(nCalPar+2*i), ldummy, cdummy
       end do
       close(70)
     else          !otherwise write out
       print*, 'write restart file'
       open(unit=70,file=trim(adjustl(restartFile)), action='write', status = 'unknown')
-      do i=1,nBetaGammaCal
-        if (parSubset(i)%perLyr)then
+      do i=1,nCalPar
+        if (calParMeta(i)%perLyr)then
           do j=1,nLyr
-            write(70,100) parSubset(i)%pname(1:20), parArray(i,1), parMask(i), 'Beta-par-perLayer'
+            write(70,100) calParMeta(i)%pname(1:20), parArray(i,1), parMask(i), 'Beta-par-perLayer'
             100 format(1X,A,1X,ES17.10,1X,L9,1X,A20)
           end do
         else
-          write(70,200) parSubset(i)%pname(1:20), parArray(i,1), parMask(i), 'Gamma-par'
+          write(70,200) calParMeta(i)%pname(1:20), parArray(i,1), parMask(i), 'Gamma-par'
           200 format(1X,A,1X,ES17.10,1X,L9,1X,A20)
         endif
       enddo  
-      do i=1,size(betaCalScale) 
-         write(70,300) betaCalScale(i)%betaname(1:20), parArray(nBetaGammaCal+2*i-1,1), parMask(nBetaGammaCal+2*i-1), 'H-scaling-par'
-         write(70,300) betaCalScale(i)%betaname(1:20), parArray(nBetaGammaCal+2*i  ,1), parMask(nBetaGammaCal+2*i),   'V-scaling-par'
+      do i=1,size(calScaleMeta) 
+         write(70,300) calScaleMeta(i)%betaname(1:20), parArray(nCalPar+2*i-1,1), parMask(nCalPar+2*i-1), 'H-scaling-par'
+         write(70,300) calScaleMeta(i)%betaname(1:20), parArray(nCalPar+2*i  ,1), parMask(nCalPar+2*i),   'V-scaling-par'
          300 format(1X,A,1X,ES17.10,1X,L9,1X,A20)
       end do
       close(70)
@@ -166,8 +166,8 @@ subroutine mpr(hruID,             &     ! input: hruID
                err, message)            ! output: error id and message
   use model_wrapper,        only:read_hru_id
   use popMeta,              only:popMprMeta
-  use globalData,           only:betaMaster, gammaMaster, soilBetaInGamma, vegBetaInGamma, betaCalScale, &
-                                 sdata_meta, vdata_meta, map_meta, nSoilParModel, nVegParModel
+  use globalData,           only:betaMeta, gammaMeta, soilBetaCalName, vegBetaCalName, calScaleMeta, &
+                                 sdata_meta, vdata_meta, map_meta, nSoilBetaModel, nVegBetaModel
   use get_ixname,           only:get_ixGamma, get_ixBeta
   use tf,                   only:comp_model_param              ! Including Soil model parameter transfer function
   use modelLayer,           only:comp_model_depth              ! Including model layr depth computation routine 
@@ -187,79 +187,79 @@ subroutine mpr(hruID,             &     ! input: hruID
   implicit none
 
   ! input
-  integer(i4b),         intent(in)   :: hruID(:)                 ! hruID list
-  type(var_d),          intent(in)   :: gammaParStr(:)           ! data structure of gamma parameter value adjusted with calibration
-  type(var_d),          intent(in)   :: pnormCoefStr(:)          ! data structure of pnorm coefficient value adjusted with calibration
-  type(cpar_meta),      intent(in)   :: gammaParMeta(:)          ! array of calibrating gamma parameter meta data
+  integer(i4b),         intent(in)   :: hruID(:)                   ! hruID list
+  type(var_d),          intent(in)   :: gammaParStr(:)             ! data structure of gamma parameter value adjusted with calibration
+  type(var_d),          intent(in)   :: pnormCoefStr(:)            ! data structure of pnorm coefficient value adjusted with calibration
+  type(cpar_meta),      intent(in)   :: gammaParMeta(:)            ! array of calibrating gamma parameter meta data
   ! output
-  real(dp),             intent(out)  :: hModel(:,:)              ! Model layer thickness at model layer x model hru 
-  type(namedvar2),      intent(inout):: parMxyMz(:)              ! storage of model soil parameter at model layer x model hru 
-  type(namedvar2),      intent(inout):: vegParMxy(:)             ! storage of model vege parameter at model hru
-  integer(i4b),         intent(out)  :: err                      ! error code
-  character(len=strLen),intent(out)  :: message                  ! error message 
+  real(dp),             intent(out)  :: hModel(:,:)                ! Model layer thickness at model layer x model hru 
+  type(namedvar2),      intent(inout):: parMxyMz(:)                ! storage of model soil parameter at model layer x model hru 
+  type(namedvar2),      intent(inout):: vegParMxy(:)               ! storage of model vege parameter at model hru
+  integer(i4b),         intent(out)  :: err                        ! error code
+  character(len=strLen),intent(out)  :: message                    ! error message 
   ! local
-  character(len=strLen)              :: cmessage                 ! error message from downward subroutine
-  integer(i2b),parameter             :: iHruPrint = 1            ! model hru id (index) for which everything is printed for checking
-  integer(i4b),parameter             :: nSub=11                  ! max. number of Soil layer within Model layer
-  integer(i4b)                       :: iLocal                   ! index of hru array in mapping file that match hru id of interest 
-  integer(i4b)                       :: iGamma                   ! index loop
-  integer(i4b)                       :: iPoly                    ! Loop index of soil polygon
-  integer(i4b)                       :: iSLyr                    ! Loop index of soil layer 
-  integer(i4b)                       :: iMLyr                    ! loop index of model soil layer (1,...,n from top to bottom) 
-  integer(i4b)                       :: iParm                    ! Loop index of model parameters (e.g., VIC)
-  integer(i4b)                       :: iVar                     ! Loop index of miscleneous variables 
-  integer(i4b)                       :: iMon                     ! Loop index of month 
-  integer(i4b)                       :: iHru                     ! loop index of hrus 
-  integer(i4b)                       :: iSub                     ! Loop index of multiple soi layers in model layer
-  integer(i4b)                       :: ixStart                  ! starting index of subset geophysical polygons in the entire dataset 
-  integer(i4b)                       :: ixEnd                    ! ending index of subset geophysical polygons in the entire dataset 
+  character(len=strLen)              :: cmessage                   ! error message from downward subroutine
+  integer(i2b),parameter             :: iHruPrint = 1              ! model hru id (index) for which everything is printed for checking
+  integer(i4b),parameter             :: nSub=11                    ! max. number of Soil layer within Model layer
+  integer(i4b)                       :: iLocal                     ! index of hru array in mapping file that match hru id of interest 
+  integer(i4b)                       :: iGamma                     ! index loop
+  integer(i4b)                       :: iPoly                      ! Loop index of soil polygon
+  integer(i4b)                       :: iSLyr                      ! Loop index of soil layer 
+  integer(i4b)                       :: iMLyr                      ! loop index of model soil layer (1,...,n from top to bottom) 
+  integer(i4b)                       :: iParm                      ! Loop index of model parameters (e.g., VIC)
+  integer(i4b)                       :: iVar                       ! Loop index of miscleneous variables 
+  integer(i4b)                       :: iMon                       ! Loop index of month 
+  integer(i4b)                       :: iHru                       ! loop index of hrus 
+  integer(i4b)                       :: iSub                       ! Loop index of multiple soi layers in model layer
+  integer(i4b)                       :: ixStart                    ! starting index of subset geophysical polygons in the entire dataset 
+  integer(i4b)                       :: ixEnd                      ! ending index of subset geophysical polygons in the entire dataset 
   type(par_meta),allocatable         :: gammaUpdateMeta(:)
-  type(par_meta),allocatable         :: betaMasterMeta(:)
-  integer(i4b)                       :: nSpoly                   ! number of soil polygon in entire soil data domain 
-  integer(i4b)                       :: nSlyrs                   ! number of soil layers
-  integer(i4b)                       :: nVpoly                   ! TO BE DELETED: number of vege polygon (grid box) in entire vege data domain 
-  integer(i4b)                       :: nShru                    ! number of hrus in soil mapping file) 
-  integer(i4b)                       :: nVhru                    ! TO BE DELETED: number of hrus in vege mapping file (should be equal to nVhru)
-  integer(i4b)                       :: nOverSpoly               ! number of overlapped soil polygon for each model HRU 
-  integer(i4b)                       :: nOverVpoly               ! TO BE DELETED: number of overlapped vege polygon for each model HRU 
-  integer(i4b)                       :: nSpolyLocal              ! number of subset overlapped soil polygon for each model HRU 
-  integer(i4b)                       :: nVpolyLocal              ! TO BE DELETED: number of subset overlapped vege polygon for each model HRU 
-  real(dp)                           :: hfrac(nLyr-1)            ! fraction of soil depth for each model layer 
-  type(namevar)                      :: sdata(nVarSoilData)      ! soil data container for all the soil polygons
-  type(namevar)                      :: sdataLocal(nVarSoilData) ! soil data container for local soil polygon 
-  type(namevar)                      :: vdata(nVarVegData)       ! veg data container for all the veg polygons
-  type(namevar)                      :: vdataLocal(nVarVegData)  ! veg data container for local vege polygon 
-  integer(i4b)                       :: vegClass(nVclass)        ! veg class array (e.g., IGBP)
-  type(var_d)                        :: vcls2prp(nVclass)        ! storage of property value for each veg class
-  integer(i4b)                       :: iVclass                  ! ID (= index) of vege class 
-  real(dp),        allocatable       :: hModelLocal(:,:)         ! Model layer thickness for soil polygon within one hru
-  real(dp),        allocatable       :: zModelLocal(:,:)         ! Model layer depth for soil polygon within one hru
-  type(namedvar2)                    :: parSxySz(nSoilParModel)  ! storage of model soil parameter for 2D field -soil layer x soil poy 
-  type(namedvar2)                    :: parSxyMz(nSoilParModel)  ! storage of model soil parameter for 2D field -model layer x soil poy
-  type(namedvar2)                    :: parVxy(nVegParModel)     ! storage of model vege parameter for 1D or 2D field - vege poly (x month)
-  integer(i4b),    allocatable       :: polySub(:)               ! list of ID (=index) of soil polygons contributing model hru
-  integer(i4b),    allocatable       :: vPolySub(:)              ! TO BE DELETED: list of ID (=index) of veg polygons contributing model hru 
-  type(mapvar)                       :: mapdata(2)               ! map data container for all the soil polygons
-  real(dp),        allocatable       :: swgtSub(:)               ! adjusted Areal weight of soil polygon for all model hrus
-  real(dp),        allocatable       :: vwgtSub(:)               ! TO BE DELETED: adjusted Areal weight of veg polygon for one model hrus
-  type(poly),      allocatable       :: soil2model_map(:)        ! data structure to hold weight and index of contributing soil layer per model layer and per soil polygon
-  type(var_d)                        :: soilParVec(nSoilParModel)! data structure to hold soil parameter vector e.g., all layers for one polygon
-  type(var_d)                        :: vegParVec(nVegParModel)  ! data structure to hold veg parameter vector e.g., all months for one polygon
+  type(par_meta),allocatable         :: betaUpdateMeta(:)
+  integer(i4b)                       :: nSpoly                     ! number of soil polygon in entire soil data domain 
+  integer(i4b)                       :: nSlyrs                     ! number of soil layers
+  integer(i4b)                       :: nVpoly                     ! TO BE DELETED: number of vege polygon (grid box) in entire vege data domain 
+  integer(i4b)                       :: nShru                      ! number of hrus in soil mapping file) 
+  integer(i4b)                       :: nVhru                      ! TO BE DELETED: number of hrus in vege mapping file (should be equal to nVhru)
+  integer(i4b)                       :: nOverSpoly                 ! number of overlapped soil polygon for each model HRU 
+  integer(i4b)                       :: nOverVpoly                 ! TO BE DELETED: number of overlapped vege polygon for each model HRU 
+  integer(i4b)                       :: nSpolyLocal                ! number of subset overlapped soil polygon for each model HRU 
+  integer(i4b)                       :: nVpolyLocal                ! TO BE DELETED: number of subset overlapped vege polygon for each model HRU 
+  real(dp)                           :: hfrac(nLyr-1)              ! fraction of soil depth for each model layer 
+  type(namevar)                      :: sdata(nVarSoilData)        ! soil data container for all the soil polygons
+  type(namevar)                      :: sdataLocal(nVarSoilData)   ! soil data container for local soil polygon 
+  type(namevar)                      :: vdata(nVarVegData)         ! veg data container for all the veg polygons
+  type(namevar)                      :: vdataLocal(nVarVegData)    ! veg data container for local vege polygon 
+  integer(i4b)                       :: vegClass(nVclass)          ! veg class array (e.g., IGBP)
+  type(var_d)                        :: vcls2prp(nVclass)          ! storage of property value for each veg class
+  integer(i4b)                       :: iVclass                    ! ID (= index) of vege class 
+  real(dp),        allocatable       :: hModelLocal(:,:)           ! Model layer thickness for soil polygon within one hru
+  real(dp),        allocatable       :: zModelLocal(:,:)           ! Model layer depth for soil polygon within one hru
+  type(namedvar2)                    :: parSxySz(nSoilBetaModel)   ! storage of model soil parameter for 2D field -soil layer x soil poy 
+  type(namedvar2)                    :: parSxyMz(nSoilBetaModel)   ! storage of model soil parameter for 2D field -model layer x soil poy
+  type(namedvar2)                    :: parVxy(nVegBetaModel)      ! storage of model vege parameter for 1D or 2D field - vege poly (x month)
+  integer(i4b),    allocatable       :: polySub(:)                 ! list of ID (=index) of soil polygons contributing model hru
+  integer(i4b),    allocatable       :: vPolySub(:)                ! TO BE DELETED: list of ID (=index) of veg polygons contributing model hru 
+  type(mapvar)                       :: mapdata(2)                 ! map data container for all the soil polygons
+  real(dp),        allocatable       :: swgtSub(:)                 ! adjusted Areal weight of soil polygon for all model hrus
+  real(dp),        allocatable       :: vwgtSub(:)                 ! TO BE DELETED: adjusted Areal weight of veg polygon for one model hrus
+  type(poly),      allocatable       :: soil2model_map(:)          ! data structure to hold weight and index of contributing soil layer per model layer and per soil polygon
+  type(var_d)                        :: soilParVec(nSoilBetaModel) ! data structure to hold soil parameter vector e.g., all layers for one polygon
+  type(var_d)                        :: vegParVec(nVegBetaModel)    ! data structure to hold veg parameter vector e.g., all months for one polygon
   
   ! initialize error control
   err=0; message='mpr/'
   !(0) Preparation
-  allocate(gammaUpdateMeta, source=gammaMaster) ! copy master gamma parameter metadata
-  allocate(betaMasterMeta, source=betaMaster) ! copy master beta parameter metadata
+  allocate(gammaUpdateMeta, source=gammaMeta) ! copy master gamma parameter metadata
+  allocate(betaUpdateMeta,  source=betaMeta)  ! copy master beta parameter metadata
   ! Swap gammaUpdateMeta%val with adjusted gammaPar value
   do iGamma=1,size(gammaParStr)
     gammaUpdateMeta(gammaParMeta(iGamma)%ixMaster)%val=gammaParStr(iGamma)%var(1)
   enddo
-  ! Swap betaMasterMeta%hpnorm and vpnorm with adjusted pnorm coefficient value
+  ! Swap betaUpdateMeta%hpnorm and vpnorm with adjusted pnorm coefficient value
   do iParm=1,size(pnormCoefStr)
-    associate(ix=>get_ixBeta(betaCalScale(iParm)%betaname))
-      betaMasterMeta(ix)%hpnorm=pnormCoefStr(iParm)%var(1)
-      betaMasterMeta(ix)%vpnorm=pnormCoefStr(iParm)%var(2)
+    associate(ix=>get_ixBeta(calScaleMeta(iParm)%betaname))
+      betaUpdateMeta(ix)%hpnorm=pnormCoefStr(iParm)%var(1)
+      betaUpdateMeta(ix)%vpnorm=pnormCoefStr(iParm)%var(2)
     end associate
   enddo 
   call popMprMeta( err, cmessage)   !for sdata_meta, vdata_meta, map_meta
@@ -360,8 +360,8 @@ subroutine mpr(hruID,             &     ! input: hruID
     vPolySub = overVpolyID(ixStart:ixEnd) ! id of soil polygons contributing to current hru
     vwgtSub  = vwgt(ixStart:ixEnd)        ! weight of soil polygons contributing to current hru
     ! allocate memmory
-    if (nSoilParModel>0_i4b)then !if at least one soil parameter is included 
-      do iParm=1,nSoilParModel
+    if (nSoilBetaModel>0_i4b)then !if at least one soil parameter is included 
+      do iParm=1,nSoilBetaModel
         allocate(parSxySz(iParm)%varData(nSlyrs,nSpolyLocal),stat=err); if(err/=0)then;message=message//'error allocating parSxySz%varData';return;endif 
         allocate(parSxyMz(iParm)%varData(nLyr,nSpolyLocal),stat=err);   if(err/=0)then;message=message//'error allocating parSxyMz%varData';return;endif
       enddo
@@ -376,8 +376,8 @@ subroutine mpr(hruID,             &     ! input: hruID
         enddo
       enddo
     endif
-    if (nVegParModel>0_i4b)then !if at least one veg parameter is included
-      do iParm=1,nVegParModel
+    if (nVegBetaModel>0_i4b)then !if at least one veg parameter is included
+      do iParm=1,nVegBetaModel
         allocate(parVxy(iParm)%varData(nMonth, nVpolyLocal),stat=err)
       enddo
     endif
@@ -433,18 +433,18 @@ subroutine mpr(hruID,             &     ! input: hruID
     if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
     if ( iHru == iHruPrint ) then
       print*,'(2) Print Model parameter at native resolution'
-      if (nSoilParModel>0_i4b)then
+      if (nSoilBetaModel>0_i4b)then
         write(*,"(' Layer       =',20I9)") (iSLyr, iSlyr=1,nSlyrs)
-        do iParm=1,nSoilParModel
+        do iParm=1,nSoilBetaModel
           do iPoly = 1,nSpolyLocal
-            write(*,"(1X,A12,'=',20f9.3)") soilBetaInGamma(iParm), (parSxySz(iParm)%varData(iSLyr,iPoly), iSlyr=1,nSlyrs)
+            write(*,"(1X,A12,'=',20f9.3)") soilBetaCalName(iParm), (parSxySz(iParm)%varData(iSLyr,iPoly), iSlyr=1,nSlyrs)
           enddo
         enddo
       endif
-      if (nVegParModel>0_i4b)then
-        do iParm=1,nVegParModel
+      if (nVegBetaModel>0_i4b)then
+        do iParm=1,nVegBetaModel
           do iPoly = 1,nVpolyLocal
-            write(*,"(1X,A10,'= ',100f9.3)") vegBetaInGamma(iParm), (parVxy(iParm)%varData(iMon, iPoly), iMon=1,nMonth)
+            write(*,"(1X,A10,'= ',100f9.3)") vegBetaCalName(iParm), (parVxy(iParm)%varData(iMon, iPoly), iMon=1,nMonth)
           enddo
         enddo
       endif 
@@ -452,7 +452,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   ! ***********
   ! (4) Spatial aggregation of Model parameter 
   ! *********************************************************************
-    if (nSoilParModel>0_i4b)then
+    if (nSoilBetaModel>0_i4b)then
       ! **********
       ! (4.1) Aggregate model parameveter vertical direction - soil data layers to model soil layers
       ! *********************************************************************
@@ -483,33 +483,33 @@ subroutine mpr(hruID,             &     ! input: hruID
       ! (4.1.3) Computing vertical weight for each model layer
       do iPoly=1,nSpolyLocal
         do iMLyr = 1,nLyr
-          do iParm = 1,nSoilParModel
+          do iParm = 1,nSoilBetaModel
             allocate( soilParVec(iParm)%var(nSub),stat=err); if(err/=0)then;message=trim(message)//'error allocating soilParVec';return;endif 
             soilParVec(iParm)%var = 0._dp
           enddo
           do iSub=1,nSub
             third: associate(iSelect => soil2model_map(iPoly)%layer(iMLyr)%ixSubLyr(iSub) )
             if (iSelect > 0 ) then 
-              do iParm = 1,nSoilParModel
+              do iParm = 1,nSoilBetaModel
                 soilParVec(iParm)%var(iSub) = parSxySz(iParm)%varData(iSelect,iPoly)
               enddo
             endif
             end associate third
           enddo
-          do iParm = 1,nSoilParModel
-            forth: associate( ix=>get_ixBeta(trim(soilBetaInGamma(iParm))) )
-            if ( trim(betaMasterMeta(ix)%vups)/='na' )then
+          do iParm = 1,nSoilBetaModel
+            forth: associate( ix=>get_ixBeta(trim(soilBetaCalName(iParm))) )
+            if ( trim(betaUpdateMeta(ix)%vups)/='na' )then
               call aggreg(parSxyMz(iParm)%varData(iMLyr,iPoly),         &
                           soil2model_map(iPoly)%layer(iMLyr)%weight(:), &
                           soilParVec(iParm)%var(:),                     &
-                          betaMasterMeta(ix)%vups,                      &
-                          betaMasterMeta(ix)%vpnorm,                    &
+                          betaUpdateMeta(ix)%vups,                      &
+                          betaUpdateMeta(ix)%vpnorm,                    &
                           err, cmessage)
                if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
             endif
             end associate forth
           enddo
-          do iParm = 1,nSoilParModel
+          do iParm = 1,nSoilBetaModel
             deallocate(soilParVec(iParm)%var,stat=err);if(err/=0)then;message=trim(message)//'error deallocating soilParVec%layer';return;endif
           enddo
         enddo ! end of iMLyr (model layer) loop
@@ -518,36 +518,36 @@ subroutine mpr(hruID,             &     ! input: hruID
     ! ************
     ! (4.2) Aggregate model parameveter horizontally - use spatial weight netCDF 
     ! *********************************************************************
-    if (nSoilParModel>0_i4b)then
+    if (nSoilBetaModel>0_i4b)then
       do iMLyr=1,nLyr
-        do iParm = 1,nSoilParModel
+        do iParm = 1,nSoilBetaModel
           allocate( soilParVec(iParm)%var(nSpolyLocal),stat=err); if(err/=0)then; message=trim(message)//'error allocating soilParVec'; return; endif
           soilParVec(iParm)%var = 0._dp
         enddo
-        do iParm = 1,nSoilParModel
+        do iParm = 1,nSoilBetaModel
           do iPoly=1,nSpolyLocal
               soilParVec(iParm)%var(iPoly) = parSxyMz(iParm)%varData(iMLyr,iPoly)
           enddo
         enddo
         call aggreg(hModel(iMLyr,iHru), swgtsub(:), hModelLocal(iMLyr,:),'pnorm', 1.0_dp, err, cmessage)
-        do iParm = 1,nSoilParModel
-          fifth: associate( ix=>get_ixBeta(trim(soilBetaInGamma(iParm))) )
-          if ( trim(betaMasterMeta(ix)%hups)/='na' )then
+        do iParm = 1,nSoilBetaModel
+          fifth: associate( ix=>get_ixBeta(trim(soilBetaCalName(iParm))) )
+          if ( trim(betaUpdateMeta(ix)%hups)/='na' )then
             call aggreg(parMxyMz(iParm)%varData(iMLyr,iHru), &
                         swgtsub(:),                          &
                         soilParVec(iParm)%var(:),            &
-                        betaMasterMeta(ix)%hups,             &
-                        betaMasterMeta(ix)%hpnorm,           &
+                        betaUpdateMeta(ix)%hups,             &
+                        betaUpdateMeta(ix)%hpnorm,           &
                         err, cmessage)
             if ( iHru == iHruPrint ) then
               print*,'-----------------------------------'
               print*,'Aggregated soil parameter '
-              write(*,"(1X,A17,'(layer ',I2,') = ',100f9.3)") betaMasterMeta(ix)%pname,iMLyr ,parMxyMz(iParm)%varData(iMLyr,iHru)
+              write(*,"(1X,A17,'(layer ',I2,') = ',100f9.3)") betaUpdateMeta(ix)%pname,iMLyr ,parMxyMz(iParm)%varData(iMLyr,iHru)
             endif
           endif
           end associate fifth
         enddo
-        do iParm = 1,nSoilParModel
+        do iParm = 1,nSoilBetaModel
           deallocate(soilParVec(iParm)%var, stat=err); if(err/=0)then; message=trim(message)//'error deallocating soilParVec%var'; return; endif 
         enddo
       enddo
@@ -555,41 +555,41 @@ subroutine mpr(hruID,             &     ! input: hruID
       deallocate(soil2model_map,stat=err); if(err/=0)then; message=trim(message)//'error deallocating soil2model_map';return;endif
       deallocate(hModelLocal,stat=err);    if(err/=0)then; message=trim(message)//'error deallocating hModelLocal';return;endif
       deallocate(zModelLocal,stat=err);    if(err/=0)then; message=trim(message)//'error deallocating zModelLocal';return;endif
-      do iParm=1,nSoilParModel
+      do iParm=1,nSoilBetaModel
         deallocate(parSxySz(iParm)%varData,stat=err);if(err/=0)then; message=message//'error deallocating parSxySz%varData'; return; endif 
         deallocate(parSxyMz(iParm)%varData,stat=err);if(err/=0)then; message=message//'error deallocating parSxyMz%varData'; return; endif
       enddo
     endif
-    if (nVegParModel>0_i4b)then
+    if (nVegBetaModel>0_i4b)then
       do iMon=1,nMonth
-        do iParm = 1,nVegParModel
+        do iParm = 1,nVegBetaModel
           allocate( vegParVec(iParm)%var(nVpolyLocal),stat=err); if(err/=0)then; message=trim(message)//'error allocating vegParVec%var'; return; endif
         enddo
-        do iParm = 1,nVegParModel
+        do iParm = 1,nVegBetaModel
           do iPoly=1,nVpolyLocal
               vegParVec(iParm)%var(iPoly) = parVxy(iParm)%varData(iMon, iPoly)
           enddo
         enddo
-        do iParm = 1,nVegParModel
-          sixth: associate( ix=>get_ixBeta(trim(vegBetaInGamma(iParm))) )
+        do iParm = 1,nVegBetaModel
+          sixth: associate( ix=>get_ixBeta(trim(vegBetaCalName(iParm))) )
           call aggreg(vegParMxy(iParm)%varData(iMon, iHru), &
                       vwgtSub(:),                           &
                       vegParVec(iParm)%var,                 &
-                      betaMasterMeta(ix)%hups,              &
-                      betaMasterMeta(ix)%hpnorm,            &
+                      betaUpdateMeta(ix)%hups,              &
+                      betaUpdateMeta(ix)%hpnorm,            &
                       err,cmessage)
           if ( iHru == iHruPrint ) then
             print*,'-----------------------------------'
             print*,'Aggregated vege parameter '
-            write(*,"(1X,A17,'(Month ',I2,') = ',100f9.3)") betaMasterMeta(ix)%pname, iMon ,parMxyMz(iParm)%varData(iMon,iHru)
+            write(*,"(1X,A17,'(Month ',I2,') = ',100f9.3)") betaUpdateMeta(ix)%pname, iMon ,parMxyMz(iParm)%varData(iMon,iHru)
           endif
           end associate sixth
         enddo
-        do iParm = 1,nVegParModel
+        do iParm = 1,nVegBetaModel
           deallocate(vegParVec(iParm)%var, stat=err); if(err/=0)then; message=trim(message)//'error deallocating vegParVec%var'; return; endif 
         enddo
       enddo
-      do iParm=1,nVegParModel
+      do iParm=1,nVegBetaModel
         deallocate(parVxy(iParm)%varData,stat=err);if(err/=0)then; message=message//'error deallocating parVxy%varData'; return; endif 
       enddo
     endif
@@ -707,7 +707,7 @@ subroutine pop_hfrac( gammaUpdateMeta, hfrac, err, message)
   hfrac=dummy(1:nLyr-1)
   
   !check h parameters - now can chcek up to 5 layers
-  !do i=1,size(gammaSubset)
+  !do i=1,size(calGammaMeta)
   !  if (gammaParMeta(i)%pname=="h1gamma1")then;dummy(1)=gammaParStr(i)%var(1);cycle;endif 
   !  if (gammaParMeta(i)%pname=="h2gamma1")then;dummy(2)=gammaParStr(i)%var(1);cycle;endif
   !  if (gammaParMeta(i)%pname=="h3gamma1")then;dummy(3)=gammaParStr(i)%var(1);cycle;endif

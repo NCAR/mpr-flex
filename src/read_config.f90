@@ -53,7 +53,7 @@ module read_config
   namelist / modelconfig / idModel,                &
                            TotNpar,                &    
                            nLyr,                   &
-                           calpar
+                           inParList
 ! DDS algorithm 
   namelist / DDS / rpar,        &
                    isRestart,   &

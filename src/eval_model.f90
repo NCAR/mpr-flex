@@ -18,14 +18,14 @@ contains
 !************************************
 function objfn( calParam )
   use mpr_routine,   only: mpr
-  use globalData,    only: betaCalScale, betaMaster, parSubset, gammaSubset, nBetaGammaCal, nSoilParModel, nVegParModel
+  use globalData,    only: calScaleMeta, betaMeta, calParMeta, calGammaMeta, nCalPar, nSoilBetaModel, nVegBetaModel
   use model_wrapper, only: read_hru_id, read_soil_param, adjust_param, replace_param, write_soil_param, read_sim
   implicit none
   !input variables
   real(dp),             intent(in)  :: calParam(:)                   ! parameter in namelist, not necessarily all parameters are calibrated
   !local variables
-  type(var_d)                       :: calParStr(nBetaGammaCal)      ! parameter storage converted from parameter array 
-  type(var_d)                       :: pnormCoef(size(betaCalScale)) ! parameter storage converted from parameter array 
+  type(var_d)                       :: calParStr(nCalPar)      ! parameter storage converted from parameter array 
+  type(var_d)                       :: pnormCoef(size(calScaleMeta)) ! parameter storage converted from parameter array 
   real(dp)                          :: objfn                         ! object function value 
   integer(i4b)                      :: iPar                          ! loop index for parameter 
   integer(i4b)                      :: idx                           ! 
@@ -52,8 +52,8 @@ function objfn( calParam )
   allocate(simBasin(nbasin,sim_len))
   allocate(simBasinRouted(nbasin,sim_len))
   idx=1
-  do iPar=1,nBetaGammaCal ! put calpar vector from optimization routine output parameter data strucure 
-    if (parSubset(iPar)%perLyr)then
+  do iPar=1,nCalPar ! put calpar vector from optimization routine output parameter data strucure 
+    if (calParMeta(iPar)%perLyr)then
       allocate(calParStr(iPar)%var(nLyr))
       calParStr(iPar)%var=calParam(idx:idx+nLyr-1)
       idx=idx+nLyr
@@ -63,7 +63,7 @@ function objfn( calParam )
       idx=idx+1
     endif
   end do
-  do iPar=1,size(betaCalScale) ! put calpar vector from optimization routine output pnorm coef. data strucure
+  do iPar=1,size(calScaleMeta) ! put calpar vector from optimization routine output pnorm coef. data strucure
     allocate(pnormCoef(iPar)%var(2))
     pnormCoef(iPar)%var=calParam(idx:idx+1)
     idx=idx+2
@@ -73,28 +73,28 @@ function objfn( calParam )
   call read_soil_param(idModel, param, err, cmessage)! to read soil param template (=param) 
   if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   adjParam=param
-  if ( any(parSubset(:)%beta == "beta") )then ! calpar include multipliers for original model parameter 
+  if ( any(calParMeta(:)%beta == "beta") )then ! calpar include multipliers for original model parameter 
     call adjust_param(idModel, param, calParStr, adjParam, err, cmessage) ! to adjust "param" with multiplier method and output in adjParam 
     if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   endif
-  if ( any(parSubset(:)%beta /= "beta") )then ! calPar includes gamma parameters to be used for MPR 
+  if ( any(calParMeta(:)%beta /= "beta") )then ! calPar includes gamma parameters to be used for MPR 
     allocate(hModel(nLyr,nHru),stat=err);      if(err/=0)then;print*,trim(message)//'error allocating hModel';stop;endif
-    allocate(parMxyMz(nSoilParModel),stat=err);if(err/=0)then;print*,trim(message)//'error allocating parMxyMz';stop;endif
-    allocate(vegParMxy(nVegParModel),stat=err);if(err/=0)then;print*,trim(message)//'error allocating vegParMxy';stop;endif
-    do iPar=1,nSoilParModel
+    allocate(parMxyMz(nSoilBetaModel),stat=err);if(err/=0)then;print*,trim(message)//'error allocating parMxyMz';stop;endif
+    allocate(vegParMxy(nVegBetaModel),stat=err);if(err/=0)then;print*,trim(message)//'error allocating vegParMxy';stop;endif
+    do iPar=1,nSoilBetaModel
       allocate(parMxyMz(iPar)%varData(nLyr,nHru),stat=err)
     enddo
-    do iPar=1,nVegParModel
+    do iPar=1,nVegBetaModel
       allocate(vegParMxy(iPar)%varData(nMonth,nHru),stat=err)
     enddo
-    allocate(mask(nBetaGammaCal))
-    mask=parSubset(:)%beta/="beta"
+    allocate(mask(nCalPar))
+    mask=calParMeta(:)%beta/="beta"
     allocate(paramGammaStr(count(mask)))
     paramGammaStr=pack(calParStr,mask)
     do iPar=1,size(paramGammaStr)
       if (size(paramGammaStr(iPar)%var)>1)then;print*,trim(message)//'gammaParameter should not have perLayer value';stop;endif
     enddo
-    call mpr(hruID, pnormCoef, paramGammaStr, gammaSubset, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
+    call mpr(hruID, pnormCoef, paramGammaStr, calGammaMeta, hModel, parMxyMz, vegParMxy, err, cmessage) ! to output model layer thickness and model parameter via MPR
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
     call replace_param(idModel, adjParam, hModel, parMxyMz, adjParam, err, cmessage)
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
@@ -109,10 +109,10 @@ function objfn( calParam )
   call agg_hru_to_basin(sim, simBasin, err, cmessage) ! aggregate hru sim to basin total sim 
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   ! route sim for each basin
-  ushape=betaMaster(ixBeta%uhshape)%val
-  uscale=betaMaster(ixBeta%uhscale)%val
-  do iPar=1,nBetaGammaCal
-    select case( parSubset(iPar)%pname )
+  ushape=betaMeta(ixBeta%uhshape)%val
+  uscale=betaMeta(ixBeta%uhscale)%val
+  do iPar=1,nCalPar
+    select case( calParMeta(iPar)%pname )
       case('uhshape');  ushape = calParStr( iPar )%var(1)
       case('uhscale');  uscale = calParStr( iPar )%var(1)
      end select

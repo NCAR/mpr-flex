@@ -61,7 +61,7 @@ module public_var
   integer(i4b),         public    :: idModel 
   integer(i4b),         public    :: TotNpar  != 54(VIC)
   integer(i4b),         public    :: nLyr     != 3 (VIC)
-  character(len=strLen),public    :: calpar 
+  character(len=strLen),public    :: inParList 
   ! DDS 
   real(dp),             public    :: rpar           ! search  
   integer(i8b),         public    :: nseed          ! starting seed for random number generator

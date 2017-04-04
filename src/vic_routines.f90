@@ -140,7 +140,7 @@ end subroutine
 ! replace VIC soil parameters 
 !***************************
 subroutine replace_soil_param_vic(param, hModel, parMxyMz, adjParam, err, message)
-  use globalData, only: betaMaster, betaInGamma, nSoilParModel 
+  use globalData, only: betaMeta, calBetaName, nSoilBetaModel 
   use get_ixname, only: get_ixBeta
   implicit none
   !input variables
@@ -160,9 +160,9 @@ subroutine replace_soil_param_vic(param, hModel, parMxyMz, adjParam, err, messag
   hru: do iHru = 1,nHru
   ! replace parameter values
     adjParam(iHru,23:25)    = hModel(:,iHru)
-    do iPar=1,nSoilParModel
-      associate( ix=>get_ixBeta(trim(betaInGamma(iPar))) )
-      select case( betaMaster(ix)%pname )
+    do iPar=1,nSoilBetaModel
+      associate( ix=>get_ixBeta(trim(calBetaName(iPar))) )
+      select case( betaMeta(ix)%pname )
         case('binfilt');  adjParam(iHru,5)     = parMxyMz(iPar)%varData(1, iHru) 
         case('D1');       adjParam(iHru,6)     = parMxyMz(iPar)%varData(nLyr,iHru)
         case('D2');       adjParam(iHru,7)     = parMxyMz(iPar)%varData(nLyr,iHru)
@@ -188,7 +188,7 @@ end subroutine
 subroutine adj_soil_param_vic(param, multiplier, adjParam,  err, message)
 !! This routine takes the adjustable parameter set "param" from namelist, reads into "origparam_name",
 !! computes the new parameters, writes them into "calibparam_name" 
-  use globalData, only: parSubset, nBetaGammaCal
+  use globalData, only: calParMeta, nCalPar
   implicit none
   !input variables
   real(dp),    intent(in)    :: param(:,:)    ! original soil parameters 
@@ -205,8 +205,8 @@ subroutine adj_soil_param_vic(param, multiplier, adjParam,  err, message)
   adjParam=param
   do iHru = 1,nHru
     ! Modify parameter values
-    do iPar=1,nBetaGammaCal
-      select case( parSubset(iPar)%pname )
+    do iPar=1,nCalPar
+      select case( calParMeta(iPar)%pname )
         case('binfilt');  adjParam(iHru,5)     = multiplier( iPar )%var(1)*Param(iHru,5)
         case('D1');       adjParam(iHru,6)     = multiplier( iPar )%var(1)*Param(iHru,6)
         case('D2');       adjParam(iHru,7)     = multiplier( iPar )%var(1)*Param(iHru,7)
@@ -265,7 +265,7 @@ end subroutine
 ! Adjust VIC vege parameters with multiplier
 !***************************
 subroutine adj_vege_param_vic(multiplier, err, message)
-  use globalData, only: parSubset, nBetaGammaCal
+  use globalData, only: calParMeta, nCalPar
   implicit none
 
   ! input variables
@@ -299,8 +299,8 @@ subroutine adj_vege_param_vic(multiplier, err, message)
       read(unit=50,fmt=*) vegClass,vegFrac,(rootDepth(iLyr), iLyr=1,nLyr),(rootFrac(iLyr), iLyr=1,nLyr)
       read(unit=50,fmt=*) (laiMonth(iMon), iMon=1,12)
       ! Modify parameter values
-      par:do iPar=1,nBetaGammaCal
-        select case( parSubset(iPar)%pname )
+      par:do iPar=1,nCalPar
+        select case( calParMeta(iPar)%pname )
           case('lai');    laiMonth = multiplier( iPar )%var(1)*laiMonth
         end select
       enddo par
