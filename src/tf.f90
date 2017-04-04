@@ -1794,13 +1794,13 @@ subroutine retcurve( err, message, ixDepend, sdata, gammaPar, retcurve_out, tfop
     ! opt 1: Cosby et al. WRR 1984
     associate(g1      => gammaPar(ixGamma%b1gamma1), &
               g2      => gammaPar(ixGamma%b1gamma2), &
-              g3      => gammaPar(ixGamma%b1gamma2), &
+              g3      => gammaPar(ixGamma%b1gamma3), &
               sand_in => sdata(ixVarSoilData%sand_frc)%dvar2, & 
               clay_in => sdata(ixVarSoilData%clay_frc)%dvar2 )
       select case(tftype)
         case(1); 
           where ( sand_in /= dmiss .and. clay_in /= dmiss ) 
-            retcurve_out = g1+g2*sand_in+g3*clay_in
+            retcurve_out = g1+g2*clay_in+g3*sand_in
           else where
             retcurve_out = dmiss 
           end where
