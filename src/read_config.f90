@@ -18,7 +18,7 @@ module read_config
                           veg_param_nc,            &
                           fname_soil,              &
                           fname_veg,               &
-                          fname_smapping,          &
+                          fname_mapping,           &
                           dname_overPoly,          &
                           dname_hru,               &
                           sclass_table,            &

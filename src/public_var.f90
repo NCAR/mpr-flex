@@ -25,7 +25,7 @@ module public_var
   character(len=strLen),public    :: veg_param_nc 
   character(len=strLen),public    :: fname_soil
   character(len=strLen),public    :: fname_veg
-  character(len=strLen),public    :: fname_smapping
+  character(len=strLen),public    :: fname_mapping
   character(len=strLen),public    :: dname_overPoly
   character(len=strLen),public    :: dname_hru
   character(len=strLen),public    :: sclass_table
