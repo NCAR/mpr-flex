@@ -211,7 +211,7 @@ contains
     character(len=strLen)              :: cmessage     ! error message from downward subroutine
 
     err=0; message="generic_hru_id/"
-    call get_vec_ivar(trim(mpr_input_dir)//trim(fname_smapping), trim("hru_id"), 1, nHru, hruid, err, cmessage) 
+    call get_vec_ivar(trim(mpr_input_dir)//trim(fname_mapping), trim("hru_id"), 1, nHru, hruid, err, cmessage) 
     if (err/=0)then; message=trim(message)//trim(cmessage); return; endif
   
   end subroutine

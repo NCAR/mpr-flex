@@ -300,7 +300,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   ! *****
   ! (2.) Read in mapping netcdf - THIS SHOULD BE OUTSIDE MPR SOUBROUTINE
   ! *********************************************
-  call getMapData(trim(mpr_input_dir)//trim(fname_smapping), &   ! input: file name
+  call getMapData(trim(mpr_input_dir)//trim(fname_mapping), &    ! input: file name
                   map_meta,                                  &   ! input: map data meta
                   dname_hru,                                 &   ! input: dimension name for hru 
                   dname_overPoly,                            &   ! input: dimension name for overlap polygon 
