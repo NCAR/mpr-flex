@@ -24,8 +24,7 @@ subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter va
                             vdata,             &  ! input: vege data
                             gammaParMasterMeta,&  ! input: gamma parameter meta file - val of calibrating parammeter is adjusted via calibration 
                             nSLyr,             &  ! input: number of soil layers
-                            nSPoly,            &  ! input: number of soil polygons
-                            nVPoly,            &  ! input: number of vege polygons (to be deleted as nVpoly=nSpoly)
+                            nGpoly,            &  ! input: number of geophysical property polygons
                             err,message) 
 
   use globalData, only:betaMeta, calBetaOrderIdx, soilBetaCalName, vegBetaCalName
@@ -39,8 +38,7 @@ subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter va
   type(namevar),        intent(in)    :: vdata(:)               ! storage of veg data strucuture
   type(par_meta)                      :: gammaParMasterMeta(:)
   integer(i4b),         intent(in)    :: nSLyr                  ! number of soil layer
-  integer(i4b),         intent(in)    :: nSPoly                 ! number of soil polygons
-  integer(i4b),         intent(in)    :: nVPoly                 ! number of vege polygons (to be deleted)
+  integer(i4b),         intent(in)    :: nGpoly                 ! number of soil polygons
   ! output
   integer(i4b),         intent(out)   :: err                    ! error code
   character(len=strLen),intent(out)   :: message                ! error message for current routine
@@ -56,9 +54,9 @@ subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter va
     ix = calBetaOrderIdx(iParm) 
     if (ix/=-999) then
       if (trim(betaMeta(ix)%ptype)=='soil')then
-        allocate(parTemp(ix)%varData(nSLyr,nSPoly) ,stat=err); if(err/=0)then;message=trim(message)//'error allocating parTemp';stop;endif
+        allocate(parTemp(ix)%varData(nSLyr,nGpoly) ,stat=err); if(err/=0)then;message=trim(message)//'error allocating parTemp';stop;endif
       elseif (betaMeta(ix)%ptype=='veg')then 
-        allocate(parTemp(ix)%varData(nMonth,nVPoly) ,stat=err); if(err/=0)then;message=trim(message)//'error allocating parTemp';stop;endif
+        allocate(parTemp(ix)%varData(nMonth,nGPoly) ,stat=err); if(err/=0)then;message=trim(message)//'error allocating parTemp';stop;endif
       endif
       second: associate (xPar => parTemp(ix)%varData, &
                          tfid => betaMeta(ix)%tftype)

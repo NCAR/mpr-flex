@@ -19,9 +19,7 @@ module read_config
                           fname_soil,              &
                           fname_veg,               &
                           fname_smapping,          &
-                          fname_vmapping,          &
-                          dname_overSpoly,         &
-                          dname_overVpoly,         &
+                          dname_overPoly,          &
                           dname_hru,               &
                           sclass_table,            &
                           vclass_table,            &
