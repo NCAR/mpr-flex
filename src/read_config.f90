@@ -48,7 +48,8 @@ module read_config
                           start_cal,               &
                           end_cal,                 &
                           nHru,                    &
-                          nbasin
+                          nbasin,                  &
+                          isRoute
 ! Model specification 
   namelist / modelconfig / idModel,                &
                            TotNpar,                &    

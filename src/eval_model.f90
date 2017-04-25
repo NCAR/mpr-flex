@@ -19,7 +19,7 @@ contains
 function objfn( calParam )
   use mpr_routine,   only: mpr
   use globalData,    only: calScaleMeta, betaMeta, calParMeta, calGammaMeta, nCalPar, nSoilBetaModel, nVegBetaModel
-  use model_wrapper, only: read_hru_id, read_soil_param, adjust_param, replace_param, write_soil_param, read_sim
+  use model_wrapper, only: read_hru_id, read_soil_param, adjust_param, replace_param, write_soil_param, read_sim, read_simRouted
   implicit none
   !input variables
   real(dp),             intent(in)  :: calParam(:)                   ! parameter in namelist, not necessarily all parameters are calibrated
@@ -104,21 +104,25 @@ function objfn( calParam )
   call system(executable) ! to run hydrologic model   
   call read_obs(obs, err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-  call read_sim(idModel, sim, err, cmessage)
-  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-  call agg_hru_to_basin(sim, simBasin, err, cmessage) ! aggregate hru sim to basin total sim 
-  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-  ! route sim for each basin
-  ushape=betaMeta(ixBeta%uhshape)%val
-  uscale=betaMeta(ixBeta%uhscale)%val
-  do iPar=1,nCalPar
-    select case( calParMeta(iPar)%pname )
-      case('uhshape');  ushape = calParStr( iPar )%var(1)
-      case('uhscale');  uscale = calParStr( iPar )%var(1)
-     end select
-  end do
-  call route_q(simBasin, simBasinRouted, ushape, uscale, err, cmessage)
-  if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
+  if (isRoute)then
+    call read_sim(idModel, sim, err, cmessage)
+    if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+    call agg_hru_to_basin(sim, simBasin, err, cmessage) ! aggregate hru sim to basin total sim 
+    if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+    ! route sim for each basin
+    ushape=betaMeta(ixBeta%uhshape)%val
+    uscale=betaMeta(ixBeta%uhscale)%val
+    do iPar=1,nCalPar
+      select case( calParMeta(iPar)%pname )
+        case('uhshape');  ushape = calParStr( iPar )%var(1)
+        case('uhscale');  uscale = calParStr( iPar )%var(1)
+       end select
+    end do
+    call route_q(simBasin, simBasinRouted, ushape, uscale, err, cmessage)
+    if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
+  else
+    call read_simRouted( simBasinRouted, err, cmessage)
+  endif
   if (opt == 2) then
     call out_opt_sim(simBasinRouted, obs) ! to just output optimal run
   else
@@ -144,29 +148,24 @@ end function
 subroutine calc_rmse_region(sim, obs, agg, objfn)
   implicit none
   !input variables 
-  real(dp), dimension(:,:), intent(in)    :: sim 
-  real(dp), dimension(:),   intent(in)    :: obs 
-  integer(i4b),             intent(in)    :: agg          ! basin aggregation method
+  real(dp), dimension(:,:), intent(in)            :: sim 
+  real(dp), dimension(:),   intent(in)            :: obs 
+  integer(i4b),             intent(in)            :: agg          ! basin aggregation method
   !output variables
-  real(dp),                 intent(out)   :: objfn
+  real(dp),                 intent(out)           :: objfn
   !local variables
-  integer(i4b)                            :: err          ! error code
-  character(len=strLen)                   :: message      ! error message
-  integer(i4b)                            :: ibasin,offset
-  real(dp),    allocatable,dimension(:,:) :: simIn
-  real(dp),    allocatable,dimension(:)   :: obsIn
-  integer(i4b),allocatable,dimension(:)   :: basin_id
-  real(dp),    allocatable,dimension(:)   :: obj_fun_weight
-  real(dp),    allocatable,dimension(:)   :: basin_rmse
-  integer(i4b)                            :: nTime        !number of time step 
+  integer(i4b)                                    :: err          ! error code
+  character(len=strLen)                           :: message      ! error message
+  integer(i4b)                                    :: ibasin,offset
+  real(dp),             dimension(nbasin,sim_len) :: simIn
+  real(dp),             dimension(nbasin*sim_len) :: obsIn
+  character(len=strLen),dimension(nbasin)         :: basin_id
+  real(dp),             dimension(nbasin)         :: obj_fun_weight
+  real(dp),             dimension(nbasin)         :: basin_rmse
+  integer(i4b)                                    :: nTime        !number of time step 
 
   ! initialize error control
   err=0; message=trim(message)//'calc_rmse_region/'
-  allocate(simIn(nbasin,sim_len))
-  allocate(obsIn(nbasin*sim_len))
-  allocate(obj_fun_weight(nbasin))
-  allocate(basin_rmse(nbasin))
-  allocate(basin_id(nbasin))
   !read in basin weight file
   !this file determines how much each basin contributes to the total rmse
   !weights need to sum to 1 in the file
@@ -197,31 +196,24 @@ end subroutine
 subroutine calc_log_rmse_region(sim, obs, agg, objfn)
   implicit none
   !input variables 
-  real(dp), dimension(:,:), intent(in)    :: sim 
-  real(dp), dimension(:),   intent(in)    :: obs 
-  integer(i4b),             intent(in)    :: agg          ! basin aggregation method
+  real(dp), dimension(:,:), intent(in)            :: sim 
+  real(dp), dimension(:),   intent(in)            :: obs 
+  integer(i4b),             intent(in)            :: agg          ! basin aggregation method
   !output variables
-  real(dp),                 intent(out)   :: objfn        ! final objective function value
+  real(dp),                 intent(out)           :: objfn        ! final objective function value
   !local variables
-  integer(i4b)                            :: err          ! error code
-  character(len=strLen)                   :: message      ! error message
-  integer(i4b)                            :: ibasin,offset
-  real(dp),    allocatable,dimension(:,:) :: simIn,logSimIn
-  real(dp),    allocatable,dimension(:)   :: obsIn,logObsIn
-  integer(i4b),allocatable,dimension(:)   :: basin_id
-  real(dp),    allocatable,dimension(:)   :: obj_fun_weight
-  real(dp),    allocatable,dimension(:)   :: basin_objfn
-  integer(i4b)                            :: nTime        !number of time step 
+  integer(i4b)                                    :: err          ! error code
+  character(len=strLen)                           :: message      ! error message
+  integer(i4b)                                    :: ibasin,offset
+  real(dp),             dimension(nbasin,sim_len) :: simIn,logSimIn
+  real(dp),             dimension(nbasin*sim_len) :: obsIn,logObsIn
+  character(len=strLen),dimension(nbasin)         :: basin_id
+  real(dp),             dimension(nbasin)         :: obj_fun_weight
+  real(dp),             dimension(nbasin)         :: basin_objfn
+  integer(i4b)                                    :: nTime        !number of time step 
 
   ! initialize error control
   err=0; message=trim(message)//'calc_log_rmse_region/'
-  allocate(simIn(nbasin,sim_len))
-  allocate(obsIn(nbasin*sim_len))
-  allocate(logSimIn(nbasin,sim_len))
-  allocate(logObsIn(nbasin*sim_len))
-  allocate(obj_fun_weight(nbasin))
-  allocate(basin_objfn(nbasin))
-  allocate(basin_id(nbasin))
   !read in basin weight file
   !this file determines how much each basin contributes to the total rmse
   !weights need to sum to 1 in the file
@@ -255,32 +247,27 @@ end subroutine
 subroutine calc_month_rmse_region(sim, obs, agg, objfn)
   implicit none
   !input variables 
-  real(dp), dimension(:,:), intent(in)    :: sim 
-  real(dp), dimension(:),   intent(in)    :: obs 
-  integer(i4b),             intent(in)    :: agg          ! basin aggregation method
+  real(dp), dimension(:,:), intent(in)            :: sim 
+  real(dp), dimension(:),   intent(in)            :: obs 
+  integer(i4b),             intent(in)            :: agg          ! basin aggregation method
   !output variables
-  real(dp),                 intent(out)   :: objfn        ! final objective function 
+  real(dp),                 intent(out)           :: objfn        ! final objective function 
   !local variables
-  integer(i4b)                            :: err          ! error code
-  character(len=strLen)                   :: message      ! error message
-  integer(i4b)                            :: itime,ibasin,offset
-  real(dp)                                :: sum_sqr
-  real(dp),    allocatable,dimension(:,:) :: simIn
-  real(dp),    allocatable,dimension(:)   :: obsIn
-  integer(i4b),allocatable,dimension(:)   :: basin_id
-  real(dp),    allocatable,dimension(:)   :: obj_fun_weight
-  real(dp),    allocatable,dimension(:)   :: basin_rmse
-  integer(i4b)                            :: nTime        !number of time step 
-  integer(i4b)                            :: start_ind, end_ind
-  real(dp)                                :: simAgg, obsAgg
+  integer(i4b)                                    :: err          ! error code
+  character(len=strLen)                           :: message      ! error message
+  integer(i4b)                                    :: itime,ibasin,offset
+  real(dp)                                        :: sum_sqr
+  real(dp),             dimension(nbasin,sim_len) :: simIn
+  real(dp),             dimension(nbasin*sim_len) :: obsIn
+  character(len=strLen),dimension(nbasin)         :: basin_id
+  real(dp),             dimension(nbasin)         :: obj_fun_weight
+  real(dp),             dimension(nbasin)         :: basin_rmse
+  integer(i4b)                                    :: nTime        !number of time step 
+  integer(i4b)                                    :: start_ind, end_ind
+  real(dp)                                        :: simAgg, obsAgg
 
   ! initialize error control
   err=0; message=trim(message)//'calc_month_rmse_region/'
-  allocate(simIn(nbasin,sim_len))
-  allocate(obsIn(nbasin*sim_len))
-  allocate(obj_fun_weight(nbasin))
-  allocate(basin_rmse(nbasin))
-  allocate(basin_id(nbasin))
   !read in basin weight file
   !this file determines how much each basin contributes to the total rmse
   !weights need to sum to 1 in the file
@@ -318,23 +305,23 @@ end subroutine
 subroutine calc_nse_region(sim, obs, agg, objfn)
   implicit none
   !input variables
-  real(dp), dimension(:,:), intent(in)  :: sim 
-  real(dp), dimension(:),   intent(in)  :: obs
-  integer(i4b),             intent(in)  :: agg                ! basin aggregation method
+  real(dp), dimension(:,:), intent(in)    :: sim 
+  real(dp), dimension(:),   intent(in)    :: obs
+  integer(i4b),             intent(in)    :: agg                ! basin aggregation method
   !output variables
-  real(dp),                 intent(out) :: objfn 
+  real(dp),                 intent(out)   :: objfn 
   !local variables
-  integer(i4b)                          :: itime,ibasin,offset
-  real(dp)                              :: sumSqrErr
-  real(dp)                              :: sumSqrDev
-  real(dp)                              :: sumQ
-  real(dp)                              :: meanQ
-  real(dp)                              :: Smax=0.6_dp        ! upper threshold for score function 
-  real(dp)                              :: Smin=0.3_dp        ! lower threshold for score function 
-  integer(i4b),dimension(nbasin)        :: basin_id
-  real(dp),    dimension(nbasin)        :: obj_fun_weight
-  real(dp),    dimension(nbasin)        :: basin_nse          ! nse for individual basin
-  real(dp),    dimension(nbasin)        :: basin_score        ! score function  
+  integer(i4b)                            :: itime,ibasin,offset
+  real(dp)                                :: sumSqrErr
+  real(dp)                                :: sumSqrDev
+  real(dp)                                :: sumQ
+  real(dp)                                :: meanQ
+  real(dp)                                :: Smax=0.6_dp        ! upper threshold for score function 
+  real(dp)                                :: Smin=0.3_dp        ! lower threshold for score function 
+  character(len=strLen),dimension(nbasin) :: basin_id
+  real(dp),             dimension(nbasin) :: obj_fun_weight
+  real(dp),             dimension(nbasin) :: basin_nse          ! nse for individual basin
+  real(dp),             dimension(nbasin) :: basin_score        ! score function  
 
   ! Read basin weight file
   ! this file determines how much each basin contributes to the total objective function 
@@ -376,30 +363,25 @@ end subroutine
 subroutine calc_log_nse_region(sim, obs, agg, objfn)
   implicit none
   !input variables
-  real(dp), dimension(:,:), intent(in)  :: sim 
-  real(dp), dimension(:),   intent(in)  :: obs
-  integer(i4b),             intent(in)  :: agg          ! basin aggregation method
+  real(dp), dimension(:,:), intent(in)            :: sim 
+  real(dp), dimension(:),   intent(in)            :: obs
+  integer(i4b),             intent(in)            :: agg          ! basin aggregation method
   !output variables
-  real(dp),                 intent(out) :: objfn 
+  real(dp),                 intent(out)           :: objfn 
   !local variables
-  integer(i4b)                              :: itime,ibasin,offset
-  real(dp)                                  :: Smax=0.6_dp        ! upper threshold for score function 
-  real(dp)                                  :: Smin=0.3_dp        ! lower threshold for score function 
-  real(dp),   allocatable,dimension(:,:)    :: simIn,logSimIn
-  real(dp),   allocatable,dimension(:)      :: obsIn,logObsIn
-  real(dp)                                  :: sumSqrErr,log_sumSqrErr
-  real(dp)                                  :: sumSqrDev,log_sumSqrDev
-  real(dp)                                  :: meanQ,log_meanQ
-  real(dp),               dimension(nbasin) :: basin_score          ! score function  
-  integer(i4b),           dimension(nbasin) :: basin_id
-  real(dp),               dimension(nbasin) :: obj_fun_weight
-  real(dp),               dimension(nbasin) :: basin_objfn          ! nse for individual basin
+  integer(i4b)                                    :: itime,ibasin,offset
+  real(dp)                                        :: Smax=0.6_dp        ! upper threshold for score function 
+  real(dp)                                        :: Smin=0.3_dp        ! lower threshold for score function 
+  real(dp),             dimension(nbasin,sim_len) :: simIn,logSimIn
+  real(dp),             dimension(nbasin*sim_len) :: obsIn,logObsIn
+  real(dp)                                        :: sumSqrErr,log_sumSqrErr
+  real(dp)                                        :: sumSqrDev,log_sumSqrDev
+  real(dp)                                        :: meanQ,log_meanQ
+  real(dp),             dimension(nbasin)         :: basin_score          ! score function  
+  character(len=strLen),dimension(nbasin)         :: basin_id
+  real(dp),             dimension(nbasin)         :: obj_fun_weight
+  real(dp),             dimension(nbasin)         :: basin_objfn          ! nse for individual basin
 
-  ! variable allocation
-  allocate(simIn(nbasin,sim_len))
-  allocate(obsIn(nbasin*sim_len))
-  allocate(logSimIn(nbasin,sim_len))
-  allocate(logObsIn(nbasin*sim_len))
   ! Read basin weight file
   ! this file determines how much each basin contributes to the total objective function 
   ! weights need to sum to 1 in the file
@@ -451,28 +433,24 @@ end subroutine
 subroutine calc_month_nse_region(sim, obs, agg, objfn)
   implicit none
   !input variables
-  real(dp), dimension(:,:), intent(in)  :: sim 
-  real(dp), dimension(:),   intent(in)  :: obs
-  integer(i4b),             intent(in)  :: agg          ! basin aggregation method
+  real(dp), dimension(:,:), intent(in)    :: sim 
+  real(dp), dimension(:),   intent(in)    :: obs
+  integer(i4b),             intent(in)    :: agg          ! basin aggregation method
   !output variables
-  real(dp),                 intent(out) :: objfn 
+  real(dp),                 intent(out)   :: objfn 
   !local variables
-  integer(i4b)                          :: itime,ibasin,offset
-  real(dp)                              :: sumSqrErr
-  real(dp)                              :: sumSqrDev
-  real(dp)                              :: sumQ
-  real(dp)                              :: meanQ
-  integer(i4b),allocatable,dimension(:) :: basin_id
-  real(dp),allocatable,dimension(:)     :: obj_fun_weight
-  real(dp),allocatable,dimension(:)     :: basin_nse          ! nse for individual basin
-  integer(i4b)                          :: nTime            ! for monthly rmse calculation
-  integer(i4b)                          :: start_ind, end_ind
-  real(dp)                              :: month_sim, month_obs
+  integer(i4b)                            :: itime,ibasin,offset
+  real(dp)                                :: sumSqrErr
+  real(dp)                                :: sumSqrDev
+  real(dp)                                :: sumQ
+  real(dp)                                :: meanQ
+  character(len=strLen),dimension(nbasin) :: basin_id
+  real(dp),             dimension(nbasin) :: obj_fun_weight
+  real(dp),             dimension(nbasin) :: basin_nse          ! nse for individual basin
+  integer(i4b)                            :: nTime            ! for monthly rmse calculation
+  integer(i4b)                            :: start_ind, end_ind
+  real(dp)                                :: month_sim, month_obs
 
-  ! variable allocation
-  allocate(obj_fun_weight(nbasin))
-  allocate(basin_nse(nbasin))
-  allocate(basin_id(nbasin))
   ! Read basin weight file
   ! this file determines how much each basin contributes to the total objective function 
   ! weights need to sum to 1 in the file
@@ -532,21 +510,21 @@ end subroutine
 subroutine calc_kge_region( sim, obs, agg, objfn)
   implicit none
 !input variables 
-  real(dp), dimension(:,:), intent(in)  :: sim 
-  real(dp), dimension(:),   intent(in)  :: obs 
-  integer(i4b),             intent(in)  :: agg          ! basin aggregation method
+  real(dp), dimension(:,:), intent(in)     :: sim 
+  real(dp), dimension(:),   intent(in)     :: obs 
+  integer(i4b),             intent(in)     :: agg          ! basin aggregation method
 !output variables
-  real(dp),                 intent(out) :: objfn 
+  real(dp),                 intent(out)    :: objfn 
 !local variables
-  integer(i4b)                          :: ibasin       ! loop index
-  integer(i4b),dimension(nbasin)        :: basin_id
-  real(dp)                              :: Smax=0.6_dp        ! upper threshold for score function 
-  real(dp)                              :: Smin=0.3_dp        ! lower threshold for score function 
-  real(dp),    dimension(nbasin)        :: basin_score        ! score function  
-  real(dp),    dimension(nbasin)        :: obj_fun_weight
-  real(dp),    dimension(nbasin)        :: basin_kge
-  real(dp)                              :: cc,alpha,betha,mu_s,mu_o,sigma_s,sigma_o
-  integer(i4b)                          :: offset
+  integer(i4b)                             :: ibasin       ! loop index
+  character(len=strLen),dimension(nbasin)  :: basin_id
+  real(dp)                                 :: Smax=0.6_dp        ! upper threshold for score function 
+  real(dp)                                 :: Smin=0.3_dp        ! lower threshold for score function 
+  real(dp),    dimension(nbasin)           :: basin_score        ! score function  
+  real(dp),    dimension(nbasin)           :: obj_fun_weight
+  real(dp),    dimension(nbasin)           :: basin_kge
+  real(dp)                                 :: cc,alpha,betha,mu_s,mu_o,sigma_s,sigma_o
+  integer(i4b)                             :: offset
 
   open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
   read (UNIT=58,fmt=*) ( basin_id(ibasin),obj_fun_weight(ibasin), ibasin=1,nbasin)
@@ -585,29 +563,25 @@ end subroutine
 subroutine calc_log_kge_region( sim, obs, agg, objfn)
   implicit none
 !input variables 
-  real(dp), dimension(:,:), intent(in)       :: sim 
-  real(dp), dimension(:),   intent(in)       :: obs 
-  integer(i4b),             intent(in)       :: agg          ! basin aggregation method
+  real(dp), dimension(:,:), intent(in)             :: sim 
+  real(dp), dimension(:),   intent(in)             :: obs 
+  integer(i4b),             intent(in)             :: agg          ! basin aggregation method
 !output variables
-  real(dp),                 intent(out)      :: objfn 
+  real(dp),                 intent(out)            :: objfn 
 !local variables
-  integer(i4b)                               :: ibasin       ! loop index
-  integer(i4b)                               :: offset
-  integer(i4b),            dimension(nbasin) :: basin_id
-  real(dp)                                   :: Smax=0.6_dp        ! upper threshold for score function 
-  real(dp)                                   :: Smin=0.3_dp        ! lower threshold for score function 
-  real(dp),    allocatable,dimension(:,:)    :: simIn,logSimIn
-  real(dp),    allocatable,dimension(:)      :: obsIn,logObsIn
-  real(dp),                dimension(nbasin) :: obj_fun_weight
-  real(dp),                dimension(nbasin) :: basin_objfn
-  real(dp),                dimension(nbasin) :: basin_score        ! score function  
-  real(dp)                                   :: cc,alpha,betha,mu_s,mu_o,sigma_s,sigma_o
-  real(dp)                                   :: log_cc,log_alpha,log_betha,log_mu_s,log_mu_o,log_sigma_s,log_sigma_o
+  integer(i4b)                                     :: ibasin       ! loop index
+  integer(i4b)                                     :: offset
+  character(len=strLen), dimension(nbasin)         :: basin_id
+  real(dp)                                         :: Smax=0.6_dp        ! upper threshold for score function 
+  real(dp)                                         :: Smin=0.3_dp        ! lower threshold for score function 
+  real(dp),              dimension(nbasin,sim_len) :: simIn,logSimIn
+  real(dp),              dimension(nbasin*sim_len) :: obsIn,logObsIn
+  real(dp),              dimension(nbasin)         :: obj_fun_weight
+  real(dp),              dimension(nbasin)         :: basin_objfn
+  real(dp),              dimension(nbasin)         :: basin_score        ! score function  
+  real(dp)                                         :: cc,alpha,betha,mu_s,mu_o,sigma_s,sigma_o
+  real(dp)                                         :: log_cc,log_alpha,log_betha,log_mu_s,log_mu_o,log_sigma_s,log_sigma_o
 
-  allocate(simIn(nbasin,sim_len))
-  allocate(obsIn(nbasin*sim_len))
-  allocate(logSimIn(nbasin,sim_len))
-  allocate(logObsIn(nbasin*sim_len))
   open (UNIT=58,file=trim(basin_objfun_weight_file),form='formatted',status='old')
   read (UNIT=58,fmt=*) ( basin_id(ibasin),obj_fun_weight(ibasin), ibasin=1,nbasin)
   close(UNIT=58)
@@ -711,9 +685,9 @@ subroutine calc_sigBias_region(sim, obs, agg, objfn)
   real(dp),    allocatable,dimension(:)   :: obsIn
   real(dp),    allocatable                :: simBasin(:)
   real(dp),    allocatable                :: obsBasin(:)
-  integer(i4b),dimension(nbasin)          :: basin_id
-  real(dp),    dimension(nbasin)          :: obj_fun_weight
-  real(dp),    dimension(nbasin)          :: basin_sigBias
+  character(len=strLen),dimension(nbasin) :: basin_id
+  real(dp),             dimension(nbasin) :: obj_fun_weight
+  real(dp),             dimension(nbasin) :: basin_sigBias
   
   allocate(simIn,source=sim)
   allocate(obsIn,source=obs)

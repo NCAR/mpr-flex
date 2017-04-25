@@ -10,11 +10,11 @@ module model_wrapper
   public :: adjust_param 
   public :: replace_param
   public :: read_sim
+  public :: read_simRouted
   public :: read_soil_param 
   public :: write_soil_param 
   public :: read_soil_lyr
   public :: read_hru_id
-
 contains
 
   subroutine adjust_param( idModel, param, multiplier, adjParam, err, message)
@@ -196,6 +196,52 @@ contains
     end select  
     if (err/=0)then; message=trim(message)//trim(cmessage); return; endif
     return
+  end subroutine
+
+  subroutine read_simRouted( sim, err, message)
+    implicit none
+    ! input 
+    ! output
+    real(dp),             intent(out)  :: sim(:,:)
+    integer(i4b),         intent(out)  :: err          ! error code
+    character(len=strLen),intent(out)  :: message      ! error message
+    ! LOCAL VARIABLES
+    character(len=strLen)              :: cmessage     ! error message from downward subroutine
+    err=0; message="read_simRouted/"
+    call read_lohmann_sim( sim, err, cmessage)
+    if (err/=0)then; message=trim(message)//trim(cmessage); return; endif
+    return
+
+    contains
+
+    subroutine read_lohmann_sim( sim, err, message )
+      !output variables
+      real(dp),              intent(out) :: sim(:,:)
+      integer(i4b),          intent(out) :: err            ! error code
+      character(*),          intent(out) :: message        ! error message
+      !Local variables
+      real(dp)                           :: auxflux(5)          
+      integer(i4b)                       :: ibasin, itime, ivar ! index 
+      character(len=strLen)              :: filename
+      ! initialize error control
+      err=0; message='read_lohmann_sim/'
+      open (UNIT=53,file=trim(filelist_name),form='formatted',status='old',iostat=err)
+      if (err/=0) then; message=trim(message)//"openError['"//trim(filelist_name)//"']";return;endif
+      do ibasin = 1,nbasin
+        read (UNIT=53,fmt=*) filename
+        filename=trim(sim_dir)//trim(filename)
+        open (UNIT=50,file=filename,form='formatted',status='old',iostat=err)
+        if (err/=0) then; message=trim(message)//"openError['"//trim(filename)//"']";return;endif
+        do itime = 1,sim_len
+          read (UNIT=50,fmt=*) (auxflux(ivar), ivar=1,4)
+          sim(ibasin,itime) = auxflux(4)
+        enddo
+        close(UNIT=50)
+      enddo
+      close(UNIT=53)
+      return
+    end subroutine
+
   end subroutine
 
   !private routine
