@@ -185,7 +185,6 @@ subroutine popMprMeta(err,message)
   ! Vege data variables 
   vdata_meta(ixVarVegData%polyid)        = var_meta('polyid'       ,"vege polygon id"                                    ,"-"           ,"1D", "integer")
   vdata_meta(ixVarVegData%vegclass)      = var_meta('vegclass'     ,"vegetation class"                                   ,"-"           ,"1D", "integer")
-  vdata_meta(ixVarVegData%grnfrc)        = var_meta('grnfrc'       ,"green fraction"                                     ,"-"           ,"2D", "double" )
   vdata_meta(ixVarVegData%lai)           = var_meta('lai'          ,"monthly lai"                                        ,"m2 m-2"      ,"2D", "double" )
   ! Vege property variables 
   vprp_meta(ixPrpVeg%lai)                = var_meta('lai'          ,"Monthly lai"                                        ,"m2 m-2"      ,"2D", "double")

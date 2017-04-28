@@ -61,6 +61,7 @@ contains
      ! get the variable ID
      ierr = nf90_inq_varid(ncid, trim(vdata_meta(ivar)%varName), ivarID)
      if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr))//'; name='//trim(vdata_meta(ivar)%varName); return; endif
+     print*, vdata_meta(iVar)%varname
      select case(vdata_meta(iVar)%vartype)
      case('integer')
        select case(vdata_meta(iVar)%vardims)

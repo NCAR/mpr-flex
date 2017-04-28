@@ -138,7 +138,6 @@ MODULE var_lookup
 ! ***********************************************************************************************************
  type, public  ::  iLook_VarVegData
   integer(i4b)     :: polyid          = imiss       ! veg polygon id
-  integer(i4b)     :: grnfrc          = imiss       ! greeness fraction 
   integer(i4b)     :: lai             = imiss       ! lai 
   integer(i4b)     :: vegclass        = imiss       ! veg class 
  endtype iLook_VarVegData
@@ -192,7 +191,7 @@ MODULE var_lookup
                                                                                  51,52)
  type(iLook_VarMapData),  public,parameter :: ixVarMapData   = iLook_VarMapData  (1,2,3,4)
  type(iLook_VarSoilData), public,parameter :: ixVarSoilData  = iLook_VarSoilData (1,2,3,4,5,6,7,8,9,10)
- type(iLook_VarVegData),  public,parameter :: ixVarVegData   = iLook_VarVegData  (1,2,3,4)
+ type(iLook_VarVegData),  public,parameter :: ixVarVegData   = iLook_VarVegData  (1,2,3)
  type(iLook_PrpVeg),      public,parameter :: ixPrpVeg       = iLook_PrpVeg      (1,2,3,4,5,6,7,8,9,10,&
                                                                                   11)
 
@@ -204,7 +203,7 @@ MODULE var_lookup
  integer(i4b),parameter,public    :: nBeta = 52 
  integer(i4b),parameter,public    :: nVarMapData=4
  integer(i4b),parameter,public    :: nVarSoilData=10
- integer(i4b),parameter,public    :: nVarVegData=4
+ integer(i4b),parameter,public    :: nVarVegData=3
  integer(i4b),parameter,public    :: nPrpVeg=11
 
 END MODULE var_lookup

@@ -184,7 +184,6 @@ contains
    select case(trim(varName))
      case('polyid');     get_ixDataVeg = ixVarVegData%polyid     ! veg polygon ID 
      case('lai');        get_ixDataVeg = ixVarVegData%lai        ! monthly lai [m2 m-2] 
-     case('grnfrc');     get_ixDataVeg = ixVarVegData%grnfrc     ! monthly greeness fraction [-] 
      case('vegclass');   get_ixDataVeg = ixVarVegData%vegclass   ! veg class in veg polygon and layer
      ! get to here if cannot find the variable
      case default;     get_ixDataVeg = imiss
