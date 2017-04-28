@@ -49,7 +49,6 @@ module public_var
   character(len=strLen),public    :: obs_name
   character(len=strLen),public    :: executable
   character(len=strLen),public    :: basin_objfun_weight_file
-  character(len=strLen),public    :: objfntype 
   integer(i4b),         public    :: agg
   integer(i4b),         public    :: dt
   integer(i4b),         public    :: sim_len 
