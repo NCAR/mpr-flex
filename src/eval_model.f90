@@ -9,44 +9,127 @@ module eval_model
   private
 
   public :: objfn 
-  public :: out_opt_sim
+  public :: out_sim
 
 contains
 
 !************************************
-! perform model evaluation 
+! Public functin: perform model evaluation 
 !************************************
 function objfn( calParam )
-  use mpr_routine,   only: mpr
-  use globalData,    only: calScaleMeta, betaMeta, calParMeta, calGammaMeta, nCalPar, nSoilBetaModel, nVegBetaModel
-  use model_wrapper, only: read_hru_id, read_soil_param, adjust_param, replace_param, write_soil_param, read_sim, read_simRouted
   implicit none
   !input variables
   real(dp),             intent(in)          :: calParam(:)     ! parameter in namelist, not necessarily all parameters are calibrated
-  !local variables
-  type(var_d),dimension(nCalPar)            :: calParStr       ! parameter storage converted from parameter array 
-  type(var_d),dimension(size(calScaleMeta)) :: pnormCoef       ! parameter storage converted from parameter array 
+  !output variable
   real(dp)                                  :: objfn           ! object function value 
-  integer(i4b)                              :: iPar            ! loop index for parameter 
-  integer(i4b)                              :: idx             ! 
-  logical(lgc),   allocatable               :: mask(:)         ! 1D mask
-  integer(i4b),dimension(nHru)              :: hruID           ! Hru ID
-  real(dp),dimension(nHru,TotNPar)          :: param           ! original soil parameter (model hru x parameter)
-  real(dp),dimension(nHru,TotNPar)          :: adjParam        ! adjustet soil parameter (model hru x parameter) 
-  type(var_d),    allocatable               :: paramGammaStr(:)! calibratin gamma parameter
-  real(dp),dimension(nbasin*sim_len)        :: obs             ! observation (number of basin*number of time step)
-  real(dp),dimension(nHru,sim_len)          :: sim             ! instantaneous sim value (hru x number of time step)
-  real(dp),dimension(nbasin,sim_len)        :: simBasin        ! instantaneous basin aggregated sim value (basin x number of time step)
+  !local variables
   real(dp),dimension(nbasin,sim_len)        :: simBasinRouted  ! routed sim value (basin x number of time step)
-  real(dp),dimension(nLyr,nHru)             :: hModel          ! storage of model layer thickness at model layer x model hru 
-  type(namedvar2),dimension(nSoilBetaModel) :: parMxyMz        ! storage of model soil parameter at model layer x model hru 
-  type(namedvar2),dimension(nVegBetaModel)  :: vegParMxy       ! storage of model vege parameter at month (or annual) x model hru
-  real(dp)                                  :: ushape,uscale   ! two routing parameter
+  real(dp),dimension(nbasin*sim_len)        :: obs             ! observation (number of basin*number of time step)
   integer(i4b)                              :: err             ! error id 
   character(len=strLen)                     :: message         ! error message
   character(len=strLen)                     :: cmessage        ! error message from subroutine
 
-  err=0; message='eval_objfn/' ! to initialize error control
+  err=0; message='objfn/' ! to initialize error control
+  call modelRun( calParam, simBasinRouted, err, cmessage )
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+  call read_obs( obs, err, cmessage )
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+  call agg_obj( simBasinRouted, obs, objfn, err, cmessage)
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+  return 
+end function 
+
+!************************************
+! Public subroutine: output sim and obs pair 
+!************************************
+subroutine out_sim(calParam, err, message)
+  use strings
+  implicit none
+  !input variables
+  real(dp),             intent(in)          :: calParam(:)     ! parameter in namelist, not necessarily all parameters are calibrated
+  !output variables
+  integer(i4b)                              :: err             ! error id 
+  character(len=strLen)                     :: message         ! error message
+  !local variable
+  real(dp),dimension(nbasin,sim_len)        :: simBasinRouted  ! routed sim value (basin x number of time step)
+  real(dp),dimension(nbasin*sim_len)        :: obs             ! observation (number of basin*number of time step)
+  character(len=strLen)                     :: cmessage        ! error message from subroutine
+
+  err=0; message='out_sim/' ! to initialize error control
+  call modelRun( calParam, simBasinRouted, err, cmessage )
+  if(err/=0)then; err=10; message=trim(message)//trim(cmessage); return; endif
+  call read_obs( obs, err, cmessage )
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+  call out_opt_sim(simBasinRouted, obs) ! to output optimal run
+  return
+  
+  contains
+
+  ! Output sim and obs in separate file 
+  subroutine out_opt_sim(sim, obs)
+    implicit none
+    !input variables 
+    real(dp), dimension(:,:), intent(in)  :: sim 
+    real(dp), dimension(:), intent(in)    :: obs 
+    !local variables
+    integer(i4b)                          :: itime,ibasin
+    integer(i4b)                          :: offset
+    character(len=1000),dimension(10)     :: tokens
+    character(len=1000)                   :: last_token
+    integer(i4b)                          :: nargs
+    character(len=2000)                   :: out_name
+    character(len=1)                      :: delims
+  
+    delims='/'
+    call parse(obs_name,delims,tokens,nargs)
+    last_token = tokens(nargs)
+    out_name = trim(sim_dir)//last_token(1:9)//"_flow.txt"
+    open(unit=88,file=out_name)
+    do ibasin = 0,nbasin-1
+      offset = ibasin*sim_len
+      do itime = start_cal,end_cal
+        write(unit=88,fmt=*) sim(ibasin+1,itime),obs(itime+offset)
+      enddo
+    enddo
+    close(unit=88)
+    return
+  end subroutine
+
+end subroutine
+
+!************************************
+! Subroutine (do dirty work - generate gamma/beta/scaling parameter array, run MPR, model, (read)route to generate simulation)
+!************************************
+subroutine modelRun( calParam, simBasinRouted, err, message )
+  use mpr_routine,   only: mpr
+  use globalData,    only: calScaleMeta, betaMeta, calParMeta, calGammaMeta, nCalPar, nSoilBetaModel, nVegBetaModel
+  use model_wrapper, only: read_hru_id, read_soil_param, adjust_param, replace_param, write_soil_param, read_sim, read_simRouted
+  implicit none
+  ! input variables
+  real(dp),               intent(in)        :: calParam(:)     ! parameter in namelist, not necessarily all parameters are calibrated
+  ! output variables
+  real(dp),dimension(:,:),intent(out)       :: simBasinRouted  ! routed sim value (basin x number of time step)
+  integer(i4b)                              :: err             ! error id 
+  character(len=strLen)                     :: message         ! error message
+  !local variables
+  type(var_d),dimension(nCalPar)            :: calParStr       ! parameter storage converted from parameter array 
+  type(var_d),dimension(size(calScaleMeta)) :: pnormCoef       ! parameter storage converted from parameter array 
+  integer(i4b)                              :: iPar            ! loop index for parameter 
+  integer(i4b)                              :: idx             ! 
+  logical(lgc), allocatable                 :: mask(:)         ! 1D mask
+  integer(i4b),dimension(nHru)              :: hruID           ! Hru ID
+  real(dp),dimension(nHru,TotNPar)          :: param           ! original soil parameter (model hru x parameter)
+  real(dp),dimension(nHru,TotNPar)          :: adjParam        ! adjustet soil parameter (model hru x parameter) 
+  type(var_d),    allocatable               :: paramGammaStr(:)! calibratin gamma parameter
+  real(dp),dimension(nHru,sim_len)          :: sim             ! instantaneous sim value (hru x number of time step)
+  real(dp),dimension(nbasin,sim_len)        :: simBasin        ! instantaneous basin aggregated sim value (basin x number of time step)
+  real(dp),dimension(nLyr,nHru)             :: hModel          ! storage of model layer thickness at model layer x model hru 
+  type(namedvar2),dimension(nSoilBetaModel) :: parMxyMz        ! storage of model soil parameter at model layer x model hru 
+  type(namedvar2),dimension(nVegBetaModel)  :: vegParMxy       ! storage of model vege parameter at month (or annual) x model hru
+  real(dp)                                  :: ushape,uscale   ! two routing parameter
+  character(len=strLen)                     :: cmessage        ! error message from subroutine
+
+  err=0; message='modelRun/' ! to initialize error control
   idx=1
   do iPar=1,nCalPar ! put calpar vector from optimization routine output parameter data strucure 
     if (calParMeta(iPar)%perLyr)then
@@ -95,9 +178,7 @@ function objfn( calParam )
   call write_soil_param(idModel, hruID, adjParam, err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   call system(executable) ! to run hydrologic model   
-  call read_obs(obs, err, cmessage)
-  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-  if (isRoute)then
+  if (isRoute)then !if routed here
     call read_sim(idModel, sim, err, cmessage)
     if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
     call agg_hru_to_basin(sim, simBasin, err, cmessage) ! aggregate hru sim to basin total sim 
@@ -117,14 +198,8 @@ function objfn( calParam )
     call read_simRouted( simBasinRouted, err, cmessage)
     if (err/=0)then; print*,trim(message)//trim(cmessage);stop;endif
   endif
-  if (opt == 2) then
-    call out_opt_sim(simBasinRouted, obs) ! to just output optimal run
-  else
-    call agg_obj( simBasinRouted, obs, objfn, err, cmessage)
-    if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-  endif
   return
-end function
+end subroutine 
 
 !************************************
 ! Subroutine: Aggregaate metrics  
@@ -675,39 +750,6 @@ subroutine sort(vec)
     vec(i) = vec(k(1))
     vec(k(1)) = buf
   enddo
-  return
-end subroutine
-
-!***********************************
-! Output sim and obs in separate file 
-!******************************
-subroutine out_opt_sim(sim, obs)
-  use strings
-  implicit none
-  !input variables 
-  real(dp), dimension(:,:), intent(in)  :: sim 
-  real(dp), dimension(:), intent(in)    :: obs 
-  !local variables
-  integer(i4b)                          :: itime,ibasin
-  integer(i4b)                          :: offset
-  character(len=1000),dimension(10)     :: tokens
-  character(len=1000)                   :: last_token
-  integer(i4b)                          :: nargs
-  character(len=2000)                   :: out_name
-  character(len=1)                      :: delims
-
-  delims='/'
-  call parse(obs_name,delims,tokens,nargs)
-  last_token = tokens(nargs)
-  out_name = trim(sim_dir)//last_token(1:9)//"_flow.txt"
-  open(unit=88,file=out_name)
-  do ibasin = 0,nbasin-1
-    offset = ibasin*sim_len
-    do itime = start_cal,end_cal-1
-      write(unit=88,fmt=*) sim(ibasin+1,itime),obs(itime+offset)
-    enddo
-  enddo
-  close(unit=88)
   return
 end subroutine
 
