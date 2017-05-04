@@ -26,9 +26,9 @@ subroutine paramMaster(err,message)
   ! -----------------------
   !                                                        name,    default, lwr bound, upr bound,parent beta,   TF,    type,    mask, h-scale,     p-norm,     v scale,    p-norm,  perLyr
   !ks transfer function
-  gammaMeta(ixGamma%ks1gamma1)       = par_meta('ks1gamma1'      ,   -0.6_dp ,  -0.66_dp,  -0.54_dp,"ks"       ,     1, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
-  gammaMeta(ixGamma%ks1gamma2)       = par_meta('ks1gamma2'      , 0.0126_dp , 0.0113_dp, 0.0139_dp,"ks"       ,     1, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
-  gammaMeta(ixGamma%ks1gamma3)       = par_meta('ks1gamma3'      ,-0.0064_dp ,-0.0058_dp,-0.0070_dp,"ks"       ,     1, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
+  gammaMeta(ixGamma%ks1gamma1)       = par_meta('ks1gamma1'      ,   -0.6_dp ,  -0.90_dp,  -0.30_dp,"ks"       ,     1, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
+  gammaMeta(ixGamma%ks1gamma2)       = par_meta('ks1gamma2'      , 0.0126_dp , 0.0063_dp, 0.0189_dp,"ks"       ,     1, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
+  gammaMeta(ixGamma%ks1gamma3)       = par_meta('ks1gamma3'      ,-0.0064_dp ,-0.0096_dp,-0.0032_dp,"ks"       ,     1, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
   gammaMeta(ixGamma%ks2gamma1)       = par_meta('ks2gamma1'      ,   54.0_dp ,   48.6_dp,   59.4_dp,"ks"       ,     2, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
   gammaMeta(ixGamma%ks2gamma2)       = par_meta('ks2gamma2'      ,  -0.07_dp , -0.077_dp, -0.063_dp,"ks"       ,     2, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
   gammaMeta(ixGamma%ks2gamma3)       = par_meta('ks2gamma3'      , -0.167_dp ,   -0.8_dp,   -0.4_dp,"ks"       ,     2, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
@@ -64,7 +64,7 @@ subroutine paramMaster(err,message)
   gammaMeta(ixGamma%h2gamma1)        = par_meta('h2gamma1'       ,     0.3_dp,   0.12_dp,    0.5_dp,"h2"       ,     1, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
   ! transfer function
   gammaMeta(ixGamma%binfilt1gamma1)  = par_meta('binfilt1gamma1' ,     0.0_dp,   -2.0_dp,    1.0_dp,"binfilt"  ,     1, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
-  gammaMeta(ixGamma%binfilt1gamma2)  = par_meta('binfilt1gamma2' ,     1.0_dp,    0.8_dp,    1.2_dp,"binfilt"  ,     2, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
+  gammaMeta(ixGamma%binfilt1gamma2)  = par_meta('binfilt1gamma2' ,     1.0_dp,    0.8_dp,    1.2_dp,"binfilt"  ,     1, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
   gammaMeta(ixGamma%D11gamma1)       = par_meta('D11gamma1'      ,     2.0_dp,   1.75_dp,    3.5_dp,"D1"       ,     1, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
   gammaMeta(ixGamma%D21gamma1)       = par_meta('D21gamma1'      ,     2.0_dp,   1.75_dp,    3.5_dp,"D2"       ,     1, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
   gammaMeta(ixGamma%D31gamma1)       = par_meta('D31gamma1'      ,     1.0_dp,  0.001_dp,    2.0_dp,"D3"       ,     1, "soil", .False.,      "na", -999.0_dp,       "na", -999.0_dp,.False.)
