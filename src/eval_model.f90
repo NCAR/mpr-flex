@@ -280,6 +280,7 @@ subroutine calc_obj(sim, obs, objfntype, objfn, err, message)
     case('month-nse');    call calc_month_nse ( sim, obs, objfn, err, cmessage )
     case('kge');          call calc_kge       ( sim, obs, objfn, err, cmessage )
     case('log-kge+kge');  call calc_log_kge   ( sim, obs, objfn, err, cmessage )
+    case('month-kge');    call calc_month_kge ( sim, obs, objfn, err, cmessage )
     case('sigBias');      call calc_sigBias   ( sim, obs, objfn, err, cmessage )
     case default; err=10; cmessage='objective function not recognized'
     if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
@@ -369,9 +370,9 @@ subroutine calc_month_rmse(sim, obs, objfn, err, message)
   if (nTime/=size(obs)) then; err=10;message=trim(message)//'size(obs)/=size(sim)'; return;endif
   !then run from the starting calibration point to the ending calibration point
   sum_sqr = 0.0
-  nMon = floor(((end_cal-start_cal)+1)/30.0_dp)  !use 30 day months uniformly to make it easier
-  start_ind = start_cal
-  end_ind   = start_cal+29
+  nMon = floor(nTime/30.0_dp)  !use 30 day months uniformly to make it easier
+  start_ind = 1
+  end_ind   = start_ind+29
   do itime = 1,nMon
     simAgg  = sum(sim(start_ind:end_ind))/30.0_dp
     obsAgg  = sum(obs(start_ind:end_ind))/30.0_dp
@@ -485,53 +486,31 @@ subroutine calc_month_nse(sim, obs, objfn, err, message)
   character(len=strLen),  intent(out)  :: message       ! error message
   !local variables
   integer(i4b)                         :: itime
-  real(dp)                             :: sumSqrErr
-  real(dp)                             :: sumSqrDev
-  real(dp)                             :: sumQ
-  real(dp)                             :: meanQ
   integer(i4b)                         :: nTime,nMon           ! for monthly rmse calculation
   integer(i4b)                         :: start_ind, end_ind
-  real(dp)                             :: month_sim, month_obs
+  real(dp),dimension(:),allocatable    :: month_sim, month_obs
+  character(len=strLen)                :: cmessage             ! error message from subroutine
 
   ! initialize error control
   err=0; message='calc_month_nse/'
   nTime=size(sim)
   if (nTime/=size(obs)) then; err=10;message=trim(message)//'size(obs)/=size(sim)'; return;endif
-  sumQ = 0.0
-  sumSqrDev = 0.0
-  sumSqrErr = 0.0
-  nMon = floor(((end_cal-start_cal)+1)/30.0)  !use 30 day months uniformly to make it easier
+  nMon = floor(nTime/30.0_dp)  !use 30 day months uniformly to make it easier
+  allocate(month_obs(nMon))
+  allocate(month_sim(nMon))
   ! Compute montly observed Q
   ! Indices of start and end for first month
-  start_ind = start_cal
-  end_ind = start_cal + 29
+  start_ind = 1 
+  end_ind   = start_ind + 29
   do itime = 1,nMon
-    month_obs = sum(obs(start_ind:end_ind))
-    sumQ       = sumQ+month_obs
+    month_obs(itime) = sum(obs(start_ind:end_ind))
+    month_sim(itime) = sum(sim(start_ind:end_ind))
     !update starting and ending indice for next month step
     start_ind = end_ind+1
-    end_ind = end_ind + 29
+    end_ind   = end_ind+29
   enddo
-  meanQ = sumQ/real(nMon)
-  ! Compute sum of squre of error and deviation from menan (for obs) 
-  start_ind = start_cal
-  end_ind = start_cal + 29
-  do itime = 1,nMon
-    month_sim = sum(sim(start_ind:end_ind))
-    month_obs = sum(obs(start_ind:end_ind))
-    sumSqrErr = sumSqrErr + ((month_sim-month_obs)**2)
-    sumSqrDev = sumSqrDev + ((month_obs-meanQ)**2)
-    !update starting and ending indice for next month step
-    start_ind = end_ind+1
-    end_ind = end_ind + 29
-  enddo
-  !grab remainder portion and weight it by number of days
-  month_sim = sum(sim(end_ind+1:end_cal-1))
-  month_obs = sum(obs(end_ind+1:end_cal-1))
-  sumSqrErr = sumSqrErr + ((month_sim-month_obs)**2) * real((end_cal-1-(end_ind+1))/30.0)
-  sumSqrDev = sumSqrDev + ((month_obs-meanQ)**2) * real((end_cal-1-(end_ind+1))/30.0)
-  ! Compute nse for current basin 
-  objfn = sumSqrErr/sumSqrDev
+  call calc_nse(month_sim, month_obs, objfn, err, cmessage)
+  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
   return
 end subroutine
 
@@ -566,6 +545,49 @@ subroutine calc_kge( sim, obs, objfn, err, message)
   betha = mu_s/mu_o
   alpha = sigma_s/sigma_o
   objfn = sqrt((cc-1.0)**2.0_dp + (alpha-1.0)**2.0_dp + (betha-1.0)**2.0_dp) 
+  return
+end subroutine
+
+!*****************************************************
+! Compute monthly KGE 
+!*****************************************************
+subroutine calc_month_kge(sim, obs, objfn, err, message)
+  implicit none
+  !input variables
+  real(dp), dimension(:), intent(in)  :: sim 
+  real(dp), dimension(:), intent(in)  :: obs
+  !output variables
+  real(dp),               intent(out) :: objfn 
+  integer(i4b),           intent(out) :: err                  ! error code
+  character(len=strLen),  intent(out) :: message              ! error message
+  !local variables
+  integer(i4b)                        :: itime
+  integer(i4b)                        :: nTime,nMon           ! for monthly rmse calculation
+  integer(i4b)                        :: start_ind, end_ind
+  real(dp),dimension(:),allocatable   :: month_sim, month_obs
+  character(len=strLen)               :: cmessage             ! error message from subroutine
+
+  ! initialize error control
+  err=0; message='calc_month_kge/'
+  nTime=size(sim)
+  if (nTime/=size(obs)) then; err=10;message=trim(message)//'size(obs)/=size(sim)'; return;endif
+
+  nMon = floor(nTime/30.0_dp)  !use 30 day months uniformly to make it easier
+  allocate(month_obs(nMon))
+  allocate(month_sim(nMon))
+  ! Compute montly observed Q
+  ! Indices of start and end for first month
+  start_ind = 1 
+  end_ind   = start_ind + 29
+  do itime = 1,nMon
+    month_obs(itime) = sum(obs(start_ind:end_ind))
+    month_sim(itime) = sum(sim(start_ind:end_ind))
+    !update starting and ending indice for next month step
+    start_ind = end_ind+1
+    end_ind   = end_ind+29
+  enddo
+  call calc_kge(month_sim, month_obs, objfn, err, cmessage)
+  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
   return
 end subroutine
 
