@@ -8,7 +8,7 @@
 !> 3 = estimate parameter with MPR (this option neglect calconfig and dds nml group)
 opt                    = 1
 !> List of parameter (name, value, flag) based on input calPar used for only if opt=2, ignored otherwise 
-mpr_param_file         = "/d3/mizukami/hydro_params/vic_regionalization/upscale_hcdn/individual_test_hydropt/01022500/MPR_Param.txt"
+mpr_param_file         = "/glade/u/home/mizukami/mpr_flex/../../MPR_Param.txt"
 /
 
 !---------------------------------------
@@ -56,6 +56,7 @@ start_cal                = 3652               ! time step when calibration start
 end_cal                  = 6940               ! time step when calibration end
 nbasin                   = 1                  ! number of calibrating basins
 nHru                     = 1                  ! sum of hrus consisting of each basin
+isRoute                  = T                  ! T=route in mpr-flex, F=route outside mpr-flex
 /
 
 !---------------------------------------
