@@ -176,7 +176,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   use read_mapdata,         only:getMapData                    ! routine to read mapping data into data structures
   use read_vegdata,         only:getVegData                    ! routine to read veg data into data structures
   use read_vegdata,         only:getVegClassLookup             ! routine to read veg calss-property lookupu table 
-  use read_soildata,        only:getData                       ! routine to read soil data into data structures
+  use read_soildata,        only:getSoilData                       ! routine to read soil data into data structures
   use read_soildata,        only:mod_hslyrs                    ! routine to modify soil layer thickness and updata soil data structure
   use var_lookup,           only:ixBeta, ixGamma               ! 
   use var_lookup,           only:ixVarSoilData,nVarSoilData    ! index of soil data variables and number of variables 
@@ -264,14 +264,14 @@ subroutine mpr(hruID,             &     ! input: hruID
   ! *****
   ! (1.1) Get soil data  
   ! *********************************************
-  call getData(trim(mpr_input_dir)//trim(fname_soil),& ! input: soil data input name (netCDF)
-               sdata_meta,                           & ! input: soil data meta
-               dname_spoly,                          & ! input: spatial dimension (polygon ID)
-               dname_slyrs,                          & ! input: spatial dimension (polygon ID)
-               sdata,                                & ! input-output: soil data structure
-               nGpoly,                               & ! output: number of dimension (i.e. number of soil polygon)
-               nSlyrs,                               & ! output: number of dimension (i.e. number of soil layer)
-               err, cmessage)
+  call getSoilData(trim(mpr_input_dir)//trim(fname_soil),& ! input: soil data input name (netCDF)
+                   sdata_meta,                           & ! input: soil data meta
+                   dname_spoly,                          & ! input: spatial dimension (polygon ID)
+                   dname_slyrs,                          & ! input: spatial dimension (polygon ID)
+                   sdata,                                & ! input-output: soil data structure
+                   nGpoly,                               & ! output: number of dimension (i.e. number of soil polygon)
+                   nSlyrs,                               & ! output: number of dimension (i.e. number of soil layer)
+                   err, cmessage)
   if(err/=0)then; message=trim(message)//cmessage; return; endif 
   call mod_hslyrs(sdata, gammaUpdateMeta(ixGamma%z1gamma1)%val, err,cmessage) ! modify soil layer thickness in sdata data structure
   if(err/=0)then; message=trim(message)//cmessage; return; endif 

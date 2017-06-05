@@ -11,7 +11,7 @@ implicit none
 private
 
 public::check_polyID
-public::getData
+public::getSoilData
 public::mod_hslyrs
 
 contains
@@ -65,14 +65,14 @@ contains
  ! *********************************************************************
  ! Subroutine: get soil data for polygons and layers 
  ! *********************************************************************
-  subroutine getData(fname,       &   ! input: file name
-                     sdata_meta,  &   ! input: soil data meta
-                     dname_spoly, &   ! input: dimension name for soil polygon
-                     dname_slyrs, &   ! input: dimension name for soil layer 
-                     sdata,       &   ! input-output: soil data structure
-                     nSpoly,      &   ! output: number of soil polygon
-                     nSLyrs,      &   ! output: number of soil layer  
-                     ierr, message)   ! output: error control
+  subroutine getSoilData(fname,       &   ! input: file name
+                         sdata_meta,  &   ! input: soil data meta
+                         dname_spoly, &   ! input: dimension name for soil polygon
+                         dname_slyrs, &   ! input: dimension name for soil layer 
+                         sdata,       &   ! input-output: soil data structure
+                         nSpoly,      &   ! output: number of soil polygon
+                         nSLyrs,      &   ! output: number of soil layer  
+                         ierr, message)   ! output: error control
   implicit none
   ! input variables
   character(*),  intent(in)       :: fname          ! filename
@@ -93,7 +93,7 @@ contains
   integer(i4b)                    :: idimID_slyr    ! dimension ID for stream segments
   integer(i4b)                    :: iVarID         ! variable ID
   ! initialize error control
-  ierr=0; message='getData/'
+  ierr=0; message='getSoilData/'
  
   ! open file for reading
   ierr = nf90_open(fname, nf90_nowrite, ncid)
