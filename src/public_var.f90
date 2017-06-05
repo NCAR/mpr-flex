@@ -47,26 +47,26 @@ module public_var
   character(len=strLen),public    :: obs_name
   character(len=strLen),public    :: executable
   character(len=strLen),public    :: basin_objfun_weight_file
-  character(len=strLen),public    :: objfntype 
   integer(i4b),         public    :: agg
   integer(i4b),         public    :: dt
   integer(i4b),         public    :: sim_len 
   integer(i4b),         public    :: start_cal
   integer(i4b),         public    :: end_cal 
-  integer(i4b),         public    :: nHru
-  integer(i4b),         public    :: nbasin
+  integer(i4b),         public    :: nHru                       ! sum of hrus where model run
+  integer(i4b),         public    :: nbasin                     ! number of basin to be jointly calibrated 
+  logical(lgc),         public    :: isRoute                    ! T if sim runoff is routed w/ gamma UH implemented in mpr-flex, F if sim runoff is routed outside
   ! modelconfig
   integer(i4b),         public    :: idModel 
   integer(i4b),         public    :: TotNpar  != 54(VIC)
   integer(i4b),         public    :: nLyr     != 3 (VIC)
   character(len=strLen),public    :: inParList 
   ! DDS 
-  real(dp),             public    :: rpar           ! search  
-  integer(i8b),         public    :: nseed          ! starting seed for random number generator
-  integer(i8b),         public    :: maxn           ! maximum number of trials before optimization is terminated
-  logical(lgc),         public    :: isMax          ! maximization or minimization
-  character(len=strLen),public    :: state_file     ! state file
-  character(len=strLen),public    :: restrt_file    ! restart file
-  logical(lgc),         public    :: isRestart      ! ues restart option? 
+  real(dp),             public    :: rpar                       ! search radius
+  integer(i8b),         public    :: nseed                      ! starting seed for random number generator
+  integer(i8b),         public    :: maxn                       ! maximum number of trials before optimization is terminated
+  logical(lgc),         public    :: isMax                      ! maximization or minimization
+  character(len=strLen),public    :: state_file                 ! state file
+  character(len=strLen),public    :: restrt_file                ! restart file
+  logical(lgc),         public    :: isRestart                  ! ues restart option? 
 
 end module public_var
