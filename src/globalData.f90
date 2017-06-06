@@ -3,7 +3,7 @@ module globalData
  use nrtype
  use public_var
  use data_type,  only: var_meta, par_meta, cpar_meta, beta_meta, scale_meta, input_meta
- use var_lookup, only: nBeta, nGamma, nVarSoilData, nVarVegData, nVarMapData, nPrpVeg
+ use var_lookup, only: nBeta, nGamma, nVarSoilData, nVarTopoData, nVarVegData, nVarMapData, nPrpVeg
 
 implicit none
 
@@ -36,6 +36,7 @@ integer(i4b),         save,            public  :: nSnowBetaModel            ! nu
 ! meta data for input data 
 type(var_meta),       save,            public  :: map_meta  (nVarMapData)   ! mapping data
 type(var_meta),       save,            public  :: sdata_meta(nVarSoilData)  ! soil data
+type(var_meta),       save,            public  :: tdata_meta(nVarTopoData)  ! topographic data
 type(var_meta),       save,            public  :: vdata_meta(nVarVegData)   ! vegetation data
 type(var_meta),       save,            public  :: vprp_meta (nPrpVeg)       ! mapping data
 

@@ -71,6 +71,7 @@ IO = \
     popMeta.f90 \
     read_config.f90 \
     read_soildata.f90 \
+    read_topodata.f90 \
     read_vegdata.f90 \
     read_mapdata.f90 \
     read_ncdata.f90 \
