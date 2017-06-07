@@ -129,7 +129,7 @@ MODULE var_lookup
  type, public  ::  iLook_VarMapData
   integer(i4b)     :: hru_id         = imiss        ! hru id 
   integer(i4b)     :: weight         = imiss        ! areal weight of intersecting geophysical data polygon for hru 
-  integer(i4b)     :: overlapPolyId  = imiss        ! id (=index of polygon in geophysical data) of intersecting geophysical data polygon for hru 
+  integer(i4b)     :: intersector    = imiss        ! id (=index of polygon in geophysical data) of intersecting geophysical data polygon for hru 
   integer(i4b)     :: overlaps       = imiss        ! number of ntersecting geophysical data polygon for hru 
  endtype iLook_varMapData
 

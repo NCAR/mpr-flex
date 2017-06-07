@@ -17,6 +17,7 @@ module read_config
                           soil_param_nc,           &
                           veg_param_nc,            &
                           fname_soil,              &
+                          fname_topo,              &
                           fname_veg,               &
                           fname_mapping,           &
                           dname_overPoly,          &
@@ -26,6 +27,7 @@ module read_config
                           nVclass,                 &
                           dname_spoly,             &
                           dname_slyrs,             &              
+                          dname_tpoly,             &
                           dname_vpoly
 ! calibration run specification 
   namelist / calconfig /  filelist_name,           &

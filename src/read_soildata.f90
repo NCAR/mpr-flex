@@ -185,8 +185,8 @@ contains
    allocate(soil_h_mod(nSlyrs),stat=ierr); 
    if(ierr/=0)then; message=trim(message)//'problem with allocating soil_h_mod'; return; endif
    do iSpoly =1,nSpoly
-     soil_h_mod = hmult*sdata(ixVarSoilData%hslyrs)%dvar2(:,iSpoly)  ! modified soil layer thickness [m] 
-     sdata(ixVarSoilData%hslyrs)%dvar2(:,iSpoly) = soil_h_mod            ! reassign modified layer thickness in data structure
+     soil_h_mod = hmult*sdata(ixVarSoilData%hslyrs)%dvar2(:,iSpoly)*0.01  ! modified soil layer thickness and convert cm to m 
+     sdata(ixVarSoilData%hslyrs)%dvar2(:,iSpoly) = soil_h_mod             ! reassign modified layer thickness in data structure
    end do
  
   end subroutine

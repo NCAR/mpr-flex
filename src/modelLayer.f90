@@ -51,9 +51,9 @@ contains
   nPoly=size(hslyrs,2) 
   ! Make mask to exclude layers with missing soil texture data assuming  
   allocate(mask(nSLyr,nPoly),stat=err); if(err/=0)then;message=trim(message)//'error allocating mask';return;endif
-  mask = ( soilData(ixVarSoilData%sand_pct)%dvar2 < 0 .and. &
-           soilData(ixVarSoilData%clay_pct)%dvar2 < 0 .and. &
-           soilData(ixVarSoilData%silt_pct)%dvar2 < 0) 
+  mask = ( soilData(ixVarSoilData%sand_pct)%dvar2 > 0 .and. &
+           soilData(ixVarSoilData%clay_pct)%dvar2 > 0 .and. &
+           soilData(ixVarSoilData%silt_pct)%dvar2 > 0) 
   do iPoly=1,nPoly
     allocate(lyr_packed(count(mask(:,iPoly))),stat=err); if(err/=0)then;message=trim(message)//'error allocating lyr_packed';return;endif
     lyr_packed = pack( hslyrs(:,iPoly), mask(:,iPoly) )

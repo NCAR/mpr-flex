@@ -326,7 +326,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   associate( hruMap        => mapdata(1)%var(ixVarMapData%hru_id)%ivar1(1:nGhru),  &
              wgt           => mapdata(1)%var(ixVarMapData%weight)%dvar1,           &
              nOverPoly     => mapdata(1)%var(ixVarMapData%overlaps)%ivar1,         & 
-             overSpolyID   => mapdata(1)%var(ixVarMapData%overlapPolyId)%ivar1 )
+             overSpolyID   => mapdata(1)%var(ixVarMapData%intersector)%ivar1 )
   hru_loop: do iHru=1,nHru
     ! Get index (iLocal) of hru id that matches with current hru from hru id array in mapping file
     call findix(hruID(iHru), hruMap, iLocal, err, cmessage); if(err/=0)then; message=trim(cmessage)//cmessage; return; endif
