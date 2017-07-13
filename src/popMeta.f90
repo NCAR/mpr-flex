@@ -153,9 +153,11 @@ subroutine popMprMeta(err,message)
   use var_lookup, only:ixVarMapData
   use var_lookup, only:ixVarSoilData
   use var_lookup, only:ixVarVegData
+  use var_lookup, only:ixVarTopoData
   use var_lookup, only:ixPrpVeg
   use globalData, only:map_meta
   use globalData, only:sdata_meta
+  use globalData, only:tdata_meta
   use globalData, only:vdata_meta
   use globalData, only:vprp_meta
   
@@ -169,23 +171,24 @@ subroutine popMprMeta(err,message)
   ! Mapping data meta
   map_meta(ixVarMapData%hru_id)          = var_meta('hru_id'       ,"hru id"                                             ,"-"           ,"1D", "integer")
   map_meta(ixVarMapData%weight)          = var_meta('weight'       ,"areal weight of intersecting polygon"               ,"-"           ,"1D", "integer")
-  map_meta(ixVarMapData%overlapPolyId)   = var_meta('overlapPolyId',"id of intersecting polygon"                         ,"-"           ,"1D", "integer")
+  map_meta(ixVarMapData%intersector)     = var_meta('intersector'  ,"id of intersecting polygon"                         ,"-"           ,"1D", "integer")
   map_meta(ixVarMapData%overlaps)        = var_meta('overlaps'     ,"number of intersecting polygons"                    ,"-"           ,"1D", "integer")
   ! Soil data variables
   sdata_meta(ixVarSoilData%polyid)       = var_meta('polyid'       ,"soil polygon id"                                    ,"-"           ,"1D", "integer")
-  sdata_meta(ixVarSoilData%soilclass)    = var_meta('soilclass'    ,"USDA soil class"                                    ,"-"           ,"2D", "integer")
   sdata_meta(ixVarSoilData%hslyrs)       = var_meta('hslyrs'       ,"soil layer thickness"                               ,"m"           ,"2D", "double" )
-  sdata_meta(ixVarSoilData%sand_frc)     = var_meta('sand_frc'     ,"sand percentage"                                    ,"%"           ,"2D", "double" )
-  sdata_meta(ixVarSoilData%silt_frc)     = var_meta('silt_frc'     ,"silt percentage"                                    ,"%"           ,"2D", "double" )
-  sdata_meta(ixVarSoilData%clay_frc)     = var_meta('clay_frc'     ,"clay percentage"                                    ,"%"           ,"2D", "double" )
+  sdata_meta(ixVarSoilData%sand_pct)     = var_meta('sand_pct'     ,"sand percentage"                                    ,"%"           ,"2D", "double" )
+  sdata_meta(ixVarSoilData%silt_pct)     = var_meta('silt_pct'     ,"silt percentage"                                    ,"%"           ,"2D", "double" )
+  sdata_meta(ixVarSoilData%clay_pct)     = var_meta('clay_pct'     ,"clay percentage"                                    ,"%"           ,"2D", "double" )
   sdata_meta(ixVarSoilData%bulk_density) = var_meta('bulk_density' ,"bulk density"                                       ,"kg m-3"      ,"2D", "double" )
-  sdata_meta(ixVarSoilData%ele_mean)     = var_meta('ele_mean'     ,"mean elevation"                                     ,"m"           ,"1D", "double" )
-  sdata_meta(ixVarSoilData%ele_std)      = var_meta('ele_std'      ,"std elevation"                                      ,"m"           ,"1D", "double" )
-  sdata_meta(ixVarSoilData%slp_mean)     = var_meta('slp_mean'     ,"mean slope"                                         ,"-"           ,"1D", "double" )
   ! Vege data variables 
   vdata_meta(ixVarVegData%polyid)        = var_meta('polyid'       ,"vege polygon id"                                    ,"-"           ,"1D", "integer")
   vdata_meta(ixVarVegData%vegclass)      = var_meta('vegclass'     ,"vegetation class"                                   ,"-"           ,"1D", "integer")
   vdata_meta(ixVarVegData%lai)           = var_meta('lai'          ,"monthly lai"                                        ,"m2 m-2"      ,"2D", "double" )
+  ! topo data variables 
+  tdata_meta(ixVarTopoData%polyid)       = var_meta('polyid'       ,"vege polygon id"                                    ,"-"           ,"1D", "integer")
+  tdata_meta(ixVarTopoData%ele_mean)     = var_meta('ele_mean'     ,"mean elevation"                                     ,"m"           ,"1D", "double" )
+  tdata_meta(ixVarTopoData%ele_std)      = var_meta('ele_std'      ,"std elevation"                                      ,"m"           ,"1D", "double" )
+  tdata_meta(ixVarTopoData%slp_mean)     = var_meta('slp_mean'     ,"mean slope"                                         ,"-"           ,"1D", "double" )
   ! Vege property variables 
   vprp_meta(ixPrpVeg%lai)                = var_meta('lai'          ,"Monthly lai"                                        ,"m2 m-2"      ,"2D", "double")
   vprp_meta(ixPrpVeg%vegtype)            = var_meta('vegtype'      ,'vegetation type'                                    ,"-"           ,"1D", "integer")

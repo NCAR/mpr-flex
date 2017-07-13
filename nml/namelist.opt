@@ -8,7 +8,7 @@
 !> 3 = estimate parameter with MPR (this option neglect calconfig and dds nml group)
 opt                    = 1
 !> List of parameter (name, value, flag) based on input calPar used for only if opt=2, ignored otherwise 
-mpr_param_file         = "/d3/mizukami/hydro_params/vic_regionalization/upscale_hcdn/individual_test_hydropt/01022500/MPR_Param.txt"
+mpr_param_file         = "/glade/u/home/mizukami/mpr_flex/../../MPR_Param.txt"
 /
 
 !---------------------------------------
@@ -19,16 +19,18 @@ mpr_input_dir          = "MPRINPUT"                ! name of directory including
 mpr_output_dir         = "PAROUTPUT"               ! name of directory where estimated parameters are saved with option 2
 soil_param_nc          = "soil_temp.nc"            ! name of soil parameter output netCDF
 veg_param_nc           = "veg_temp.nc"             ! name of veg parameter output netCDF
-fname_soil             = "statsgo_v4.nc"           ! name soil netCDF
-fname_veg              = "modis.vege.noahmp.nc"    ! name vege netCDF
-fname_mapping          = "statsgo_HCDN.sub.nc"     ! name of mapping netCDF (soil polygon to model hru)
+fname_soil             = "soil_data.nc"            ! name soil variable netCDF
+fname_topo             = "topo_data.nc"            ! name topographic variable netCDF
+fname_veg              = "veg_data.nc"             ! name vegetation varialbe netCDF
+fname_mapping          = "statsgo_HCDN.sub.nc"     ! name of mapping from geophysical grid to model hru) netCDF
 dname_overPoly         = "overlapPoly"             ! name of dimension of polygon intersectiong hru in geophy.data-model.hru mapping NetCDf
 dname_hru              = "hru_id"                  ! name of model hru dimension in mapping netCDF
-sclass_table           = "USDA_soil_class.txt"     ! name of USDA soil class look up table 
+sclass_table           = "USDA_soil_class.txt"     ! name of USDA soil class look up table (WILL BE REMOVED)
 vclass_table           = "NOAHMP_veg_type.txt"     ! name of vegetation class look up table
 nVclass                = NUMVCLASS "               ! number of vegetation class 
 dname_spoly            = "polyid"                  ! name of soil polygon dimension in soil netCDf
 dname_slyrs            = "layer"                   ! name of soil layer dimension in soil data in soil netCDf
+dname_tpoly            = "polyid"                  ! name of vegetation polygon dimension in vegetation netCDf
 dname_vpoly            = "polyid"                  ! name of vegetation polygon dimension in vegetation netCDf
 /
 
@@ -54,6 +56,7 @@ start_cal                = 3652               ! time step when calibration start
 end_cal                  = 6940               ! time step when calibration end
 nbasin                   = 1                  ! number of calibrating basins
 nHru                     = 1                  ! sum of hrus consisting of each basin
+isRoute                  = T                  ! T=route in mpr-flex, F=route outside mpr-flex
 /
 
 !---------------------------------------

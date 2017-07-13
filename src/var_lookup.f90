@@ -129,7 +129,7 @@ MODULE var_lookup
  type, public  ::  iLook_VarMapData
   integer(i4b)     :: hru_id         = imiss        ! hru id 
   integer(i4b)     :: weight         = imiss        ! areal weight of intersecting geophysical data polygon for hru 
-  integer(i4b)     :: overlapPolyId  = imiss        ! id (=index of polygon in geophysical data) of intersecting geophysical data polygon for hru 
+  integer(i4b)     :: intersector    = imiss        ! id (=index of polygon in geophysical data) of intersecting geophysical data polygon for hru 
   integer(i4b)     :: overlaps       = imiss        ! number of ntersecting geophysical data polygon for hru 
  endtype iLook_varMapData
 
@@ -148,15 +148,21 @@ MODULE var_lookup
  type, public  ::  iLook_VarSoilData
   integer(i4b)     :: polyid       = imiss      ! soil polygon id
   integer(i4b)     :: hslyrs       = imiss      ! soil layer thickness 
-  integer(i4b)     :: soilclass    = imiss      ! soil polygon id
-  integer(i4b)     :: sand_frc     = imiss      ! sand fraction in soil polygon and layer
-  integer(i4b)     :: silt_frc     = imiss      ! silt fraction in soil polygon and layer
-  integer(i4b)     :: clay_frc     = imiss      ! clay fraction in soil polygon and layer
+  integer(i4b)     :: sand_pct     = imiss      ! sand fraction in soil polygon and layer
+  integer(i4b)     :: silt_pct     = imiss      ! silt fraction in soil polygon and layer
+  integer(i4b)     :: clay_pct     = imiss      ! clay fraction in soil polygon and layer
   integer(i4b)     :: bulk_density = imiss      ! bulk density in soil polygon and layer 
+ endtype iLook_VarSoilData
+
+! ***********************************************************************************************************
+!  Define index for variables in topographical data 
+! ***********************************************************************************************************
+ type, public  ::  iLook_VarTopoData
+  integer(i4b)     :: polyid       = imiss      ! soil polygon id
   integer(i4b)     :: ele_mean     = imiss      ! mean elevation over a soil polygon 
   integer(i4b)     :: ele_std      = imiss      ! standard deviation of elevation over a soil polygon 
   integer(i4b)     :: slp_mean     = imiss      ! mean slope over a soil polygon 
- endtype iLook_VarSoilData
+ endtype iLook_VarTopoData
 
 ! ***********************************************************************************************************
 !  Define indices for Veg properties
@@ -190,8 +196,9 @@ MODULE var_lookup
                                                                                  41,42,43,44,45,46,47,48,49,50,&
                                                                                  51,52)
  type(iLook_VarMapData),  public,parameter :: ixVarMapData   = iLook_VarMapData  (1,2,3,4)
- type(iLook_VarSoilData), public,parameter :: ixVarSoilData  = iLook_VarSoilData (1,2,3,4,5,6,7,8,9,10)
+ type(iLook_VarSoilData), public,parameter :: ixVarSoilData  = iLook_VarSoilData (1,2,3,4,5,6)
  type(iLook_VarVegData),  public,parameter :: ixVarVegData   = iLook_VarVegData  (1,2,3)
+ type(iLook_VarTopoData), public,parameter :: ixVarTopoData  = iLook_VarTopoData (1,2,3,4)
  type(iLook_PrpVeg),      public,parameter :: ixPrpVeg       = iLook_PrpVeg      (1,2,3,4,5,6,7,8,9,10,&
                                                                                   11)
 
@@ -202,8 +209,9 @@ MODULE var_lookup
  integer(i4b),parameter,public    :: nGamma = 50 
  integer(i4b),parameter,public    :: nBeta = 52 
  integer(i4b),parameter,public    :: nVarMapData=4
- integer(i4b),parameter,public    :: nVarSoilData=10
+ integer(i4b),parameter,public    :: nVarSoilData=6
  integer(i4b),parameter,public    :: nVarVegData=3
+ integer(i4b),parameter,public    :: nVarTopoData=4
  integer(i4b),parameter,public    :: nPrpVeg=11
 
 END MODULE var_lookup

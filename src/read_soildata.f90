@@ -11,7 +11,7 @@ implicit none
 private
 
 public::check_polyID
-public::getData
+public::getSoilData
 public::mod_hslyrs
 
 contains
@@ -65,14 +65,14 @@ contains
  ! *********************************************************************
  ! Subroutine: get soil data for polygons and layers 
  ! *********************************************************************
-  subroutine getData(fname,       &   ! input: file name
-                     sdata_meta,  &   ! input: soil data meta
-                     dname_spoly, &   ! input: dimension name for soil polygon
-                     dname_slyrs, &   ! input: dimension name for soil layer 
-                     sdata,       &   ! input-output: soil data structure
-                     nSpoly,      &   ! output: number of soil polygon
-                     nSLyrs,      &   ! output: number of soil layer  
-                     ierr, message)   ! output: error control
+  subroutine getSoilData(fname,       &   ! input: file name
+                         sdata_meta,  &   ! input: soil data meta
+                         dname_spoly, &   ! input: dimension name for soil polygon
+                         dname_slyrs, &   ! input: dimension name for soil layer 
+                         sdata,       &   ! input-output: soil data structure
+                         nSpoly,      &   ! output: number of soil polygon
+                         nSLyrs,      &   ! output: number of soil layer  
+                         ierr, message)   ! output: error control
   implicit none
   ! input variables
   character(*),  intent(in)       :: fname          ! filename
@@ -93,7 +93,7 @@ contains
   integer(i4b)                    :: idimID_slyr    ! dimension ID for stream segments
   integer(i4b)                    :: iVarID         ! variable ID
   ! initialize error control
-  ierr=0; message='getData/'
+  ierr=0; message='getSoilData/'
  
   ! open file for reading
   ierr = nf90_open(fname, nf90_nowrite, ncid)
@@ -115,7 +115,7 @@ contains
     ! get the variable ID
     ierr = nf90_inq_varid(ncid, trim(sdata_meta(ivar)%varName), iVarID)
     if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr))//'; name='//trim(sdata_meta(ivar)%varName); return; endif
-    sdata(ivar)%varName=trim(sdata_meta(ivar)%varName) 
+    !sdata(ivar)%varName=trim(sdata_meta(ivar)%varName) 
     select case(sdata_meta(iVar)%vartype)
       case('integer')
        select case(sdata_meta(iVar)%vardims)
@@ -185,8 +185,8 @@ contains
    allocate(soil_h_mod(nSlyrs),stat=ierr); 
    if(ierr/=0)then; message=trim(message)//'problem with allocating soil_h_mod'; return; endif
    do iSpoly =1,nSpoly
-     soil_h_mod = hmult*sdata(ixVarSoilData%hslyrs)%dvar2(:,iSpoly)  ! modified soil layer thickness [m] 
-     sdata(ixVarSoilData%hslyrs)%dvar2(:,iSpoly) = soil_h_mod            ! reassign modified layer thickness in data structure
+     soil_h_mod = hmult*sdata(ixVarSoilData%hslyrs)%dvar2(:,iSpoly)*0.01  ! modified soil layer thickness and convert cm to m 
+     sdata(ixVarSoilData%hslyrs)%dvar2(:,iSpoly) = soil_h_mod             ! reassign modified layer thickness in data structure
    end do
  
   end subroutine

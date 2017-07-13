@@ -24,6 +24,7 @@ module public_var
   character(len=strLen),public    :: soil_param_nc 
   character(len=strLen),public    :: veg_param_nc 
   character(len=strLen),public    :: fname_soil
+  character(len=strLen),public    :: fname_topo
   character(len=strLen),public    :: fname_veg
   character(len=strLen),public    :: fname_mapping
   character(len=strLen),public    :: dname_overPoly
@@ -34,6 +35,7 @@ module public_var
   integer(i4b)                    :: nVclass
   character(len=strLen),public    :: dname_spoly 
   character(len=strLen),public    :: dname_slyrs
+  character(len=strLen),public    :: dname_tpoly 
   character(len=strLen),public    :: dname_vpoly 
   ! calconfig 
   character(len=strLen),public    :: filelist_name

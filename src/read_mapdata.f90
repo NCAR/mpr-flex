@@ -76,7 +76,7 @@ subroutine getMapData(fname,          &   ! input: file name
         allocate(mapdata(1)%var(ivar)%dvar1(nOverPoly),stat=err)
         if(err/=0)then; message=trim(message)//'problem allocating weight for mapdata data structure'; return; endif
         err = nf90_get_var(ncid, iVarID, mapdata(1)%var(ivar)%dvar1)
-      case('overlapPolyId') ! 1D integer vector 
+      case('intersector') ! 1D integer vector 
         allocate(mapdata(1)%var(ivar)%ivar1(nOverPoly),stat=err)
         if(err/=0)then; message=trim(message)//'problem allocating overlapID for mapdata data structure'; return; endif
         err = nf90_get_var(ncid, iVarID, mapdata(1)%var(ivar)%ivar1)

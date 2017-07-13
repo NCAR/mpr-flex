@@ -71,6 +71,7 @@ IO = \
     popMeta.f90 \
     read_config.f90 \
     read_soildata.f90 \
+    read_topodata.f90 \
     read_vegdata.f90 \
     read_mapdata.f90 \
     read_ncdata.f90 \
@@ -80,16 +81,16 @@ CORE = \
     get_ixname.f90 \
     process_meta.f90 \
     mo_xor4096.f90 \
-    mo_opt_run.f90 \
     mo_dds.f90 \
-    vic_routines.f90 \
     sac_routines.f90 \
+    vic_routines.f90 \
     model_wrapper.f90 \
     tf.f90 \
     modelLayer.f90 \
     upscaling.f90 \
     mpr_routine.f90 \
     eval_model.f90 \
+    mo_opt_run.f90 \
 
 # concatanate model subroutines
 TEMP_MODSUB = $(DATATYPES) $(UTILS) $(IO) $(CORE)

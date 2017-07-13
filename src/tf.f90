@@ -3,7 +3,7 @@ module tf
 use nrtype                                        ! variable types, etc.
 use data_type                                     ! Including custum data structure definition
 use public_var                                    ! Including common constant (physical constant, other e.g., missingVal, etc.)
-use var_lookup, only:ixVarSoilData, ixVarVegData, ixBeta, ixGamma, nBeta
+use var_lookup, only:ixVarSoilData, ixVarTopoData, ixVarVegData, ixBeta, ixGamma, nBeta
 
 implicit none
 
@@ -21,6 +21,7 @@ contains
 subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter values for all L0 polygons that are included
                             parVxy,            &  ! in/output: veg parameter values for all L0 polygons that are included 
                             sdata,             &  ! input: soil data
+                            tdata,             &  ! input: topo data
                             vdata,             &  ! input: vege data
                             gammaParMasterMeta,&  ! input: gamma parameter meta file - val of calibrating parammeter is adjusted via calibration 
                             nSLyr,             &  ! input: number of soil layers
@@ -35,6 +36,7 @@ subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter va
   type(namedvar2),      intent(inout) :: parVxy(:)              ! veg parameter values for ParVxy(:)%varDat(lyr,poly) 
   ! input
   type(namevar),        intent(in)    :: sdata(:)               ! storage of soil data strucuture
+  type(namevar),        intent(in)    :: tdata(:)               ! storage of topo data strucuture
   type(namevar),        intent(in)    :: vdata(:)               ! storage of veg data strucuture
   type(par_meta)                      :: gammaParMasterMeta(:)
   integer(i4b),         intent(in)    :: nSLyr                  ! number of soil layer
@@ -79,11 +81,11 @@ subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter va
         case(ixBeta%myu)
           call myu( err, message, phi_in=parTemp(ixBeta%phi)%varData, fc_in=parTemp(ixBeta%fc)%varData, gammaPar=gammaPar, myu_out=xPar, tfopt=tfid ) 
         case(ixBeta%binfilt)
-          call binfilt(err, message, sdata=sdata, gammaPar=gammaPar, binfilt_out=xPar, tfopt=tfid )
+          call binfilt(err, message, sdata=sdata, tdata=tdata, gammaPar=gammaPar, binfilt_out=xPar, tfopt=tfid )
         case(ixBeta%D1)
-          call D1( err, message, sdata=sdata, ks_in=parTemp(ixBeta%ks)%varData, phi_in=parTemp(ixBeta%phi)%varData, gammaPar=gammaPar, D1_out=xPar, tfopt=tfid ) 
+          call D1( err, message, sdata=sdata, tdata=tdata, ks_in=parTemp(ixBeta%ks)%varData, phi_in=parTemp(ixBeta%phi)%varData, gammaPar=gammaPar, D1_out=xPar, tfopt=tfid ) 
         case(ixBeta%D2)
-          call D2( err, message, sdata=sdata, ks_in=parTemp(ixBeta%ks)%varData, D4_in=parTemp(ixBeta%D4)%varData, gammaPar=gammaPar, D2_out=xPar, tfopt=tfid ) 
+          call D2( err, message, sdata=sdata, tdata=tdata, ks_in=parTemp(ixBeta%ks)%varData, D4_in=parTemp(ixBeta%D4)%varData, gammaPar=gammaPar, D2_out=xPar, tfopt=tfid ) 
         case(ixBeta%D3)
           call D3( err, message, sdata=sdata, fc_in=parTemp(ixBeta%fc)%varData, gammaPar=gammaPar, D3_out=xPar, tfopt=tfid ) 
         case(ixBeta%D4)
@@ -287,7 +289,7 @@ end subroutine
 ! *********************************************************************
 ! infilt parameter 
 ! *********************************************************************
-subroutine binfilt(err, message, ixDepend, sdata, gammaPar, binfilt_out, tfopt )
+subroutine binfilt(err, message, ixDepend, sdata, tdata, gammaPar, binfilt_out, tfopt )
   ! Use Arno scheme 
   ! b = (sigma_elev-sigma_min)/(sigma_ele+sigma_max)
   ! where
@@ -306,6 +308,7 @@ subroutine binfilt(err, message, ixDepend, sdata, gammaPar, binfilt_out, tfopt )
   implicit none
   ! input
   type(namevar),            optional,intent(in)   :: sdata(:)           ! input(optional): storage of soil data strucuture
+  type(namevar),            optional,intent(in)   :: tdata(:)           ! input(optional): storage of topo data strucuture
   real(dp),                 optional,intent(in)   :: gammaPar(:)        ! input(optional): gamma parameter array 
   integer(i4b),             optional,intent(in)   :: tfopt              ! input(optional): option for transfer function form
   ! output 
@@ -326,12 +329,12 @@ subroutine binfilt(err, message, ixDepend, sdata, gammaPar, binfilt_out, tfopt )
   if ( present(ixDepend) ) then ! setup dependency
     allocate(ixDepend(1),stat=err); if(err/=0)then;message=trim(message)//'error allocating ixDepend';return;endif
     ixDepend=-999_i4b
-  elseif ( present(sdata) .and. present(gammaPar) .and. present(binfilt_out) )then ! compute parameters with TF 
+  elseif ( present(sdata) .and. present(tdata) .and. present(gammaPar) .and. present(binfilt_out) )then ! compute parameters with TF 
     tftype=1_i4b
     if (present(tfopt) ) tftype=tfopt
     associate(g1=>gammaPar(ixGamma%binfilt1gamma1), &
               g2=>gammaPar(ixGamma%binfilt1gamma2), &
-              elestd_in => sdata(ixVarSoilData%ele_std)%dvar1)
+              elestd_in => tdata(ixVarTopoData%ele_std)%dvar1)
     n1=size(sdata(ixVarSoilData%hslyrs)%dvar2,1)
     n2=size(sdata(ixVarSoilData%hslyrs)%dvar2,2)
     allocate(elestd2d(n1,n2)) 
@@ -393,10 +396,11 @@ end subroutine
 ! ***********
 !  Nijssen basiflow D1 parameter
 ! *********************************************************************
-subroutine D1( err, message, ixDepend, sdata, ks_in, phi_in, gammaPar, D1_out, tfopt )
+subroutine D1( err, message, ixDepend, sdata, tdata, ks_in, phi_in, gammaPar, D1_out, tfopt )
   implicit none
   ! input
   type(namevar),            optional,intent(in)   :: sdata(:)         ! input(optional): storage of soil data strucuture
+  type(namevar),            optional,intent(in)   :: tdata(:)         ! input(optional): storage of topo data strucuture
   real(dp),                 optional,intent(in)   :: ks_in(:,:)       ! input(optional): porosity [fraction]  
   real(dp),                 optional,intent(in)   :: phi_in(:,:)      ! input(optional): porosity [fraction]  
   real(dp),                 optional,intent(in)   :: gammaPar(:)      ! input(optional): gamma parameter array 
@@ -420,13 +424,13 @@ subroutine D1( err, message, ixDepend, sdata, ks_in, phi_in, gammaPar, D1_out, t
   if ( present(ixDepend) ) then ! setup dependency
     allocate(ixDepend(nDepend),stat=err); if(err/=0)then;message=trim(message)//'error allocating ixDepend';return;endif
     ixDepend=(/ixBeta%ks,ixBeta%phi/)
-  elseif ( present(sdata) .and. present(phi_in) .and. present(ks_in) .and. present(gammaPar) .and. present(D1_out) )then ! compute parameters with TF 
+  elseif ( present(sdata) .and. present(tdata) .and.  present(phi_in) .and. present(ks_in) .and. present(gammaPar) .and. present(D1_out) )then ! compute parameters with TF 
     tftype=1_i4b
     if (present(tfopt) ) tftype=tfopt
     ! local variable allocation
     associate(g1       => gammaPar(ixGamma%D11gamma1), &
               h_in     => sdata(ixVarSoilData%hslyrs)%dvar2, &
-              slope_in => sdata(ixVarSoilData%slp_mean)%dvar1 )
+              slope_in => tdata(ixVarTopoData%slp_mean)%dvar1 )
     n1=size(D1_out,1)
     n2=size(D1_out,2)
     allocate(S(n1,n2)) 
@@ -504,10 +508,11 @@ end subroutine
 ! ***********
 ! Nijssen baseflow D2 parameter
 ! *********************************************************************
-subroutine D2( err, message, ixDepend, sdata, ks_in, D4_in, gammaPar, D2_out, tfopt ) 
+subroutine D2( err, message, ixDepend, sdata, tdata, ks_in, D4_in, gammaPar, D2_out, tfopt ) 
   implicit none
   ! input
   type(namevar),           optional,intent(in)  :: sdata(:)    ! input(optional): storage of soil data strucuture
+  type(namevar),           optional,intent(in)  :: tdata(:)    ! input(optional): storage of topo data strucuture
   real(dp),                optional,intent(in)  :: Ks_in(:,:)  ! input(optional): ksat [mm/s]
   real(dp),                optional,intent(in)  :: D4_in(:,:)  ! input(optional): VIC D4 parameter [-]
   real(dp),                optional,intent(in)  :: gammaPar(:) ! input(optional): gamma parameter array 
@@ -531,11 +536,11 @@ subroutine D2( err, message, ixDepend, sdata, ks_in, D4_in, gammaPar, D2_out, tf
   if (present(ixDepend) ) then ! setup dependency
     allocate(ixDepend(nDepend),stat=err); if(err/=0)then;message=trim(message)//'error allocating ixDepend';return;endif
     ixDepend=(/ixBeta%ks,ixBeta%D4/)
-  elseif ( present(sdata) .and. present(ks_in) .and. present(D4_in) .and. present(gammaPar) .and. present(D2_out) )then ! compute parameters with TF 
+  elseif ( present(sdata) .and. present(tdata) .and. present(ks_in) .and. present(D4_in) .and. present(gammaPar) .and. present(D2_out) )then ! compute parameters with TF 
     tftype=1_i4b
     if (present(tfopt) ) tftype=tfopt
     associate(g1=>gammaPar(ixGamma%D21gamma1), &
-              slope_in => sdata(ixVarSoilData%slp_mean)%dvar1 )
+              slope_in => tdata(ixVarTopoData%slp_mean)%dvar1 )
     n1=size(D2_out,1)
     n2=size(D2_out,2)
     allocate(S(n1,n2))
@@ -1508,8 +1513,8 @@ subroutine ks( err, message, ixDepend, sdata, gammaPar, ks_out, tfopt )
               g4=>gammaPar(ixGamma%ks2gamma1), &
               g5=>gammaPar(ixGamma%ks2gamma2), &
               g6=>gammaPar(ixGamma%ks2gamma3), & 
-              sand_in => sdata(ixVarSoilData%sand_frc)%dvar2, & 
-              clay_in => sdata(ixVarSoilData%clay_frc)%dvar2 )
+              sand_in => sdata(ixVarSoilData%sand_pct)%dvar2, & 
+              clay_in => sdata(ixVarSoilData%clay_pct)%dvar2 )
     select case(tftype)
       case(1); 
         where ( sand_in /= dmiss .and. clay_in /= dmiss ) 
@@ -1628,8 +1633,8 @@ subroutine phi( err, message, ixDepend, sdata, gammaPar, phi_out, tfopt )
               g7      => gammaPar(ixGamma%phi2gamma4),          &
               g8      => gammaPar(ixGamma%phi2gamma5),          &
               g9      => gammaPar(ixGamma%phi2gamma6),          &
-              sand_in => sdata(ixVarSoilData%sand_frc)%dvar2, & 
-              clay_in => sdata(ixVarSoilData%clay_frc)%dvar2, & 
+              sand_in => sdata(ixVarSoilData%sand_pct)%dvar2, & 
+              clay_in => sdata(ixVarSoilData%clay_pct)%dvar2, & 
               bd_in   => sdata(ixVarSoilData%bulk_density)%dvar2 ) 
       select case(tftype)
         case(1);  ! Cosby
@@ -1694,7 +1699,7 @@ subroutine fc( err, message, ixDepend, sdata, phi_in, psis_in, b_in, gammaPar, f
     allocate(psi_fc(nSpoly,nSLyr))
     psi_fc(:,:)=-20
     associate( g1      => gammaPar(ixGamma%fc1gamma1), &
-               sand_in => sdata(ixVarSoilData%sand_frc)%dvar2 )
+               sand_in => sdata(ixVarSoilData%sand_pct)%dvar2 )
     where (sand_in > 69) psi_fc=-10
     select case(tftype)
       case(1);  !campbell
@@ -1793,8 +1798,8 @@ subroutine retcurve( err, message, ixDepend, sdata, gammaPar, retcurve_out, tfop
     associate(g1      => gammaPar(ixGamma%b1gamma1), &
               g2      => gammaPar(ixGamma%b1gamma2), &
               g3      => gammaPar(ixGamma%b1gamma3), &
-              sand_in => sdata(ixVarSoilData%sand_frc)%dvar2, & 
-              clay_in => sdata(ixVarSoilData%clay_frc)%dvar2 )
+              sand_in => sdata(ixVarSoilData%sand_pct)%dvar2, & 
+              clay_in => sdata(ixVarSoilData%clay_pct)%dvar2 )
       select case(tftype)
         case(1); 
           where ( sand_in /= dmiss .and. clay_in /= dmiss ) 
@@ -1840,8 +1845,8 @@ subroutine psis( err, message, ixDepend, sdata, gammaPar, psis_out, tfopt )
     associate(g1      => gammaPar(ixGamma%psis1gamma1), &
               g2      => gammaPar(ixGamma%psis1gamma2), &
               g3      => gammaPar(ixGamma%psis1gamma2), &
-              sand_in => sdata(ixVarSoilData%sand_frc)%dvar2, & 
-              silt_in => sdata(ixVarSoilData%silt_frc)%dvar2 )
+              sand_in => sdata(ixVarSoilData%sand_pct)%dvar2, & 
+              silt_in => sdata(ixVarSoilData%silt_pct)%dvar2 )
       select case(tftype)
         case(1);  !Cosby et al. 
           where ( sand_in /= dmiss .and. silt_in /= dmiss ) 

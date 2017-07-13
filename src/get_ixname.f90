@@ -12,6 +12,7 @@ public::get_ixBeta          ! assign variable index to beta parameter
 public::get_ixDataMap       ! assign variable index to variables in mapping netCDF data
 public::get_ixDataVeg       ! assign variable index to variables in veg netCDF data
 public::get_ixDataSoil      ! assign variable index to variables in soil netCDF data
+public::get_ixDataTopo      ! assign variable index to variables in topo netCDF data
 public::get_ixPrpVeg
 
 contains
@@ -164,7 +165,7 @@ contains
    select case(trim(varName))
      case('hru_id');         get_ixDataMap = ixVarMapData%hru_id         ! hru ID 
      case('weight');         get_ixDataMap = ixVarMapData%weight         ! weight of intersecting geophysical polygon
-     case('overlapPolyId');  get_ixDataMap = ixVarMapData%overlapPolyId  ! ID of intersecting geophysical polygon
+     case('intersector');    get_ixDataMap = ixVarMapData%intersector    ! ID of intersecting geophysical polygon
      case('overlaps');       get_ixDataMap = ixVarMapData%overlaps       ! number of intersecting geophysical polygon
      ! get to here if cannot find the variable
      case default;           get_ixDataMap = imiss
@@ -203,17 +204,33 @@ contains
   select case(trim(varName))
    case('polyid');       get_ixDataSoil = ixVarSoilData%polyid        ! soil polygon ID 
    case('hslyrs');       get_ixDataSoil = ixVarSoilData%hslyrs        ! soil layer thickness [m] 
-   case('soilclass');    get_ixDataSoil = ixVarSoilData%soilclass     ! soil class in soil polygon and layer
-   case('sand_frc');     get_ixDataSoil = ixVarSoilData%sand_frc      ! sand fraction in soil polygon and layer [-]
-   case('silt_frc');     get_ixDataSoil = ixVarSoilData%silt_frc      ! silt fraction in soil polygon and layer [-]
-   case('clay_frc');     get_ixDataSoil = ixVarSoilData%clay_frc      ! clay fraction in soil polygon and layer [-]
-   case('bulk_density'); get_ixDataSoil = ixVarSoilData%bulk_density  ! bulk density in soil polygon and layer [-]
-   case('ele_mean');     get_ixDataSoil = ixVarSoilData%ele_mean      ! average elev over soil polygon [m]
-   case('ele_std');      get_ixDataSoil = ixVarSoilData%ele_std       ! std elev over soil polygon [m]
-   case('slp_mean');     get_ixDataSoil = ixVarSoilData%slp_mean      ! average slope over soil polygon [-]
+   case('sand_pct');     get_ixDataSoil = ixVarSoilData%sand_pct      ! sand percent in soil polygon and layer [%]
+   case('silt_pct');     get_ixDataSoil = ixVarSoilData%silt_pct      ! silt percent in soil polygon and layer [%]
+   case('clay_pct');     get_ixDataSoil = ixVarSoilData%clay_pct      ! clay percent in soil polygon and layer [%]
+   case('bulk_density'); get_ixDataSoil = ixVarSoilData%bulk_density  ! bulk density in soil polygon and layer [%]
    ! get to here if cannot find the variable
    case default;     get_ixdataSoil = imiss
   endselect
+ end function
+
+! *******************************************************************************************************************
+! function: get the index of the named variables for veg data 
+! *******************************************************************************************************************
+ function get_ixDataTopo(varName)
+   USE var_lookup,only:ixVarTopoData              ! indices of the named variables
+   implicit none
+   ! define dummy variables
+   character(*), intent(in) :: varName            ! variable name
+   integer(i4b)             :: get_ixDataTopo     ! index of the named variable
+   ! get the index of the named variables
+   select case(trim(varName))
+     case('polyid');     get_ixDataTopo = ixVarTopoData%polyid     ! polygon ID 
+     case('ele_mean');   get_ixDataTopo = ixVarTopoData%ele_mean   ! average elev over soil polygon [m]  
+     case('ele_std');    get_ixDataTopo = ixVarTopoData%ele_std    ! std elev over soil polygon [m]
+     case('slp_mean');   get_ixDataTopo = ixVarTopoData%slp_mean   ! average slope over soil polygon [-]
+     ! get to here if cannot find the variable
+     case default;     get_ixDataTopo = imiss
+   endselect
  end function
 
 ! *******************************************************************************************************************
