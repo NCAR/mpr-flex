@@ -15,23 +15,23 @@ public::getTopoData
 contains
 
  ! *********************************************************************
- ! Subroutine: get soil data for polygons and layers 
+ ! Subroutine: get topo data for gridbox and layers 
  ! *********************************************************************
   subroutine getTopoData(fname,       &   ! input: file name
-                         tdata_meta,  &   ! input: soil data meta
-                         dname_tpoly, &   ! input: dimension name for soil polygon
-                         tdata,       &   ! input-output: soil data structure
-                         nTpoly,      &   ! output: number of soil polygon
+                         tdata_meta,  &   ! input: topo data meta
+                         dname_tpoly, &   ! input: dimension name for gridbox 
+                         tdata,       &   ! input-output: topo data structure
+                         nTpoly,      &   ! output: number of gridbox 
                          ierr, message)   ! output: error control
   implicit none
   ! input variables
   character(*),  intent(in)       :: fname          ! filename
-  type(var_meta),intent(in)       :: tdata_meta(:)  ! soil data meta
+  type(var_meta),intent(in)       :: tdata_meta(:)  ! topo data meta
   character(*),  intent(in)       :: dname_tpoly    ! dimension name for polygon
   ! input-output
-  type(namevar), intent(inout)    :: tdata(:)       ! soil data container
+  type(namevar), intent(inout)    :: tdata(:)       ! topo data container
   ! output variables
-  integer(i4b),  intent(out)      :: nTpoly         ! number of soil polygons
+  integer(i4b),  intent(out)      :: nTpoly         ! number of gridbox 
   integer(i4b),  intent(out)      :: ierr           ! error code
   character(*),  intent(out)      :: message        ! error message
   ! local variables
@@ -56,7 +56,6 @@ contains
     ! get the variable ID
     ierr = nf90_inq_varid(ncid, trim(tdata_meta(ivar)%varName), iVarID)
     if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr))//'; name='//trim(tdata_meta(ivar)%varName); return; endif
-    tdata(ivar)%varName=trim(tdata_meta(ivar)%varName) 
     select case(tdata_meta(iVar)%vartype)
       case('integer')
        select case(tdata_meta(iVar)%vardims)

@@ -115,7 +115,7 @@ contains
     ! get the variable ID
     ierr = nf90_inq_varid(ncid, trim(sdata_meta(ivar)%varName), iVarID)
     if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr))//'; name='//trim(sdata_meta(ivar)%varName); return; endif
-    sdata(ivar)%varName=trim(sdata_meta(ivar)%varName) 
+    !sdata(ivar)%varName=trim(sdata_meta(ivar)%varName) 
     select case(sdata_meta(iVar)%vartype)
       case('integer')
        select case(sdata_meta(iVar)%vardims)

@@ -320,6 +320,7 @@ subroutine mpr(hruID,             &     ! input: hruID
                   err,cmessage)                                  ! output: error control
   if (err/=0)then; message=trim(message)//cmessage; return; endif
   if ( opt==3 .and. nHru /= nGhru )then;err=10;message=trim(message)//'nHru= '//trim(int2str(nGhru))//' NOT '//trim(int2str(nHru));return;endif
+  print*, 'pass3'
   !!! ---------------------------------------------
   !!! Start of model hru loop (from mapping file) !!!
   !!! --------------------------------------------- 
@@ -368,11 +369,11 @@ subroutine mpr(hruID,             &     ! input: hruID
       print*,'****************************************************'
       print*,'HRU, hruID = ',iHru,hruID(iHru)
       print*,'****************************************************'
-      print*,'(1.1) Print list of soil polygon ID and weigth'
+      print*,'(1.1) Print list of geophysical gridbox ID and weight (first 100)'
       write(*,"(' polyID = ',100I9)")   (polySub(iPoly), iPoly=1,nGpolyLocal)
-      write(*,"(' weight = ',100f9.3)") (wgtSub(iPoly), iPoly=1,nGpolyLocal)
+      write(*,"(' weight = ',100f10.5)") (wgtSub(iPoly), iPoly=1,nGpolyLocal)
       do iVar=1,nVarSoilData
-        write(*,"(A12,'= ')") adjustl(sdataLocal(iVar)%varName)
+        write(*,"(A12,'= ')") adjustl(sdata_meta(iVar)%varname)
         do iPoly=1,nGpolyLocal
         select case(trim(sdata_meta(iVar)%vartype))
           case('integer')

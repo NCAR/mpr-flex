@@ -29,21 +29,21 @@ contains
  
    implicit none
   
-   character(*), intent(in)        :: fname          ! filename
-   type(var_meta),intent(in)       :: vdata_meta(:)  ! veg data meta
-   character(*), intent(in)        :: dname_vpoly    ! dimension name for polygon
+   character(*), intent(in)           :: fname          ! filename
+   type(var_meta),intent(in)          :: vdata_meta(:)  ! veg data meta
+   character(*), intent(in)           :: dname_vpoly    ! dimension name for polygon
    ! input-output
-   type(namevar), intent(inout)    :: vdata(:)       ! veg data container
+   type(namevar), intent(inout)       :: vdata(:)       ! veg data container
    ! output variables
-   integer(i4b), intent(out)       :: nVpoly         ! number of veg polygons
-   integer(i4b), intent(out)       :: ierr           ! error code
-   character(*), intent(out)       :: message        ! error message
+   integer(i4b), intent(out)          :: nVpoly         ! number of veg polygons
+   integer(i4b), intent(out)          :: ierr           ! error code
+   character(len=strLen), intent(out) :: message        ! error message
    ! local variables
-   integer(i4b)                    :: iVar           ! variable index
-   integer(i4b)                    :: ncid           ! NetCDF file ID
-   integer(i4b)                    :: idimID_poly    ! dimension ID for HRUs
-   integer(i4b)                    :: iVarID         ! variable ID
-   integer(i4b)                    :: nMonth=12      ! number of month 
+   integer(i4b)                       :: iVar           ! variable index
+   integer(i4b)                       :: ncid           ! NetCDF file ID
+   integer(i4b)                       :: idimID_poly    ! dimension ID for HRUs
+   integer(i4b)                       :: iVarID         ! variable ID
+   integer(i4b)                       :: nMonth=12      ! number of month 
  
    ! initialize error control
    ierr=0; message='getVegData/'
@@ -61,7 +61,6 @@ contains
      ! get the variable ID
      ierr = nf90_inq_varid(ncid, trim(vdata_meta(ivar)%varName), ivarID)
      if(ierr/=0)then; message=trim(message)//trim(nf90_strerror(ierr))//'; name='//trim(vdata_meta(ivar)%varName); return; endif
-     print*, vdata_meta(iVar)%varname
      select case(vdata_meta(iVar)%vartype)
      case('integer')
        select case(vdata_meta(iVar)%vardims)
@@ -125,6 +124,7 @@ contains
    ! local
    character(len=strLen)             :: spName,spData      ! name and data from cLines(iLine) veg data, respectively
    character(len=strLen),allocatable :: sLines(:)          ! vector of character strings
+   character(len=strLen)             :: cmessage           ! error message from subroutine
    integer(i4b)                      :: ibeg_name          ! start index of variable name in string sLines(iLine)
    integer(i4b)                      :: iend_name          ! end index of variable name in string sLines(iLine)
    integer(i4b)                      :: iVclass            ! ID (= index) of veg class 
@@ -135,9 +135,11 @@ contains
    !allocation
    do iVclass=1,nVclass; allocate(vegPropt(iVclass)%var(nPrpVeg)); end do
    ! open file (also returns un-used file unit used to open the file)
-   call file_open(in_vegTable,iunit,err,message)
+   call file_open(in_vegTable,iunit,err,cmessage)
+   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
    ! get a list of character strings from non-comment lines
-   call get_vlines(iunit,sLines,err,message)
+   call get_vlines(iunit,sLines,err,cmessage)
+   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
    ! close the file unit
    close(iunit)
    do iLine=1,size(sLines) ! looping through lines in the veg data file 
