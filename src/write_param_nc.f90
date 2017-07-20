@@ -24,7 +24,7 @@ contains
                            hModel,          & ! input: model layer thickness 
                            parMxyMz,        & ! input: parameter data structure 
                            err, message)      ! output: error control
-    use globalData,    only: nSoilParModel, soilBetaInGamma
+    use globalData,    only: nSoilBetaModel, soilBetaCalName
     implicit none
     ! input variables
     character(*),   intent(in)            :: fname        ! input: filename
@@ -58,9 +58,9 @@ contains
       zModel(iLyr,:)=zModel(iLyr-1,:)+zModel(iLyr,:) 
     enddo
     ! construct soil beta parameter name array 
-    allocate(betaNames(nSoilParModel+1),stat=err);if(err/=0)then;message=trim(message)//'error allocating betaNames';return;endif
-    betaNames(1:nSoilParModel)=soilBetaInGamma
-    betaNames(nSoilParModel+1)='z'
+    allocate(betaNames(nSoilBetaModel+1),stat=err);if(err/=0)then;message=trim(message)//'error allocating betaNames';return;endif
+    betaNames(1:nSoilBetaModel)=soilBetaCalName
+    betaNames(nSoilBetaModel+1)='z'
     ! Define variables
     call defNetCDF(fname, betaNames, nHru, nLyr, hruDim, sLyrDim, err, cmessage)
     if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
@@ -71,8 +71,8 @@ contains
     call write_vec_ivar(fname,trim(sLyrDim%dimName),(/(iLyr,iLyr=1,nLyr)/),1,err,cmessage)
     if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     ! Write soil parameters
-    do iPar=1,nSoilParModel
-      call write_array2_dvar(fname,trim(soilBetaInGamma(iPar)),parMxyMz(iPar)%varData,(/1,1/),(/nLyr,nHru/),err,cmessage)
+    do iPar=1,nSoilBetaModel
+      call write_array2_dvar(fname,trim(soilBetaCalName(iPar)),parMxyMz(iPar)%varData,(/1,1/),(/nLyr,nHru/),err,cmessage)
       if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     enddo
     ! Write soil layers depth 
@@ -88,7 +88,7 @@ contains
                           hruID,           & ! input: hruID array 
                           vegParMxy,         & ! input: parameter data structure 
                           err, message)      ! output: error control
-    use globalData,    only: nVegParModel, vegBetaInGamma
+    use globalData,    only: nVegBetaModel, vegBetaCalName
     implicit none
     ! input variables
     character(*),   intent(in)            :: fname        ! input: filename
@@ -114,7 +114,7 @@ contains
     monDim%dimDesc='Month'
     monDim%dimUnit='-'
     ! Define variables
-    call defNetCDF(fname, vegBetaInGamma, nHru, nMonth, HruDim, monDim, err, cmessage)
+    call defNetCDF(fname, vegBetaCalName, nHru, nMonth, HruDim, monDim, err, cmessage)
     if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     ! write 1st Dimension
     call write_vec_ivar(fname,trim(hruDim%dimName),hruID,1,err,cmessage)
@@ -123,8 +123,8 @@ contains
     call write_vec_ivar(fname,trim(monDim%dimName),(/(iMon,iMon=1,nMonth)/),1,err,cmessage)
     if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     ! Write veg parameters
-    do iPar=1,nVegParModel
-      call write_array2_dvar(fname,trim(vegBetaInGamma(iPar)),vegParMxy(iPar)%varData,(/1,1/),(/nMonth,nHru/),err,cmessage)
+    do iPar=1,nVegBetaModel
+      call write_array2_dvar(fname,trim(vegBetaCalName(iPar)),vegParMxy(iPar)%varData,(/1,1/),(/nMonth,nHru/),err,cmessage)
       if(err/=0)then;message=trim(message)//trim(cmessage);return;endif
     enddo
     return 
@@ -138,28 +138,28 @@ contains
                        defDim1,         &  ! input: 1st dimension name 
                        defDim2,         &  ! input: 2nd dimension name 
                        err, message)       ! output: error control
-    use globalData,    only: betaMaster 
+    use globalData,    only: betaMeta 
     use var_lookup,    only: nBeta 
     implicit none
     ! input variables
-    character(*), intent(in)          :: fname        ! filename
-    character(*), intent(in)          :: betaNames(:) ! parameter name array 
-    integer(i4b), intent(in)          :: nDim1        ! number of 1st dimension (hru polygon )
-    integer(i4b), intent(in)          :: nDim2        ! number of 2nd Dimension (e.g., soil layer, month) 
-    type(defDim), intent(in)          :: defDim1      ! 1st dimension name 
-    type(defDim), intent(in)          :: defDim2      ! 2nd dimension name 
+    character(*), intent(in)          :: fname           ! filename
+    character(*), intent(in)          :: betaNames(:)    ! parameter name array 
+    integer(i4b), intent(in)          :: nDim1           ! number of 1st dimension (hru polygon )
+    integer(i4b), intent(in)          :: nDim2           ! number of 2nd Dimension (e.g., soil layer, month) 
+    type(defDim), intent(in)          :: defDim1         ! 1st dimension name 
+    type(defDim), intent(in)          :: defDim2         ! 2nd dimension name 
     ! output variables
-    integer(i4b), intent(out)         :: err          ! error code
-    character(*), intent(out)         :: message      ! error message
+    integer(i4b), intent(out)         :: err             ! error code
+    character(*), intent(out)         :: message         ! error message
     ! local variables
-    type(par_meta),  allocatable      :: betaMeta(:)  ! meta data for beta parameter estimated via MPR
-    integer(i4b)                      :: ncid         ! NetCDF file ID
-    integer(i4b)                      :: dim1ID       ! 1st dimension ID (hru)
-    integer(i4b)                      :: dim2ID       ! 2nd dimension ID (soil layer, month) 
-    integer(i4b)                      :: nBetaOut     ! number of beta parameter to be output 
-    integer(i4b)                      :: iPar         ! variable index
-    integer(i4b)                      :: iBeta        ! variable index
-    character(len=strLen)             :: cmessage     ! error message of downwind routine
+    type(par_meta),  allocatable      :: betaMetaTemp(:) ! meta data for beta parameter estimated via MPR
+    integer(i4b)                      :: ncid            ! NetCDF file ID
+    integer(i4b)                      :: dim1ID          ! 1st dimension ID (hru)
+    integer(i4b)                      :: dim2ID          ! 2nd dimension ID (soil layer, month) 
+    integer(i4b)                      :: nBetaOut        ! number of beta parameter to be output 
+    integer(i4b)                      :: iPar            ! variable index
+    integer(i4b)                      :: iBeta           ! variable index
+    character(len=strLen)             :: cmessage        ! error message of downwind routine
     
     ! initialize error control
     err=0; message='defNetCDF/'
@@ -176,13 +176,13 @@ contains
     call defvar(defDim1%dimName,trim(defDim1%dimDesc),'-', (/defDim1%dimName/), nf90_int, err,cmessage)
     call defvar(defDim2%dimName,trim(defDim2%dimDesc),'-', (/defDim2%dimName/), nf90_int, err,cmessage)
     nBetaOut=size(betaNames)
-    allocate(betaMeta(nBetaOut)) 
+    allocate(betaMetaTemp(nBetaOut)) 
     do iBeta=1,nBetaOut
       do iPar=1,nBeta
-        if ( betaMaster(iPar)%pname==betaNames(iBeta) )then; betaMeta(iBeta)=betaMaster(iPar); exit; endif
+        if ( betaMeta(iPar)%pname==betaNames(iBeta) )then;betaMetaTemp(iBeta)=betaMeta(iPar); exit; endif
       enddo
       ! define parameter values 
-      call defvar(trim(betaMeta(iBeta)%pname),trim(betaMeta(iBeta)%pname),'-',(/defDim2%dimName,defDim1%dimName/),nf90_double,err,cmessage)
+      call defvar(trim(betaMetaTemp(iBeta)%pname),trim(betaMetaTemp(iBeta)%pname),'-',(/defDim2%dimName,defDim1%dimName/),nf90_double,err,cmessage)
       if(err/=0)then; message=trim(message)//trim(nf90_strerror(err)); return; endif
     end do
     ! end definitions

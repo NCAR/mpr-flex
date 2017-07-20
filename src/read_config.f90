@@ -42,19 +42,19 @@ module read_config
                           obs_name,                &
                           executable,              & 
                           basin_objfun_weight_file,&
-                          objfntype,               &
                           agg,                     &
                           dt,                      &
                           sim_len,                 & 
                           start_cal,               &
                           end_cal,                 &
                           nHru,                    &
-                          nbasin
+                          nbasin,                  &
+                          isRoute
 ! Model specification 
   namelist / modelconfig / idModel,                &
                            TotNpar,                &    
                            nLyr,                   &
-                           calpar
+                           inParList
 ! DDS algorithm 
   namelist / DDS / rpar,        &
                    isRestart,   &

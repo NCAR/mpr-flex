@@ -3,8 +3,8 @@ program main_calibration
   use nrtype 
   use public_var
   use read_config,     only: read_nml 
-  use globaldata,      only: betaInGamma, parMask, parArray
-  use process_meta,    only: read_parm_master_meta, read_calPar, get_parm_meta, param_setup, print_config
+  use globaldata,      only: calBetaName, parMask, parArray
+  use process_meta,    only: read_parm_master_meta, read_inParList, get_parm_meta, param_setup, print_config
   use tf,              only: betaDependency, betaCompOrder
   use mo_dds,          only: dds
   use mo_opt_run,      only: opt_run
@@ -23,16 +23,16 @@ program main_calibration
   call read_nml( trim(nmlfile), ierr, cmessage ); call handle_err(ierr,cmessage)
   ! Read parameter master metadata and populate "betaMaster and gammaMaster" structure
   call read_parm_master_meta(trim(param_master_meta), ierr, cmessage); call handle_err(ierr,cmessage)
-  ! Read 'CalPar' input listing metadata of beta parameters to be estimated. Saved data: 'calParMeta'
-  call read_calPar( trim(calpar), ierr,  cmessage ); call handle_err(ierr,cmessage)
-  ! Process 'CalParMeta' along with master parameter meta data. 
-  ! Saved data: 'parSubset','gammaSubset', 'betaInGamma', betaCalScale, nBetaDirCal, nBetaGammaCal, nGammaCal, nnParCalSum 
+  ! Read 'inParList' nml input listing metadata of beta parameters to be estimated. Saved data: 'inParMeta'
+  call read_inParList( trim(inParList), ierr,  cmessage ); call handle_err(ierr,cmessage)
+  ! Process 'inParMeta' along with master parameter meta data. 
+  ! Saved data: 'calParMeta','calGammaMeta', 'calBetaName', calScaleMeta, nCalBetaDir, nCalPar, nCalGamma, nCalParSum 
   call get_parm_meta(ierr,cmessage); call handle_err(ierr,cmessage)
-  ! Compute beta parameter dependency. Saved data: beta 
+  ! Compute beta parameter dependency. Saved data: betaAncilMeta
   call betaDependency (ierr, cmessage); call handle_err(ierr,cmessage)
-  if (size(betaInGamma)/=0)then
-    ! Compute computing order of beta parameters including dependent parameters. Saved data: 'betaOrder', nBetaNeed
-    call betaCompOrder (betaInGamma, ierr, cmessage); call handle_err(ierr,cmessage)
+  if (size(calBetaName)/=0)then
+    ! Compute computing order of beta parameters including dependent parameters. Saved data: 'calBetaOrderIdx', nBetaNeed
+    call betaCompOrder (calBetaName, ierr, cmessage); call handle_err(ierr,cmessage)
     call check_polyID(trim(mpr_input_dir)//trim(fname_soil), dname_spoly , ierr, cmessage); call handle_err(ierr, cmessage)
   endif
   ! initialize parameter and mask arrays 
@@ -41,8 +41,6 @@ program main_calibration
   call print_config()
   ! main routine starts depending on option
   select case (opt)
-    case (2)     ! just run model and output ascii of sim and obs series (parameter values use default or ones specified in restart file)
-      call opt_run(objfn, restrt_file)
     case (1)     ! perform calibration with DDS
       call dds(objfn,                   & ! function to get object function
                parArray(:,1),           & ! initial parameter values
@@ -55,6 +53,8 @@ program main_calibration
                maxiter=maxn,            & ! maximum iteration
                maxit=isMax,             & ! minimzation (0) or maximization (1)
                tmp_file=state_file)       !
+    case (2)     ! just run model and output ascii of sim and obs series (parameter values use default or ones specified in restart file)
+      call opt_run( restrt_file, ierr, cmessage ); call handle_err(ierr, cmessage )
     case (3)     ! just perform MPR only and output parameters in netCDF
       call run_mpr( parArray(:,1), mpr_param_file , ierr, cmessage ); call handle_err(ierr,cmessage)
     case default

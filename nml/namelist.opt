@@ -10,7 +10,7 @@ opt                    = 1
 !> metadata for all gamma and beta parameters 
 param_master_meta      = "/home/mizukami/hydropt/meta/ParamMeta.txt"
 !> List of parameter (name, value, flag) based on input calPar used for only if opt=2, ignored otherwise 
-mpr_param_file         = "/d3/mizukami/hydro_params/vic_regionalization/upscale_hcdn/individual_test_hydropt/01022500/MPR_Param.txt"
+mpr_param_file         = "/glade/u/home/mizukami/mpr_flex/../../MPR_Param.txt"
 /
 
 !---------------------------------------
@@ -51,7 +51,6 @@ sim_dir                  = "OUTDIR"           ! name of directory where model ou
 obs_name                 = "CALIBFLOW"        ! name of ascii observed flow data
 executable               = "EXE"              ! name of model executable
 basin_objfun_weight_file = "OBJWEIGHT"        ! name of ascii listing weight of each basin that is appplied to basin objective function   
-objfntype                = "OBJFNCNAME"       ! name of objective function to be minimized- "nse", "rmse", "kge", "month-nse", "month-rmse", "sigBias"
 agg                      =  1                 ! method for aggregaion of basin objective function
 dt                       = 86400              ! simulation time step [sec]
 sim_len                  = 6940               ! number of simulation time step 
@@ -59,6 +58,7 @@ start_cal                = 3652               ! time step when calibration start
 end_cal                  = 6940               ! time step when calibration end
 nbasin                   = 1                  ! number of calibrating basins
 nHru                     = 1                  ! sum of hrus consisting of each basin
+isRoute                  = T                  ! T=route in mpr-flex, F=route outside mpr-flex
 /
 
 !---------------------------------------
@@ -68,7 +68,7 @@ nHru                     = 1                  ! sum of hrus consisting of each b
 idModel                  = IDMODEL            ! id of model
 TotNpar                  = NUMPAR             ! total number of soil parameters
 nLyr                     = NUMLYR             ! number of soil layers
-calpar                   = "calBeta.txt"      ! name of ascii file listing calibrating parameters
+inParList                = "calBeta.txt"      ! name of ascii file listing calibrating parameters
 /
 
 !---------------------------------------

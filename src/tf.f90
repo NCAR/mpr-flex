@@ -28,7 +28,7 @@ subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter va
                             nVPoly,            &  ! input: number of vege polygons (to be deleted as nVpoly=nSpoly)
                             err,message) 
 
-  use globalData, only:betaMaster, betaOrder, soilBetaInGamma, vegBetaInGamma
+  use globalData, only:betaMeta, calBetaOrderIdx, soilBetaCalName, vegBetaCalName
   use get_ixname, only:get_ixBeta
   implicit none
   ! in/out
@@ -52,16 +52,16 @@ subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter va
 
   err=0; message="comp_model_param/"
   first: associate(gammaPar=> gammaParMasterMeta(:)%val)
-  do iParm = 1,size(betaOrder)
-    ix = betaOrder(iParm) 
+  do iParm = 1,size(calBetaOrderIdx)
+    ix = calBetaOrderIdx(iParm) 
     if (ix/=-999) then
-      if (trim(betaMaster(ix)%ptype)=='soil')then
+      if (trim(betaMeta(ix)%ptype)=='soil')then
         allocate(parTemp(ix)%varData(nSLyr,nSPoly) ,stat=err); if(err/=0)then;message=trim(message)//'error allocating parTemp';stop;endif
-      elseif (betaMaster(ix)%ptype=='veg')then 
+      elseif (betaMeta(ix)%ptype=='veg')then 
         allocate(parTemp(ix)%varData(nMonth,nVPoly) ,stat=err); if(err/=0)then;message=trim(message)//'error allocating parTemp';stop;endif
       endif
       second: associate (xPar => parTemp(ix)%varData, &
-                         tfid => betaMaster(ix)%tftype)
+                         tfid => betaMeta(ix)%tftype)
       if (tfid==-999_i4b) tfid=1_i4b
       select case(ix)
         case(ixBeta%ks)
@@ -137,13 +137,13 @@ subroutine comp_model_param(parSxySz,          &  ! in/output: soil parameter va
     endif
   end do ! end of parameter loop
   end associate first
-  ! extract beta parameters in 'CalPar' list
-  do iParm=1,size(soilBetaInGamma)
-    idBeta=get_ixBeta(trim(soilBetaInGamma(iParm)))
+  ! extract beta parameters in 'inParList' list
+  do iParm=1,size(soilBetaCalName)
+    idBeta=get_ixBeta(trim(soilBetaCalName(iParm)))
     parSxySz(iParm)%varData=parTemp(idBeta)%varData 
   enddo
-  do iParm=1,size(vegBetaInGamma)
-    idBeta=get_ixBeta(trim(vegBetaInGamma(iParm)))
+  do iParm=1,size(vegBetaCalName)
+    idBeta=get_ixBeta(trim(vegBetaCalName(iParm)))
     parVxy(iParm)%varData=parTemp(idBeta)%varData 
   enddo
   return
@@ -154,7 +154,7 @@ end subroutine
 ! *********************************************************************
 subroutine betaDependency( err, message )
   use get_ixname, only:get_ixBeta
-  use globalData, only:betaMaster, beta
+  use globalData, only:betaMeta, betaAncilMeta
   implicit none
   ! output 
   integer(i4b),         intent(out)   :: err                     ! output: error id 
@@ -208,8 +208,9 @@ subroutine betaDependency( err, message )
       case(ixBeta%h5);allocate(ixDepend(1), stat=err); ixDepend=-999_i4b
     end select
     if ( allocated(ixDepend) )then
-      allocate(beta(iParm)%depend(size(ixDepend)),stat=err);if(err/=0)then;message=trim(message)//'error allocating beta%ixDepend for '//trim(betaMaster(iParm)%pname);return;endif 
-      beta(iParm)%depend = ixDepend
+      allocate(betaAncilMeta(iParm)%depend(size(ixDepend)),stat=err)
+      if(err/=0)then;message=trim(message)//'error allocating betaAncilMeta%ixDepend for '//trim(betaMeta(iParm)%pname);return;endif 
+      betaAncilMeta(iParm)%depend = ixDepend
       deallocate(ixDepend)
     endif
   enddo
@@ -220,7 +221,7 @@ end subroutine
 ! public subroutine: Determin computing order of beta parameters including depedent parameters 
 ! *********************************************************************
 subroutine betaCompOrder( betaList, err, message)
-  use globalData, only:beta, betaOrder, nBetaNeed
+  use globalData, only:betaAncilMeta, calBetaOrderIdx, nBetaNeed
   use get_ixname, only:get_ixBeta
   implicit none
   ! input
@@ -236,10 +237,10 @@ subroutine betaCompOrder( betaList, err, message)
   integer(i4b)                      :: iDeps              ! loop index for dependent parameters 
   integer(i4b)                      :: nDeps              ! number of dependant parameters of the parameter 
 
-  err=0; message="betaOrder/"
+  err=0; message="betaCompOrder/"
   parFlag = .false.
   nassign = 0
-  betaOrder=-999
+  calBetaOrderIdx=-999
   nBetaNeed=0
   do  ! do until all beta parameters are assigned
     nassign = 0
@@ -250,18 +251,18 @@ subroutine betaCompOrder( betaList, err, message)
       ! climb up parameter network as far as possible
       jParm = jdx    ! the first parameter under investigation 
       do  ! do until get to a "most uplevel" parameters that is not assigned
-        if ( beta(jParm)%depend(1) .eq. -999_i4b ) then     ! (if nDeps = 0, then the parameter is independent of any others )
+        if ( betaAncilMeta(jParm)%depend(1) .eq. -999_i4b ) then     ! (if nDeps = 0, then the parameter is independent of any others )
           ! assign jParm
           nBetaNeed=nBetaNeed+1
           parFlag(jParm) = .true.
-          beta(jParm)%order = nBetaNeed 
-          betaOrder(nBetaNeed)=jParm
+          betaAncilMeta(jParm)%order = nBetaNeed 
+          calBetaOrderIdx(nBetaNeed)=jParm
           exit 
         else    ! if the parameter has any dependent parameters 
           kParm = jParm   ! the parameter under investigation 
-          nDeps = size(beta(jParm)%depend)    ! get number of number of dependent parameters
+          nDeps = size(betaAncilMeta(jParm)%depend)    ! get number of number of dependent parameters
           do iDeps=1,nDeps
-            idx = beta(jParm)%depend(iDeps)   
+            idx = betaAncilMeta(jParm)%depend(iDeps)   
             ! check if the parameter is NOT assigned
             if (.not.parFlag(idx))then; jParm = idx; exit; endif
           end do  ! (looping through dependent parameters)
@@ -270,8 +271,8 @@ subroutine betaCompOrder( betaList, err, message)
             ! assign jParm
             nBetaNeed=nBetaNeed+1
             parFlag(jParm) = .true.
-            beta(jParm)%order = nBetaNeed
-            betaOrder(nBetaNeed)=jParm
+            betaAncilMeta(jParm)%order = nBetaNeed
+            calBetaOrderIdx(nBetaNeed)=jParm
             exit 
           endif  
           cycle   ! if jrch changes, keep looping (move upstream)
@@ -1793,13 +1794,13 @@ subroutine retcurve( err, message, ixDepend, sdata, gammaPar, retcurve_out, tfop
     ! opt 1: Cosby et al. WRR 1984
     associate(g1      => gammaPar(ixGamma%b1gamma1), &
               g2      => gammaPar(ixGamma%b1gamma2), &
-              g3      => gammaPar(ixGamma%b1gamma2), &
+              g3      => gammaPar(ixGamma%b1gamma3), &
               sand_in => sdata(ixVarSoilData%sand_frc)%dvar2, & 
               clay_in => sdata(ixVarSoilData%clay_frc)%dvar2 )
       select case(tftype)
         case(1); 
           where ( sand_in /= dmiss .and. clay_in /= dmiss ) 
-            retcurve_out = g1+g2*sand_in+g3*clay_in
+            retcurve_out = g1+g2*clay_in+g3*sand_in
           else where
             retcurve_out = dmiss 
           end where
