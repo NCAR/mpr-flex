@@ -8,9 +8,9 @@
 !> 3 = estimate parameter with MPR (this option neglect calconfig and dds nml group)
 opt                    = 1
 !> metadata for all gamma and beta parameters 
-param_master_meta      = "/home/mizukami/hydropt/meta/ParamMeta.txt"
+param_master_meta      = "PATH_TO/meta/ParamMeta.txt"
 !> List of parameter (name, value, flag) based on input calPar used for only if opt=2, ignored otherwise 
-mpr_param_file         = "/glade/u/home/mizukami/mpr_flex/../../MPR_Param.txt"
+mpr_param_file         = "PATH_TO/MPR_Param.txt"
 /
 
 !---------------------------------------

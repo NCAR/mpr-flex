@@ -23,7 +23,7 @@ subroutine read_parm_master_meta(infile, err, message)
   use data_type,  only:par_meta            ! metadata structure
   use ascii_util, only:file_open
   use get_ixname, only:get_ixBeta, get_ixGamma
-  use globalData, only:betaMaster, gammaMaster
+  use globalData, only:betaMeta, gammaMeta
 
   implicit none
 
@@ -89,33 +89,33 @@ subroutine read_parm_master_meta(infile, err, message)
       ivar = get_ixBeta(parmdTemp%pname)
       if(ivar<=0)then; err=40; message=trim(message)//"variableNotFound[var="//trim(parmdTemp%pname)//"]"; return; endif
       ! check if index is within range
-      if(ivar>size(betaMaster))then; err=50; message=trim(message)//"variableExceedsVectorSize[par="//trim(parmdTemp%pname)//"]"; return; endif
+      if(ivar>size(betaMeta))then; err=50; message=trim(message)//"variableExceedsVectorSize[par="//trim(parmdTemp%pname)//"]"; return; endif
       ! put data into the global gamma and beta master metadata vector
       iBeta=iBeta+1
-      betaMaster(iBeta) = parmdTemp
+      betaMeta(iBeta) = parmdTemp
     else
       ! identify the index of the named variable
       ivar = get_ixGamma(parmdTemp%pname)
       if(ivar<=0)then; err=40; message=trim(message)//"variableNotFound[var="//trim(parmdTemp%pname)//"]"; return; endif
       ! check if index is within range
-      if(ivar>size(gammaMaster))then; err=50; message=trim(message)//"variableExceedsVectorSize[par="//trim(parmdTemp%pname)//"]"; return; endif
+      if(ivar>size(gammaMeta))then; err=50; message=trim(message)//"variableExceedsVectorSize[par="//trim(parmdTemp%pname)//"]"; return; endif
       ! put data into the global gamma and beta master metadata vector
       iGamma=iGamma+1
-      gammaMaster(iGamma) = parmdTemp
+      gammaMeta(iGamma) = parmdTemp
     endif
   enddo  ! looping through lines in the file
 
-  ! check that all elements are populated for betaMaster
-  if(any(betaMaster(:)%pname==''))then
-   do iline=1,size(betaMaster)
-    print*,iline,' -> ',trim(betaMaster(iline)%pname)
+  ! check that all elements are populated for betaMeta
+  if(any(betaMeta(:)%pname==''))then
+   do iline=1,size(betaMeta)
+    print*,iline,' -> ',trim(betaMeta(iline)%pname)
    end do
    err=40; message=trim(message)//"BetaSomeVariablesNotPopulated"; return
   endif
-  ! check that all elements are populated for gammaMaster
-  if(any(gammaMaster(:)%pname==''))then
-   do iline=1,size(gammaMaster)
-    print*,iline,' -> ',trim(gammaMaster(iline)%pname)
+  ! check that all elements are populated for gammaMeta
+  if(any(gammaMeta(:)%pname==''))then
+   do iline=1,size(gammaMeta)
+    print*,iline,' -> ',trim(gammaMeta(iline)%pname)
    end do
    err=40; message=trim(message)//"GammaSomeVariablesNotPopulated"; return
   endif
