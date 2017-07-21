@@ -42,8 +42,6 @@ program main_calibration
   call print_config()
   ! main routine starts depending on option
   select case (opt)
-    case (2)     ! just run model and output ascii of sim and obs series (parameter values use default or ones specified in restart file)
-      call opt_run(objfn, restrt_file)
     case (1)     ! perform calibration with DDS
       call dds(objfn,                   & ! function to get object function
                parArray(:,1),           & ! initial parameter values
@@ -56,6 +54,8 @@ program main_calibration
                maxiter=maxn,            & ! maximum iteration
                maxit=isMax,             & ! minimzation (0) or maximization (1)
                tmp_file=state_file)       !
+    case (2)     ! just run model and output ascii of sim and obs series (parameter values use default or ones specified in restart file)
+      call opt_run( restrt_file, ierr, cmessage ); call handle_err(ierr, cmessage )
     case (3)     ! just perform MPR only and output parameters in netCDF
       call run_mpr( parArray(:,1), mpr_param_file , ierr, cmessage ); call handle_err(ierr,cmessage)
     case default
