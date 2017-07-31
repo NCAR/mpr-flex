@@ -10,7 +10,7 @@ module sce
 
 contains
 
-  subroutine sceua(obj_func, pini, prange, maxiter, kstop, pcento, seed, ngs, tmp_file, mask)
+  subroutine sceua(obj_func, pini, prange, seed, maxiter, kstop, pcento, ngs, tmp_file, mask)
   
   use public_var
   use mo_xor4096, only: xor4096, xor4096g
