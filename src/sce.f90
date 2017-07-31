@@ -110,10 +110,10 @@ contains
     end interface
     real(dp),              intent(in)    :: pini(:) 
     real(dp),              intent(in)    :: prange(:,:) 
+    integer(i8b),          intent(in)    :: seed 
     integer(i8b),          intent(in)    :: maxiter 
     integer(i4b),          intent(in)    :: kstop 
     real(dp),              intent(in)    :: pcento 
-    integer(i8b),          intent(in)    :: seed 
     integer(i4b),          intent(in)    :: ngs
     character(*),          intent(in)    :: tmp_file 
     logical,     optional, intent(in)    :: mask(:)        ! parameter to be optimized (true or false)
@@ -196,7 +196,7 @@ contains
     if (size(prange,1) /= pnum) stop 'Error sceua: size(prange,1) /= size(pini)'
     if (size(prange,2) /= 2)    stop 'Error sceua: size(prange,2) /= 2'
     if (maxiter .le. 1)         stop 'Error sceua: maxiter must be greater than 1'
-  
+
     ! INITIALIZE VARIABLES
     open(ISCE,file=trim(adjustl(tmp_file)), action='write', status='unknown')
     write(ISCE,400)
@@ -260,7 +260,7 @@ contains
         BESTF=XF(1)
         do J = 1, pnum
           BESTX(J) = XX(J)
-        end do 
+        end do
       else
         BESTF=FA
         do J = 1, pnum
@@ -344,7 +344,7 @@ contains
       do J = 1, pnum
         pval(J) = BESTX(J)
       end do
-      return 
+      return  ! end of SCE process
     end if
   
     if (IPCNVG .eq. 1) then 
@@ -361,7 +361,7 @@ contains
       return 
     end if
 
-  !  BEGIN THE MAIN LOOP ----------------
+    ! BEGIN THE MAIN LOOP ----------------
     main:do
       NLOOP = NLOOP + 1
       ! BEGIN LOOP ON COMPLEXES ----------------
@@ -430,22 +430,12 @@ contains
           ! SORT THE POINTS
           call SORT(npg,pnum,CX,CF)
   
-         ! ! RECORD THE BEST AND WORST POINTS
-         ! do J = 1, pnum
-         !   BESTX(J) = CX(1,J)
-         !   WORSTX(J) = CX(npt1,J)
-         ! end do
-         ! BESTF = CF(1)
-         ! WORSTF = CF(npt1)
-         ! ! PRINT THE RESULTS FOR CURRENT POPULATION
-         ! write(ISCE,640) NLOOP,ICALL,ngs1,BESTF,WORSTF,(BESTX(J),J=1,pnum)
           ! IF MAXIMUM NUMBER OF RUNS EXCEEDED, BREAK OUT OF THE LOOP
           if (ICALL .GE. maxiter) exit
   
         end do subcomplex 
 
-        ! STEP 5. Suffle complexes
-        ! REPLACE THE NEW COMPLEX INTO ORIGINAL ARRAY X(.,.)
+        ! REPLACE THE NEW COMPLEX INTO ORIGINAL ARRAY X(:,:), XF(:,:)
         do K1 = 1, npg
           K2 = (K1-1) * ngs1 + IGS
           do J = 1, pnum
@@ -457,6 +447,7 @@ contains
   
       end do complexes ! end loop on complexes
 
+      ! STEP 5. Suffle complexes
       ! RE-SORT THE POINTS
       call SORT(npt1,pnum,X,XF)
   
