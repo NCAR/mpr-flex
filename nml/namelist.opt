@@ -3,13 +3,17 @@
 !---------------------------------------
 &runconfig
 !> Option to run the program
-!> 1 = calibrate parameters specifided in input with DDS
-!> 2 = only run model with parameters given by restart file or default in param metafile
+!> 1 = calibrate parameters 
+!> 2 = run model with parameters given by restart file or default in param metafile
 !> 3 = estimate parameter with MPR (this option neglect calconfig and dds nml group)
 opt                    = 1
+!> if opt = 1, use following optimization method, 
+!> 1 = DDS
+!> 2 = SCE 
+opt_method             = 2
 !> metadata for all gamma and beta parameters 
 param_master_meta      = "PATH_TO/meta/ParamMeta.txt"
-!> List of parameter (name, value, flag) based on input calPar used for only if opt=2, ignored otherwise 
+!> List of parameter (name, value, flag) based on input calPar used for only if opt=3, ignored otherwise 
 mpr_param_file         = "PATH_TO/MPR_Param.txt"
 /
 
@@ -81,5 +85,19 @@ nseed         =  32                            ! starting seed for random number
 maxn          =  1000                          ! maximum number of objective function evaluation (i.e., iteration) 
 isMax         =  F                             ! maximization (.True.) or minimization (.False.) 
 restrt_file   = "./restart_dds.txt"            ! name of ascii restart file 
+state_file    = "./region_xx_dds_output.txt" ! name of ascii history file
+/
+
+!---------------------------------------
+! SCE parameters
+!---------------------------------------
+&SCE
+isRestart     =  F                             ! F -> start with the begining, T -> start with restart file
+nseed         =  32                            ! starting seed for random number generator
+maxn          =  1000                          ! maximum number of objective function evaluation (i.e., iteration) 
+percen        =  0.001                         ! 
+numcpx        =  5                             ! 
+cpxstop       =  5                             ! 
+restrt_file   = "./restart_sce.txt"            ! name of ascii restart file 
 state_file    = "./region_xx_sceua_output.txt" ! name of ascii history file
 /

@@ -11,6 +11,7 @@ module read_config
 ! Main configuration 
   namelist / runconfig /  opt,                     &
                           param_master_meta,       &
+                          opt_method,              &
                           mpr_param_file
 ! MPR configuration
   namelist / mprconfig /  mpr_input_dir,           & 
@@ -63,6 +64,15 @@ module read_config
                    ismax,       &
                    restrt_file, &
                    state_file
+! SCE algorithm 
+  namelist / SCE / percen,      &
+                   numcpx,      &
+                   cpxstop,     &
+                   isRestart,   &
+                   nseed,       &
+                   maxn,        & 
+                   restrt_file, &
+                   state_file
 
 contains
 
@@ -92,9 +102,16 @@ subroutine read_nml(nmlfile, err, message)
   ! read "modelconfig" group 
   read(unit=30, NML=modelconfig, iostat=err)
   if (err/=0)then; message=trim(message)//"Error:Read modelconfig"; return; endif
-  ! read DDS group 
-  read(UNIT=30, NML=DDS, iostat=err)
-  if (err/=0)then; message=trim(message)//"Error:Read DDS"; return; endif
+  select case (opt_method)
+    case (1)
+    ! read DDS group 
+    read(UNIT=30, NML=DDS, iostat=err)
+    if (err/=0)then; message=trim(message)//"Error:Read DDS"; return; endif
+    case (2)
+    ! read SCE group 
+    read(UNIT=30, NML=SCE, iostat=err)
+    if (err/=0)then; message=trim(message)//"Error:Read SCE"; return; endif
+  end select
   close(UNIT=30)
   print *, 'Namelist file has been successfully processed'
   return

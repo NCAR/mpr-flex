@@ -17,7 +17,7 @@ F_MASTER = ~/mpr-flex/
 
 # Define the Fortran Compiler. 
 # ifort is default. The other options are gfortran and pgf90
-FC  = pgf90
+FC  = ifort
 
 # Define the NetCDF libraries and path to include files
 # You may need to change the netCDF paths
@@ -80,16 +80,17 @@ CORE = \
     get_ixname.f90 \
     process_meta.f90 \
     mo_xor4096.f90 \
-    mo_opt_run.f90 \
     mo_dds.f90 \
-    vic_routines.f90 \
+    sce.f90 \
     sac_routines.f90 \
+    vic_routines.f90 \
     model_wrapper.f90 \
     tf.f90 \
     modelLayer.f90 \
     upscaling.f90 \
     mpr_routine.f90 \
     eval_model.f90 \
+    mo_opt_run.f90 \
 
 # concatanate model subroutines
 TEMP_MODSUB = $(DATATYPES) $(UTILS) $(IO) $(CORE)
@@ -104,7 +105,7 @@ MODSUB = $(patsubst %, $(F_KORE_DIR)%, $(TEMP_MODSUB))
 DRIVER = $(F_KORE_DIR)main_calibration.f90
 
 # Define the executable
-EXE = test1.exe
+EXE = mpr-flex.exe
 
 #========================================================================
 # PART 3: Compile the puppy
