@@ -90,10 +90,12 @@ state_file    = "./region_xx_dds_output.txt" ! name of ascii history file
 ! SCE parameters
 !---------------------------------------
 &SCE
+isRestart     =  F                             ! F -> start with the begining, T -> start with restart file
+nseed         =  32                            ! starting seed for random number generator
 maxn          =  1000                          ! maximum number of objective function evaluation (i.e., iteration) 
 percen        =  0.001                         ! 
-nseed         =  32                            ! starting seed for random number generator
 numcpx        =  5                             ! 
 cpxstop       =  5                             ! 
+restrt_file   = "./restart_sce.txt"            ! name of ascii restart file 
 state_file    = "./region_xx_sceua_output.txt" ! name of ascii history file
 /

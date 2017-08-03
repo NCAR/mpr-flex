@@ -64,11 +64,13 @@ module read_config
                    restrt_file, &
                    state_file
 ! SCE algorithm 
-  namelist / SCE / maxn,        & 
-                   percen,      &
-                   nseed,       &
+  namelist / SCE / percen,      &
                    numcpx,      &
                    cpxstop,     &
+                   isRestart,   &
+                   nseed,       &
+                   maxn,        & 
+                   restrt_file, &
                    state_file
 
 contains

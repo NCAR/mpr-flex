@@ -61,6 +61,8 @@ program main_calibration
         call sceua(objfn, &
                    parArray(:,1),         & ! initial parameter values
                    parArray(:,2:3),       & ! lower and upper bounds of each parameters
+                   isRestart,             & ! .true. - use restart file to start, otherwise from beginning 
+                   restrt_file,           & ! restart file to write the most recent param values, etc
                    nseed,                 & ! seed for random number
                    maxn,                  & ! maximum iteration
                    cpxstop,               & ! 
