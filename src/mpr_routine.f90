@@ -320,7 +320,6 @@ subroutine mpr(hruID,             &     ! input: hruID
                   err,cmessage)                                  ! output: error control
   if (err/=0)then; message=trim(message)//cmessage; return; endif
   if ( opt==3 .and. nHru /= nGhru )then;err=10;message=trim(message)//'nHru= '//trim(int2str(nGhru))//' NOT '//trim(int2str(nHru));return;endif
-  print*, 'pass3'
   !!! ---------------------------------------------
   !!! Start of model hru loop (from mapping file) !!!
   !!! --------------------------------------------- 
