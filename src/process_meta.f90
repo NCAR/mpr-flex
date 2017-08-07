@@ -43,8 +43,6 @@ subroutine read_parm_master_meta(infile, err, message)
   type(par_meta)                       :: parmdTemp      ! temporary metadata structure
   character(len=1)                     :: dLim(12)       ! column delimiter
   integer(i4b)                         :: ivar           ! index of model variable
-  integer(i4b)                         :: iGamma         ! counter for gamma parameters in master parameter meta file
-  integer(i4b)                         :: iBeta          ! counter for beta parameters in master parameter meta file 
   ! Start procedure here
   err=0; message="read_param_meta/"
   ! open file
@@ -58,7 +56,6 @@ subroutine read_parm_master_meta(infile, err, message)
   ! read in format string
   read(temp,*)ffmt
   ! loop through the lines in the file
-  iGamma=0;iBeta=0
   do iline=1,maxLines
     ! read a line of data and exit iif an error code (character read, so only possible error is end of file)
     read(unt,'(a)',iostat=iend)temp; if (iend/=0)exit
@@ -91,8 +88,7 @@ subroutine read_parm_master_meta(infile, err, message)
       ! check if index is within range
       if(ivar>size(betaMeta))then; err=50; message=trim(message)//"variableExceedsVectorSize[par="//trim(parmdTemp%pname)//"]"; return; endif
       ! put data into the global gamma and beta master metadata vector
-      iBeta=iBeta+1
-      betaMeta(iBeta) = parmdTemp
+      betaMeta(ivar) = parmdTemp
     else
       ! identify the index of the named variable
       ivar = get_ixGamma(parmdTemp%pname)
@@ -100,8 +96,7 @@ subroutine read_parm_master_meta(infile, err, message)
       ! check if index is within range
       if(ivar>size(gammaMeta))then; err=50; message=trim(message)//"variableExceedsVectorSize[par="//trim(parmdTemp%pname)//"]"; return; endif
       ! put data into the global gamma and beta master metadata vector
-      iGamma=iGamma+1
-      gammaMeta(iGamma) = parmdTemp
+      gammaMeta(ivar) = parmdTemp
     endif
   enddo  ! looping through lines in the file
 
@@ -559,7 +554,7 @@ subroutine print_config()
   do i=1,nCalPar
     if (calParMeta(i)%perLyr)then
       do j=1,nLyr
-        write(*,100) calParMeta(i)%pname(1:20), parArray(i,1), parMask(i), 'layer=', j 
+        write(*,100) calParMeta(i)%pname(1:20), parArray(i,1), parMask(i), j 
         100 format(1X,A,1X,ES17.10,1X,L9,1X,'layer=',I2)
       end do
     else
