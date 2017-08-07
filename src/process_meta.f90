@@ -450,7 +450,7 @@ subroutine print_config()
   do i=1,nCalPar
     if (calParMeta(i)%perLyr)then
       do j=1,nLyr
-        write(*,100) calParMeta(i)%pname(1:20), parArray(i,1), parMask(i), 'layer=', j 
+        write(*,100) calParMeta(i)%pname(1:20), parArray(i,1), parMask(i), j 
         100 format(1X,A,1X,ES17.10,1X,L9,1X,'layer=',I2)
       end do
     else
