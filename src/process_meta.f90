@@ -347,12 +347,12 @@ subroutine get_parm_meta( err, message)
         res(counter)=betaMeta(ivar)%pname
       end if
     end do
+    ! Count number of soil and Vege parameters to be computed with MPR 
+    nSoilBetaModel=0
+    nVegBetaModel=0
     if ( counter > 0 ) then
       allocate(calBetaName(counter))
       calBetaName=res(1:counter)
-      ! Count number of soil and Vege parameters to be computed with MPR 
-      nSoilBetaModel=0
-      nVegBetaModel=0
       do iPar=1,size(calBetaName)
         ivar=get_ixBeta(calBetaName(iPar))
         if (betaMeta(ivar)%ptype=='soil') nSoilBetaModel = nSoilBetaModel+1
