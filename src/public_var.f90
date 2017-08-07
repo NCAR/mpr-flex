@@ -15,8 +15,9 @@ module public_var
   real(dp),    parameter,public   :: valMin=1.e-10_dp       ! minimum value for positive value
 
   ! Namelist variables
-  ! runconfig 
+  ! &runconfig 
   integer(i4b),         public    :: opt
+  integer(i4b),         public    :: opt_method
   character(len=strLen),public    :: mpr_param_file
   ! mprconfig
   character(len=strLen),public    :: mpr_input_dir 
@@ -62,13 +63,19 @@ module public_var
   integer(i4b),         public    :: TotNpar  != 54(VIC)
   integer(i4b),         public    :: nLyr     != 3 (VIC)
   character(len=strLen),public    :: inParList 
-  ! DDS 
-  real(dp),             public    :: rpar                       ! search radius
-  integer(i8b),         public    :: nseed                      ! starting seed for random number generator
+  ! optimization routine
+  ! common
   integer(i8b),         public    :: maxn                       ! maximum number of trials before optimization is terminated
-  logical(lgc),         public    :: isMax                      ! maximization or minimization
+  integer(i8b),         public    :: nseed                      ! starting seed for random number generator
   character(len=strLen),public    :: state_file                 ! state file
   character(len=strLen),public    :: restrt_file                ! restart file
   logical(lgc),         public    :: isRestart                  ! ues restart option? 
+  ! DDS 
+  real(dp),             public    :: rpar                       ! search radius
+  logical(lgc),         public    :: isMax                      ! maximization or minimization
+  ! SCE 
+  real(dp),             public    :: percen 
+  integer(i4b),         public    :: numcpx                     ! 
+  integer(i4b),         public    :: cpxstop                    ! 
 
 end module public_var

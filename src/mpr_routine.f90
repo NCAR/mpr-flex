@@ -322,7 +322,7 @@ subroutine mpr(hruID,             &     ! input: hruID
   if ( opt==3 .and. nHru /= nGhru )then;err=10;message=trim(message)//'nHru= '//trim(int2str(nGhru))//' NOT '//trim(int2str(nHru));return;endif
   !!! ---------------------------------------------
   !!! Start of model hru loop (from mapping file) !!!
-  !!! --------------------------------------------- 
+  !!! ---------------------------------------------
   associate( hruMap        => mapdata(1)%var(ixVarMapData%hru_id)%ivar1(1:nGhru),  &
              wgt           => mapdata(1)%var(ixVarMapData%weight)%dvar1,           &
              nOverPoly     => mapdata(1)%var(ixVarMapData%overlaps)%ivar1,         & 
@@ -338,21 +338,29 @@ subroutine mpr(hruID,             &     ! input: hruID
     allocate(wgtSub(nGpolyLocal),stat=err); if(err/=0)then;message=message//'error allocating wgtSub';return;endif
     polySub = overSpolyId(ixStart:ixEnd) ! id of soil polygons contributing to current hru
     wgtSub  = wgt(ixStart:ixEnd)         ! weight of soil polygons contributing to current hru
+    ! Select list of veg polygon ID contributing a current hru 
+    ixEnd       = sum(nVegOverPoly(1:iLocal));
+    ixStart     = ixEnd-nVegOverPoly(iLocal)+1
+    nVpolyLocal = nVegOverPoly(iLocal)
+    allocate(vPolySub(nVpolyLocal),stat=err); if(err/=0)then;message=message//'error allocating vPolySub';return;endif
+    allocate(vwgtSub(nVpolyLocal),stat=err);  if(err/=0)then;message=message//'error allocating vwgtSub';return;endif
+    vPolySub = overVpolyID(ixStart:ixEnd) ! id of soil polygons contributing to current hru
+    vwgtSub  = vwgt(ixStart:ixEnd)        ! weight of soil polygons contributing to current hru
+    allocate(hModelLocal(nLyr,nSpolyLocal),stat=err);    if(err/=0)then;message=message//'error allocating hModelLocal'; return;endif
+    allocate(zModelLocal(nLyr,nSpolyLocal),stat=err);    if(err/=0)then;message=message//'error allocating zModelLocal'; return;endif
+    allocate(soil2model_map(nSpolyLocal),stat=err);      if(err/=0)then;message=trim(message)//'error allocating soil2model_map';return;endif
+    do iPoly=1,nSpolyLocal
+      allocate(soil2model_map(iPoly)%layer(nLyr),stat=err); if(err/=0)then;message=trim(message)//'error allocating soil2model_map%layer';return;endif
+      do iMLyr=1,nLyr
+        allocate(soil2model_map(iPoly)%layer(iMLyr)%weight(nSub),stat=err);  if(err/=0)then;message=trim(message)//'error allocating lyrmap%layer%weight';return;endif
+        allocate(soil2model_map(iPoly)%layer(iMLyr)%ixSubLyr(nSub),stat=err);if(err/=0)then;message=trim(message)//'error allocating lyrmap%layer%ixSubLyr';return;endif
+      enddo
+    enddo
     ! allocate memmory
     if (nSoilBetaModel>0_i4b)then !if at least one soil parameter is included 
       do iParm=1,nSoilBetaModel
         allocate(parSxySz(iParm)%varData(nSlyrs,nGpolyLocal),stat=err); if(err/=0)then;message=message//'error allocating parSxySz%varData';return;endif 
         allocate(parSxyMz(iParm)%varData(nLyr,nGpolyLocal),stat=err);   if(err/=0)then;message=message//'error allocating parSxyMz%varData';return;endif
-      enddo
-      allocate(hModelLocal(nLyr,nGpolyLocal),stat=err);    if(err/=0)then;message=message//'error allocating hModelLocal'; return;endif
-      allocate(zModelLocal(nLyr,nGpolyLocal),stat=err);    if(err/=0)then;message=message//'error allocating zModelLocal'; return;endif
-      allocate(soil2model_map(nGpolyLocal),stat=err);      if(err/=0)then;message=trim(message)//'error allocating soil2model_map';return;endif
-      do iPoly=1,nGpolyLocal
-        allocate(soil2model_map(iPoly)%layer(nLyr),stat=err); if(err/=0)then;message=trim(message)//'error allocating soil2model_map%layer';return;endif
-        do iMLyr=1,nLyr
-          allocate(soil2model_map(iPoly)%layer(iMLyr)%weight(nSub),stat=err);  if(err/=0)then;message=trim(message)//'error allocating lyrmap%layer%weight';return;endif
-          allocate(soil2model_map(iPoly)%layer(iMLyr)%ixSubLyr(nSub),stat=err);if(err/=0)then;message=trim(message)//'error allocating lyrmap%layer%ixSubLyr';return;endif
-        enddo
       enddo
     endif
     if (nVegBetaModel>0_i4b)then !if at least one veg parameter is included
@@ -399,25 +407,37 @@ subroutine mpr(hruID,             &     ! input: hruID
     if(err/=0)then; message=trim(message)//cmessage; return; endif
   ! (3.4) Compute model parameters using transfer function
     ! compute model soil parameters
-    call comp_model_param(parSxySz, parVxy, sdataLocal, tdataLocal, vdataLocal, gammaUpdateMeta, nSlyrs, nGpolyLocal, err, cmessage)
+    if (nSoilBetaModel>0_i4b)then
+      call comp_model_param(parSxySz, parVxy, sdataLocal, vdataLocal, gammaUpdateMeta, nSlyrs, nSpolyLocal, nVpolyLocal, err, cmessage)
+      if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
+      if ( iHru == iHruPrint ) then
+        print*,'(2) Print Model parameter at native resolution'
+        if (nSoilBetaModel>0_i4b)then
+          write(*,"(' Layer       =',20I9)") (iSLyr, iSlyr=1,nSlyrs)
+          do iParm=1,nSoilBetaModel
+            do iPoly = 1,nSpolyLocal
+              write(*,"(1X,A12,'=',20f9.3)") soilBetaCalName(iParm), (parSxySz(iParm)%varData(iSLyr,iPoly), iSlyr=1,nSlyrs)
+            enddo
+          enddo
+        endif
+        if (nVegBetaModel>0_i4b)then
+          do iParm=1,nVegBetaModel
+            do iPoly = 1,nVpolyLocal
+              write(*,"(1X,A10,'= ',100f9.3)") vegBetaCalName(iParm), (parVxy(iParm)%varData(iMon, iPoly), iMon=1,nMonth)
+            enddo
+          enddo
+        endif 
+      endif
+    end if
+    ! (4.1.1) Compute Model layer depth 
+    call comp_model_depth(hModelLocal, zModelLocal, hfrac, sdataLocal, err, cmessage) 
     if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
     if ( iHru == iHruPrint ) then
-      print*,'(2) Print Model parameter at native resolution'
-      if (nSoilBetaModel>0_i4b)then
-        write(*,"(' Layer       =',20I9)") (iSLyr, iSlyr=1,nSlyrs)
-        do iParm=1,nSoilBetaModel
-          do iPoly = 1,nGpolyLocal
-            write(*,"(1X,A12,'=',20f9.3)") soilBetaCalName(iParm), (parSxySz(iParm)%varData(iSLyr,iPoly), iSlyr=1,nSlyrs)
-          enddo
-        enddo
-      endif
-      if (nVegBetaModel>0_i4b)then
-        do iParm=1,nVegBetaModel
-          do iPoly = 1,nGpolyLocal
-            write(*,"(1X,A10,'= ',100f9.3)") vegBetaCalName(iParm), (parVxy(iParm)%varData(iMon, iPoly), iMon=1,nMonth)
-          enddo
-        enddo
-      endif 
+      print*, '(3.1.1) Print model depth ---' 
+      write(*,"(' Layer       =',20I9)") (iMLyr, iMlyr=1,nlyr)
+      do iPoly = 1,nSpolyLocal
+        write(*,"('z            =',20f9.3)") (zModelLocal(iMLyr,iPoly), iMlyr=1,nLyr)
+      enddo 
     endif
   ! ***********
   ! (4) Spatial aggregation of Model parameter 
@@ -426,16 +446,6 @@ subroutine mpr(hruID,             &     ! input: hruID
       ! **********
       ! (4.1) Aggregate model parameveter vertical direction - soil data layers to model soil layers
       ! *********************************************************************
-      ! (4.1.1) Compute Model layer depth 
-      call comp_model_depth(hModelLocal, zModelLocal, hfrac, sdataLocal, err, cmessage) 
-      if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
-      if ( iHru == iHruPrint ) then
-        print*, '(3.1.1) Print model depth ---' 
-        write(*,"(' Layer       =',20I9)") (iMLyr, iMlyr=1,nlyr)
-        do iPoly = 1,nGpolyLocal
-          write(*,"('z            =',20f9.3)") (zModelLocal(iMLyr,iPoly), iMlyr=1,nLyr)
-        enddo 
-      endif
       ! (4.1.2) Computing vertical weight of soil layer for each model layer
       second: associate( hSoilLocal =>sdataLocal(ixVarSoilData%hslyrs)%dvar2 ) 
       call map_slyr2mlyr(hSoilLocal, zModelLocal, soil2model_map, err, cmessage)
@@ -488,6 +498,9 @@ subroutine mpr(hruID,             &     ! input: hruID
     ! ************
     ! (4.2) Aggregate model parameveter horizontally - use spatial weight netCDF 
     ! *********************************************************************
+    do iMLyr=1,nLyr
+      call aggreg(hModel(iMLyr,iHru), wgtsub(:), hModelLocal(iMLyr,:),'pnorm', 1.0_dp, err, cmessage)
+    end do
     if (nSoilBetaModel>0_i4b)then
       do iMLyr=1,nLyr
         do iParm = 1,nSoilBetaModel
@@ -499,7 +512,6 @@ subroutine mpr(hruID,             &     ! input: hruID
               soilParVec(iParm)%var(iPoly) = parSxyMz(iParm)%varData(iMLyr,iPoly)
           enddo
         enddo
-        call aggreg(hModel(iMLyr,iHru), wgtSub(:), hModelLocal(iMLyr,:),'pnorm', 1.0_dp, err, cmessage)
         do iParm = 1,nSoilBetaModel
           fifth: associate( ix=>get_ixBeta(trim(soilBetaCalName(iParm))) )
           if ( trim(betaUpdateMeta(ix)%hups)/='na' )then
@@ -521,15 +533,15 @@ subroutine mpr(hruID,             &     ! input: hruID
           deallocate(soilParVec(iParm)%var, stat=err); if(err/=0)then; message=trim(message)//'error deallocating soilParVec%var'; return; endif 
         enddo
       enddo
-      ! deallocate memmory
-      deallocate(soil2model_map,stat=err); if(err/=0)then; message=trim(message)//'error deallocating soil2model_map';return;endif
-      deallocate(hModelLocal,stat=err);    if(err/=0)then; message=trim(message)//'error deallocating hModelLocal';return;endif
-      deallocate(zModelLocal,stat=err);    if(err/=0)then; message=trim(message)//'error deallocating zModelLocal';return;endif
       do iParm=1,nSoilBetaModel
         deallocate(parSxySz(iParm)%varData,stat=err);if(err/=0)then; message=message//'error deallocating parSxySz%varData'; return; endif 
         deallocate(parSxyMz(iParm)%varData,stat=err);if(err/=0)then; message=message//'error deallocating parSxyMz%varData'; return; endif
       enddo
     endif
+    ! deallocate memmory
+    deallocate(soil2model_map,stat=err); if(err/=0)then; message=trim(message)//'error deallocating soil2model_map';return;endif
+    deallocate(hModelLocal,stat=err);    if(err/=0)then; message=trim(message)//'error deallocating hModelLocal';return;endif
+    deallocate(zModelLocal,stat=err);    if(err/=0)then; message=trim(message)//'error deallocating zModelLocal';return;endif
     if (nVegBetaModel>0_i4b)then
       do iMon=1,nMonth
         do iParm = 1,nVegBetaModel
