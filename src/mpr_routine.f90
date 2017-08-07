@@ -338,18 +338,10 @@ subroutine mpr(hruID,             &     ! input: hruID
     allocate(wgtSub(nGpolyLocal),stat=err); if(err/=0)then;message=message//'error allocating wgtSub';return;endif
     polySub = overSpolyId(ixStart:ixEnd) ! id of soil polygons contributing to current hru
     wgtSub  = wgt(ixStart:ixEnd)         ! weight of soil polygons contributing to current hru
-    ! Select list of veg polygon ID contributing a current hru 
-    ixEnd       = sum(nVegOverPoly(1:iLocal));
-    ixStart     = ixEnd-nVegOverPoly(iLocal)+1
-    nVpolyLocal = nVegOverPoly(iLocal)
-    allocate(vPolySub(nVpolyLocal),stat=err); if(err/=0)then;message=message//'error allocating vPolySub';return;endif
-    allocate(vwgtSub(nVpolyLocal),stat=err);  if(err/=0)then;message=message//'error allocating vwgtSub';return;endif
-    vPolySub = overVpolyID(ixStart:ixEnd) ! id of soil polygons contributing to current hru
-    vwgtSub  = vwgt(ixStart:ixEnd)        ! weight of soil polygons contributing to current hru
-    allocate(hModelLocal(nLyr,nSpolyLocal),stat=err);    if(err/=0)then;message=message//'error allocating hModelLocal'; return;endif
-    allocate(zModelLocal(nLyr,nSpolyLocal),stat=err);    if(err/=0)then;message=message//'error allocating zModelLocal'; return;endif
-    allocate(soil2model_map(nSpolyLocal),stat=err);      if(err/=0)then;message=trim(message)//'error allocating soil2model_map';return;endif
-    do iPoly=1,nSpolyLocal
+    allocate(hModelLocal(nLyr,nGpolyLocal),stat=err);    if(err/=0)then;message=message//'error allocating hModelLocal'; return;endif
+    allocate(zModelLocal(nLyr,nGpolyLocal),stat=err);    if(err/=0)then;message=message//'error allocating zModelLocal'; return;endif
+    allocate(soil2model_map(nGpolyLocal),stat=err);      if(err/=0)then;message=trim(message)//'error allocating soil2model_map';return;endif
+    do iPoly=1,nGpolyLocal
       allocate(soil2model_map(iPoly)%layer(nLyr),stat=err); if(err/=0)then;message=trim(message)//'error allocating soil2model_map%layer';return;endif
       do iMLyr=1,nLyr
         allocate(soil2model_map(iPoly)%layer(iMLyr)%weight(nSub),stat=err);  if(err/=0)then;message=trim(message)//'error allocating lyrmap%layer%weight';return;endif
@@ -408,21 +400,21 @@ subroutine mpr(hruID,             &     ! input: hruID
   ! (3.4) Compute model parameters using transfer function
     ! compute model soil parameters
     if (nSoilBetaModel>0_i4b)then
-      call comp_model_param(parSxySz, parVxy, sdataLocal, vdataLocal, gammaUpdateMeta, nSlyrs, nSpolyLocal, nVpolyLocal, err, cmessage)
+      call comp_model_param(parSxySz, parVxy, sdataLocal, tdataLocal, vdataLocal, gammaUpdateMeta, nSlyrs, nGpolyLocal, err, cmessage)
       if(err/=0)then;message=trim(message)//trim(cmessage);return;endif 
       if ( iHru == iHruPrint ) then
         print*,'(2) Print Model parameter at native resolution'
         if (nSoilBetaModel>0_i4b)then
           write(*,"(' Layer       =',20I9)") (iSLyr, iSlyr=1,nSlyrs)
           do iParm=1,nSoilBetaModel
-            do iPoly = 1,nSpolyLocal
+            do iPoly = 1,nGpolyLocal
               write(*,"(1X,A12,'=',20f9.3)") soilBetaCalName(iParm), (parSxySz(iParm)%varData(iSLyr,iPoly), iSlyr=1,nSlyrs)
             enddo
           enddo
         endif
         if (nVegBetaModel>0_i4b)then
           do iParm=1,nVegBetaModel
-            do iPoly = 1,nVpolyLocal
+            do iPoly = 1,nGpolyLocal
               write(*,"(1X,A10,'= ',100f9.3)") vegBetaCalName(iParm), (parVxy(iParm)%varData(iMon, iPoly), iMon=1,nMonth)
             enddo
           enddo
@@ -435,7 +427,7 @@ subroutine mpr(hruID,             &     ! input: hruID
     if ( iHru == iHruPrint ) then
       print*, '(3.1.1) Print model depth ---' 
       write(*,"(' Layer       =',20I9)") (iMLyr, iMlyr=1,nlyr)
-      do iPoly = 1,nSpolyLocal
+      do iPoly = 1,nGpolyLocal
         write(*,"('z            =',20f9.3)") (zModelLocal(iMLyr,iPoly), iMlyr=1,nLyr)
       enddo 
     endif
