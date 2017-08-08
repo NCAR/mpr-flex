@@ -189,7 +189,7 @@ contains
   
     err=0; message="read_sim/"
     select case (idModel)
-      case (1); call read_vic_sim( sim, err, cmessage)
+      case (1); call read_vic_sim( err, cmessage, qsim=sim )
       case (2); call read_sac_sim( sim, err, cmessage)
       case default
         err=10; message=trim(message)//"model is not implemented"; return

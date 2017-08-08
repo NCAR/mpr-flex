@@ -320,16 +320,17 @@ end subroutine
 !***************************
 ! Read VIC output file
 !***************************
-subroutine read_vic_sim(sim, err, message)
+subroutine read_vic_sim(err, message, prec, qsim )
   implicit none
   !output variables
-  real(dp),              intent(out) :: sim(:,:)
+  real(dp),optional,     intent(out) :: prec(:,:)
+  real(dp),optional,     intent(out) :: qsim(:,:)
   integer(i4b),          intent(out) :: err            ! error code
   character(*),          intent(out) :: message        ! error message
   !local variables
   character(len=strLen)              :: filename
   real(dp)                           :: cellfraction,basin_area
-  real(dp)                           :: auxflux(5)                 ! This is only in case of water balance mode
+  real(dp)                           :: auxflux(6)                 ! This is only in case of water balance mode
   integer(i4b)                       :: ibasin, itime, ivar, icell ! index 
   integer(i4b)                       :: ncell
   integer(i4b)                       :: dum,c_cell
@@ -337,7 +338,6 @@ subroutine read_vic_sim(sim, err, message)
   ! initialize error control
   err=0; message='read_vic_sim/'
   !set output variable to zero
-  sim = 0.0_dp
   !cell counter
   c_cell = 1
   !open a few files
@@ -352,8 +352,13 @@ subroutine read_vic_sim(sim, err, message)
       filename=trim(sim_dir)//trim(filename)
       open (UNIT=55,file= filename,form='formatted',status='old')
       do itime = 1,sim_len
-        read (UNIT=55,fmt=*) (auxflux(ivar), ivar=1,5)
-        sim(c_cell,itime) = (auxflux(4) + auxflux(5))*cellfraction
+        read (UNIT=55,fmt=*) (auxflux(ivar), ivar=1,6)
+        if (present(prec)) then 
+          prec(c_cell,itime) = (auxflux(4))*cellfraction
+        end if 
+        if (present(qsim)) then 
+          qsim(c_cell,itime) = (auxflux(5) + auxflux(6))*cellfraction
+        end if 
       enddo
       close(UNIT=55)
       c_cell = c_cell + 1
