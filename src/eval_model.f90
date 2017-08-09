@@ -3,6 +3,7 @@ module eval_model
   use public_var
   use data_type 
   use var_lookup
+  use hydroSignature, only:cal_rr,cal_eqp,cal_mean_yr,cal_fms,cal_qp,cal_bfi,cal_events
 
   implicit none
 
@@ -19,15 +20,25 @@ contains
 function objfn( calParam )
   implicit none
   !input variables
-  real(dp),             intent(in)          :: calParam(:)     ! parameter in namelist, not necessarily all parameters are calibrated
+  real(dp),             intent(in)          :: calParam(:)        ! parameter in namelist, not necessarily all parameters are calibrated
   !output variable
-  real(dp)                                  :: objfn           ! object function value 
+  real(dp)                                  :: objfn              ! object function value 
   !local variables
-  real(dp),dimension(nbasin,sim_len)        :: simBasinRouted  ! routed sim value (basin x number of time step)
-  real(dp),dimension(nbasin*sim_len)        :: obs             ! observation (number of basin*number of time step)
-  integer(i4b)                              :: err             ! error id 
-  character(len=strLen)                     :: message         ! error message
-  character(len=strLen)                     :: cmessage        ! error message from subroutine
+  real(dp),dimension(nbasin,sim_len)        :: simBasinRouted     ! routed sim value : q [mm/day] (basin x number of time step)
+  real(dp),dimension(nbasin,sim_len)        :: precp              ! observed precipitation [mm/day] (number of basins x number of time steps)
+  real(dp),dimension(nbasin*sim_len)        :: obs                ! observation: q[mm/day]          (number of basin*number of time steps)
+  real(dp),dimension(nbasin*sim_len)        :: q1d                ! routed sim value : q [mm/day]   (number of basins*number of time steps)
+  real(dp),dimension(nbasin*sim_len)        :: p1d                ! observed precipitation [mm/day] (number of basins*number of time steps)
+  real(dp)                                  :: rr
+  real(dp)                                  :: eqp
+  real(dp)                                  :: Qyr
+  real(dp)                                  :: FMS
+  real(dp)                                  :: Q90,Q5
+  real(dp)                                  :: BFI 
+  real(dp)                                  :: HFRE,HDUR,LFRE,LDUR 
+  integer(i4b)                              :: err                 ! error id 
+  character(len=strLen)                     :: message             ! error message
+  character(len=strLen)                     :: cmessage            ! error message from subroutine
 
   err=0; message='objfn/' ! to initialize error control
   call modelRun( calParam, simBasinRouted, err, cmessage )
@@ -36,6 +47,31 @@ function objfn( calParam )
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   call agg_obj( simBasinRouted, obs, objfn, err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+
+  !Compute Hydrologic Signatures and print out them
+  q1d=reshape( simBasinRouted, [nbasin*sim_len] ) 
+  p1d=reshape( precp, [nbasin*sim_len] ) 
+  call cal_rr (q1d, p1d, rr, err, cmessage)
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+  call cal_eqp(q1d, p1d, eqp, err, cmessage)
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+  call cal_mean_yr(q1d, Qyr, err, cmessage)
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+  call cal_fms(q1d, FMS, err, cmessage)
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+  call cal_qp(q1d, Q90, 0.9_dp, err, cmessage)
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+  call cal_qp(q1d, Q5, 0.05_dp, err, cmessage)
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+  call cal_bfi(q1d, BFI, err, cmessage)
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+  call cal_events(q1d, 9.0_dp, HFRE, HDUR, err, cmessage)
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+  call cal_events(q1d, 0.2_dp, LFRE, LDUR, err, cmessage)
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+
+  write(*,*) rr,eqp,Qyr,FMS,Q90,Q5,BFI,HFRE,HDUR,LFRE,LDUR 
+
   return 
 end function 
 
