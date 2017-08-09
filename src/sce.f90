@@ -65,6 +65,7 @@ contains
   !     IPRINT = FLAG FOR CONTROLLING PRINT-OUT AFTER EACH SHUFFLING LOOP
   !         = 0, PRINT INFORMATION ON THE BEST POINT OF THE POPULATION
   !         = 1, PRINT INFORMATION ON EVERY POINT OF THE POPULATION
+  !         = 2, PRINT INFORMATION ON ALL THE SAMPLED POINTS 
   !     pnum = NUMBER OF PARAMETERS TO BE OPTIMIZED
   !     npg = NUMBER OF POINTS IN EACH COMPLEX
   !     npt = TOTAL NUMBER OF POINTS IN INITIAL POPULATION (npt=ngs*npg)
@@ -143,6 +144,7 @@ contains
     integer(i4b)                         :: npt1
     integer(i4b)                         :: ngs1 
     integer(i4b)                         :: ngs2 
+    integer(i4b)                         :: niter
     integer(i8b)                         :: urndState(n_save_state) 
     integer(i8b)                         :: grndState(n_save_state) 
     real(dp), dimension(size(pini))      :: pval             ! initial value of parameter - either input or restart
@@ -155,6 +157,8 @@ contains
     real(dp)                             :: XF(2000)
     real(dp)                             :: CF(2000)
     real(dp)                             :: SF(50)
+    real(dp), dimension(3,size(pini))    :: SX
+    real(dp), dimension(3)               :: STF
     real(dp)                             :: DIST(2000)
     real(dp), dimension(size(pini))      :: XI              ! initial parameter values == pval == pini
     real(dp), dimension(size(pini))      :: XNSTD
@@ -291,9 +295,12 @@ contains
         XF(1) = obj_func(XX) 
       end if
       ICALL = ICALL + 1
-      ! PRINT THE RESULTS FOR CURRENT POPULATION
-      open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
-      write(ISCE,645) NLOOP,ICALL,XF(1),(X(1,J),J=1,pnum)
+      ! PRINT THE RESULTS FOR 1ST POINT
+      if ( IPRINT==2 ) then
+        open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
+        write(ISCE,505) 
+        write(ISCE,520) XF(1),(X(1,J),J=1,pnum)
+      end if
       ! PRINT restart file 
       open(unit=ISRE,file=trim(adjustl(restartFile)), action='write', status='unknown')
       write(ISRE,*) (urndState(I), I=1,n_save_state)
@@ -331,7 +338,7 @@ contains
     ! STEP1.2 GENERATE npt1-1 RANDOM POINTS DISTRIBUTED UNIFORMLY IN THE PARAMETER
     ! SPACE, AND COMPUTE THE CORRESPONDING FUNCTION VALUES
     if ( not (restart) .or. ( restart .and. ( ICALL >= 1 .and. ICALL <= npt1-1 )) ) then ! if restart is used and if INITIAL points is less than npt1 
-      if ( restart ) then
+      if ( restart .and. IPRINT==2 ) then
         open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
         do I = 1, ICALL 
           write(ISCE,645) NLOOP,I,XF(I),(X(I,J),J=1,pnum)
@@ -352,9 +359,11 @@ contains
         XF(I) = obj_func(XX)
         ICALL = ICALL + 1
         ! PRINT THE RESULTS FOR CURRENT POPULATION
-        open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
-        write(ISCE,645) NLOOP,ICALL,XF(I),(XX(J),J=1,pnum)
-        close(ISCE)
+        if (IPRINT==2) then
+          open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
+          write(ISCE,520) XF(I),(X(I,J),J=1,pnum)
+          close(ISCE)
+        endif
         ! PRINT restart file 
         open(unit=ISRE,file=trim(adjustl(restartFile)), action='write', status='replace')
         write(ISRE,*) (urndState(J), J=1,n_save_state)
@@ -387,18 +396,20 @@ contains
       call NORMDIST(npt,pnum,X,XI,DIST,BOUND)
   
       ! PRINT THE RESULTS FOR THE INITIAL POPULATION
-      open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
-      write(ISCE,600)
-      write(ISCE,610) (XNAME(J),J=1,pnum)
-      write(ISCE,630) NLOOP,ICALL,ngs1,BESTF,WORSTF,DIST(1),(BESTX(J),J=1,pnum)
-      if (IPRINT .EQ. 1) then 
-        write(ISCE,650) NLOOP
-        write(ISCE,615) (XNAME(J),J=1,pnum)
-        do I = 1, npt1
-          write(ISCE,620) XF(I),(X(I,J),J=1,pnum)
-        end do
+      if (IPRINT == 1 .or. IPRINT == 0) then 
+        open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
+        write(ISCE,600) NLOOP
+        write(ISCE,610) (XNAME(J),J=1,pnum)
+        write(ISCE,630) NLOOP,ICALL,ngs1,BESTF,WORSTF,DIST(1),(BESTX(J),J=1,pnum)
+        if (IPRINT == 1) then 
+          write(ISCE,650) NLOOP
+          write(ISCE,615) (XNAME(J),J=1,pnum)
+          do I = 1, npt1
+            write(ISCE,620) XF(I),(X(I,J),J=1,pnum)
+          end do
+        end if
+        close(ISCE)
       end if
-      close(ISCE)
 
       if (ICALL .ge. maxiter) then 
         !  PRINT THE FINAL PARAMETER ESTIMATE AND ITS FUNCTION VALUE
@@ -485,7 +496,7 @@ contains
           endif
 
           ! USE THE SUB-COMPLEX TO GENERATE NEW POINT(S)
-          call CCE(obj_func,pnum,nps,S,SF,prange,XNSTD,ICALL,maxiter,grndState,maske)
+          call CCE(obj_func,pnum,nps,S,SF,SX,STF,niter,prange,XNSTD,ICALL,maxiter,grndState,maske)
   
           ! IF THE SUB-COMPLEX IS ACCEPTED, REPLACE THE NEW SUB-COMPLEX
           ! INTO THE COMPLEX
@@ -498,6 +509,14 @@ contains
   
           ! SORT THE POINTS
           call SORT(npg,pnum,CX,CF)
+
+          ! PRINT RECORDS OF SAMPLE POINTS and FUNCTION VALUES GENERATED IN CCE  
+          if (IPRINT==2) then
+            open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
+            do I = 1,niter
+              write(ISCE,520) STF(I),(SX(I,J),J=1,pnum)
+            end do
+          end if
   
           ! IF MAXIMUM NUMBER OF RUNS EXCEEDED, BREAK OUT OF THE LOOP
           if (ICALL .GE. maxiter) exit
@@ -546,16 +565,20 @@ contains
       call NORMDIST(npt,pnum,X,XI,DIST,BOUND)
   
       ! PRINT THE RESULTS FOR CURRENT POPULATION
-      open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
-      write(ISCE,610) (XNAME(J),J=1,pnum)
-      write(ISCE,630) NLOOP,ICALL,ngs1,BESTF,WORSTF,DIST(1),(BESTX(J),J=1,pnum)
-      if (IPRINT .EQ. 1) THEN
-        write(ISCE,650) NLOOP
-        write(ISCE,615) (XNAME(J),J=1,pnum)
-        do I = 1, npt1
-          write(ISCE,620) XF(I),(X(I,J),J=1,pnum)
-        end do
-      end if 
+      if (IPRINT == 1 .or. IPRINT == 0) then 
+        open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
+        write(ISCE,600) NLOOP
+        write(ISCE,610) (XNAME(J),J=1,pnum)
+        write(ISCE,630) NLOOP,ICALL,ngs1,BESTF,WORSTF,DIST(1),(BESTX(J),J=1,pnum)
+        if (IPRINT == 1 ) then
+          write(ISCE,650) NLOOP
+          write(ISCE,615) (XNAME(J),J=1,pnum)
+          do I = 1, npt1
+            write(ISCE,620) XF(I),(X(I,J),J=1,pnum)
+          end do
+        end if
+        close(ISCE)
+      end if
   
       ! TEST IF MAXIMUM NUMBER OF FUNCTION EVALUATIONS EXCEEDED
       if (ICALL .GE. maxiter) then
@@ -628,10 +651,11 @@ contains
     return
   
     400 format(//,2X,50(1H=),/,2X,'ENTER THE SHUFFLED COMPLEX EVOLUTION GLOBAL SEARCH',/,2X,50(1H=))
-    500 format(//,'*** PRINT THE INITIAL POINT AND ITS CRITERION VALUE ***')
+    500 format(//,'*** PRINT THE INITIAL POINT AND ITS FUNCTION VALUE ***')
+    505 format(/,' PRINT SAMPLED POINT and ITS FUNCTION VALUES')
     510 format(/,' CRITERION',100(2X,A4,2X),/1X,80(1H-))
     520 format(F10.3,100(F8.3,1X))
-    600 format(//,1X,'*** PRINT THE RESULTS OF THE SCE SEARCH ***')
+    600 format(//,1X,'RESULTS AFTER LOOP ',I3,/,1X,22(1H-))
     610 format(/,1X,'LOOP',2X,'TRIALS',2X,'COMPLXS',5X,'BEST-F',4X,'WORST-F',4X,'PAR-RNG',4X,100(A4,2X))
     615 format(9X,'F',4X,100(A4,2X))
     620 format(F10.3,100(F8.3,1X))
@@ -639,7 +663,7 @@ contains
     641 format(I5,1X,I5,1X,I5,16X,100(ES17.10,1X))
     642 format(ES17.10,16X,100(ES17.10,1X))
     645 format(I5,1X,I5,8X,F10.3,16X,100(F8.3,1X))
-    650 format(/,1X,'POPULATION AT LOOP ',I3,/,1X,22(1H-))
+    650 format(/,1X,'POPULATION AFTER LOOP ',I3,/,1X,22(1H-))
     800 format(//,1X,'*** OPTIMIZATION SEARCH TERMINATED BECAUSE THE',  &
                ' LIMIT ON THE MAXIMUM',/,5X,'NUMBER OF TRIALS ',I5,     &
                ' EXCEEDED.  SEARCH WAS STOPPED AT',/,5X,'SUB-COMPLEX ', &
@@ -653,9 +677,9 @@ contains
   end subroutine
 
 !====================================================================
-  subroutine CCE(obj_func,pnum,nps,S,SF,prange,XNSTD,ICALL,maxiter,grndState,maske)
+  subroutine CCE(obj_func,pnum,nps,S,SF,SX,STF,niter,prange,XNSTD,ICALL,maxiter,grndState,maske)
     use mo_xor4096, only: xor4096g, n_save_state
-  ! ALGORITHM GENERATE A NEW POINT(S) FROM A SUB-COMPLEX
+  ! DOWNHILL SIMPLEX ALGORITHM TO GENERATE A NEW POINT(S) FROM A SUB-COMPLEX
   ! SUB-COMPLEX VARIABLES
     implicit none
     interface 
@@ -673,6 +697,9 @@ contains
     integer(i8b),          intent(in)    :: maxiter 
     real(dp),              intent(inout) :: S(:,:)
     real(dp),              intent(inout) :: SF(:)
+    real(dp),              intent(out)   :: SX(:,:)
+    real(dp),              intent(out)   :: STF(:)
+    integer(i4b),          intent(out)   :: niter
     integer(i4b),          intent(inout) :: ICALL
     integer(i8b),          intent(inout) :: grndState(:) 
     logical,               intent(in)    :: maske(:)
@@ -682,15 +709,14 @@ contains
     integer(i4b)                         :: ibound 
     real(dp)                             :: zvalue 
     real(dp)                             :: FW
-    real(dp)                             :: FNEW       ! FUNCTION VALUE OF THE WORST POINT
+    real(dp)                             :: FNEW      ! FUNCTION VALUE OF THE WORST POINT
     real(dp)                             :: WO(pnum)  ! THE WORST POINT OF THE SIMPLEX
     real(dp)                             :: CE(pnum)  ! THE CENTROID OF THE SIMPLEX EXCLUDING WO
     real(dp)                             :: SNEW(pnum)! NEW POINT GENERATED FROM THE SIMPLEX
     real(dp)                             :: STEP(pnum)! VECTOR FROM WO TO CE
 
-    ! EQUIVALENCE OF VARIABLES FOR READABILTY OF CODE
     N = nps
-
+    niter=0  
     ! IDENTIFY THE WORST POINT WO OF THE SUB-COMPLEX S
     ! COMPUTE THE CENTROID CE OF THE REMAINING POINTS
     ! COMPUTE STEP, THE VECTOR BETWEEN WO AND CE
@@ -735,9 +761,18 @@ contains
         end if
       end do 
     end if 
+
     ! COMPUTE THE FUNCTION VALUE AT SNEW
     FNEW = obj_func(SNEW)
     ICALL = ICALL + 1
+
+    ! RECORD SAMPLE POINT and FUNCTION VALUE
+    niter=niter+1
+    STF(niter)=FNEW
+    do J=1,pnum
+      SX(niter,J)= SNEW(J)
+    enddo
+
     !COMPARE FNEW WITH THE WORST FUNCTION VALUE FW
     ! FNEW IS LESS THAN FW, ACCEPT THE NEW POINT SNEW AND RETURN
     if (FNEW .le. FW) then 
@@ -753,9 +788,18 @@ contains
     do J = 1, pnum 
       SNEW(J) = WO(J) + 0.5 * STEP(J)
     end do
+
     ! COMPUTE THE FUNCTION VALUE OF THE CONTRACTED POINT
     FNEW = obj_func(SNEW)
     ICALL = ICALL + 1
+
+    ! RECORD SAMPLE POINT and FUNCTION VALUE
+    niter=niter+1
+    STF(niter)=FNEW
+    do J=1,pnum
+      SX(niter,J)= SNEW(J)
+    enddo
+
     ! COMPARE FNEW TO THE WORST VALUE FW
     ! IF FNEW IS LESS THAN OR EQUAL TO FW, THEN ACCEPT THE POINT AND RETURN
     if (FNEW .le. FW) then
@@ -765,6 +809,7 @@ contains
       SF(N) = FNEW
       return
     end if
+
     if (ICALL .ge. maxiter) return
 
     ! IF BOTH REFLECTION AND CONTRACTION FAIL, CHOOSE ANOTHER POINT
@@ -779,9 +824,18 @@ contains
         end do
       end if
     end do
+
     ! COMPUTE THE FUNCTION VALUE AT THE RANDOM POINT
     FNEW = obj_func(SNEW)
     ICALL = ICALL + 1
+
+    ! RECORD SAMPLE POINT and FUNCTION VALUE
+    niter=niter+1
+    STF(niter)=FNEW
+    do J=1,pnum
+      SX(niter,J)= SNEW(J)
+    enddo
+
     ! REPLACE THE WORST POINT BY THE NEW POINT
     DO J = 1, pnum 
       S(N,J) = SNEW(J)
