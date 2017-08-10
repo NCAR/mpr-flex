@@ -412,7 +412,6 @@ contains
       end if
 
       if (ICALL .ge. maxiter) then 
-        !  PRINT THE FINAL PARAMETER ESTIMATE AND ITS FUNCTION VALUE
         open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
         write(ISCE,800) maxiter,LOOP,IGS,NLOOP
         write(ISCE,830)
@@ -426,7 +425,6 @@ contains
       end if
   
       if (IPCNVG .eq. 1) then 
-        !  PRINT THE FINAL PARAMETER ESTIMATE AND ITS FUNCTION VALUE
         open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
         write(ISCE,820) GNRNG*100.
         write(ISCE,830)

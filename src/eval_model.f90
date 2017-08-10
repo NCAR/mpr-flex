@@ -18,6 +18,7 @@ contains
 ! Public functin: perform model evaluation 
 !************************************
 function objfn( calParam )
+  use model_wrapper, only: read_prec
   implicit none
   !input variables
   real(dp),             intent(in)          :: calParam(:)        ! parameter in namelist, not necessarily all parameters are calibrated
@@ -47,7 +48,10 @@ function objfn( calParam )
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   call agg_obj( simBasinRouted, obs, objfn, err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-
+  
+  !Read precipitation time series from model output
+  call read_prec(idModel, precp, err, cmessage)
+  if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
   !Compute Hydrologic Signatures and print out them
   q1d=reshape( simBasinRouted, [nbasin*sim_len] ) 
   p1d=reshape( precp, [nbasin*sim_len] ) 

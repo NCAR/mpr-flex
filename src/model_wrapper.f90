@@ -10,6 +10,7 @@ module model_wrapper
   public :: adjust_param 
   public :: replace_param
   public :: read_sim
+  public :: read_prec
   public :: read_simRouted
   public :: read_soil_param 
   public :: write_soil_param 
@@ -174,6 +175,30 @@ contains
     return
   end subroutine
   
+  subroutine read_prec( idModel, pre, err, message)
+    use vic_routines, only: read_vic_sim
+    use sac_routines, only: read_sac_sim
+    implicit none
+    ! input 
+    integer(i4b),         intent(in)   :: idModel 
+    ! output
+    real(dp),             intent(out)  :: pre(:,:)
+    integer(i4b),         intent(out)  :: err          ! error code
+    character(len=strLen),intent(out)  :: message      ! error message
+    ! LOCAL VARIABLES
+    character(len=strLen)              :: cmessage     ! error message from downward subroutine
+  
+    err=0; message="read_prec/"
+    select case (idModel)
+      case (1); call read_vic_sim( err, cmessage, prec=pre )
+      case (2); call read_sac_sim( pre, err, cmessage)
+      case default
+        err=10; message=trim(message)//"model is not implemented"; return
+    end select  
+    if (err/=0)then; message=trim(message)//trim(cmessage); return; endif
+    return
+  end subroutine
+
   subroutine read_sim( idModel, sim, err, message)
     use vic_routines, only: read_vic_sim
     use sac_routines, only: read_sac_sim
