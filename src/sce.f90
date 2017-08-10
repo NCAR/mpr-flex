@@ -122,7 +122,7 @@ contains
     logical,     optional, intent(in)    :: mask(:)        ! parameter to be optimized (true or false)
     ! local
     integer(i4b), parameter              :: INIFLG=1
-    integer(i4b), parameter              :: IPRINT=1     
+    integer(i4b), parameter              :: IPRINT=2     
     integer(i4b), parameter              :: ISCE=999
     integer(i4b), parameter              :: ISRE=998
     integer(i4b)                         :: istat 
@@ -157,8 +157,8 @@ contains
     real(dp)                             :: XF(2000)
     real(dp)                             :: CF(2000)
     real(dp)                             :: SF(50)
-    real(dp), dimension(3,size(pini))    :: SX
-    real(dp), dimension(3)               :: STF
+    real(dp), dimension(200,size(pini))  :: SX
+    real(dp), dimension(200)             :: STF
     real(dp)                             :: DIST(2000)
     real(dp), dimension(size(pini))      :: XI              ! initial parameter values == pval == pini
     real(dp), dimension(size(pini))      :: XNSTD
@@ -412,7 +412,6 @@ contains
       end if
 
       if (ICALL .ge. maxiter) then 
-        !  PRINT THE FINAL PARAMETER ESTIMATE AND ITS FUNCTION VALUE
         open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
         write(ISCE,800) maxiter,LOOP,IGS,NLOOP
         write(ISCE,830)
@@ -426,7 +425,6 @@ contains
       end if
   
       if (IPCNVG .eq. 1) then 
-        !  PRINT THE FINAL PARAMETER ESTIMATE AND ITS FUNCTION VALUE
         open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
         write(ISCE,820) GNRNG*100.
         write(ISCE,830)
@@ -454,6 +452,9 @@ contains
           end do
           CF(K1) = XF(K2)
         end do
+        niter=0     ! Count number of points sampled during complex evolution (C.E.) step 
+        SX=0.0_dp   ! keep track of points sampled during C.E. step
+        STF=0.0_dp  ! keep track of function values for points sampled during C.E. step
         ! BEGIN INNER LOOP - RANDOM SELECTION OF SUB-COMPLEXES ---------------
         subcomplex:do LOOP = 1, nspl
           ! STEP 4. COMPLEX EVOLUTION STEP
@@ -510,14 +511,6 @@ contains
           ! SORT THE POINTS
           call SORT(npg,pnum,CX,CF)
 
-          ! PRINT RECORDS OF SAMPLE POINTS and FUNCTION VALUES GENERATED IN CCE  
-          if (IPRINT==2) then
-            open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
-            do I = 1,niter
-              write(ISCE,520) STF(I),(SX(I,J),J=1,pnum)
-            end do
-          end if
-  
           ! IF MAXIMUM NUMBER OF RUNS EXCEEDED, BREAK OUT OF THE LOOP
           if (ICALL .GE. maxiter) exit
   
@@ -532,6 +525,14 @@ contains
           XF(K2) = CF(K1)
         end do 
 
+        ! PRINT RECORDS OF SAMPLE POINTS and FUNCTION VALUES GENERATED IN CCE  
+        if (IPRINT==2) then
+          open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
+          do I = 1,niter
+            write(ISCE,520) STF(I),(SX(I,J),J=1,pnum)
+          end do
+        end if
+  
        ! PRINT restart file 
         open(unit=ISRE,file=trim(adjustl(restartFile)), action='write', status='replace')
         write(ISRE,*) (urndState(I), I=1,n_save_state)
@@ -699,7 +700,7 @@ contains
     real(dp),              intent(inout) :: SF(:)
     real(dp),              intent(out)   :: SX(:,:)
     real(dp),              intent(out)   :: STF(:)
-    integer(i4b),          intent(out)   :: niter
+    integer(i4b),          intent(inout) :: niter
     integer(i4b),          intent(inout) :: ICALL
     integer(i8b),          intent(inout) :: grndState(:) 
     logical,               intent(in)    :: maske(:)
@@ -716,7 +717,6 @@ contains
     real(dp)                             :: STEP(pnum)! VECTOR FROM WO TO CE
 
     N = nps
-    niter=0  
     ! IDENTIFY THE WORST POINT WO OF THE SUB-COMPLEX S
     ! COMPUTE THE CENTROID CE OF THE REMAINING POINTS
     ! COMPUTE STEP, THE VECTOR BETWEEN WO AND CE
