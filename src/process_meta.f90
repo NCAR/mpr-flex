@@ -243,12 +243,12 @@ subroutine get_parm_meta( err, message)
         res(counter)=betaMeta(ivar)%pname
       end if
     end do
+    ! Count number of soil and Vege parameters to be computed with MPR excluding h and z parameters 
+    nSoilBetaModel=0
+    nVegBetaModel=0
     if ( counter > 0 ) then
       allocate(calBetaName(counter))
       calBetaName=res(1:counter)
-      ! Count number of soil and Vege parameters to be computed with MPR 
-      nSoilBetaModel=0
-      nVegBetaModel=0
       do iPar=1,size(calBetaName)
         ivar=get_ixBeta(calBetaName(iPar))
         if (betaMeta(ivar)%ptype=='soil') nSoilBetaModel = nSoilBetaModel+1
@@ -450,7 +450,7 @@ subroutine print_config()
   do i=1,nCalPar
     if (calParMeta(i)%perLyr)then
       do j=1,nLyr
-        write(*,100) calParMeta(i)%pname(1:20), parArray(i,1), parMask(i), 'layer=', j 
+        write(*,100) calParMeta(i)%pname(1:20), parArray(i,1), parMask(i), j 
         100 format(1X,A,1X,ES17.10,1X,L9,1X,'layer=',I2)
       end do
     else
