@@ -207,21 +207,21 @@ subroutine adj_soil_param_vic(param, multiplier, adjParam,  err, message)
     ! Modify parameter values
     do iPar=1,nCalPar
       select case( calParMeta(iPar)%pname )
-        case('binfilt');  adjParam(iHru,5)     = multiplier( iPar )%var(1)*Param(iHru,5)
-        case('D1');       adjParam(iHru,6)     = multiplier( iPar )%var(1)*Param(iHru,6)
-        case('D2');       adjParam(iHru,7)     = multiplier( iPar )%var(1)*Param(iHru,7)
-        case('D3');       adjParam(iHru,8)     = multiplier( iPar )%var(1)*Param(iHru,8)
-        case('D4');       adjParam(iHru,9)     = multiplier( iPar )%var(1)*Param(iHru,9)
-        case('expt');     adjParam(iHru,10:12) = multiplier( iPar )%var(1:nLyr)*Param(iHru,10:12)
-        case('ks');       adjParam(iHru,13:15) = multiplier( iPar )%var(1:nLyr)*Param(iHru,13:15)
-        case('h1');       adjParam(iHru,23)    = multiplier( iPar )%var(1)*Param(iHru,23)
-        case('h2');       adjParam(iHru,24)    = multiplier( iPar )%var(1)*Param(iHru,24)
-        case('h3');       adjParam(iHru,25)    = multiplier( iPar )%var(1)*Param(iHru,25)
-        case('bbl');      adjParam(iHru,28:30) = multiplier( iPar )%var(1:nLyr)*Param(iHru,28:30)
-        case('bd');       adjParam(iHru,34:36) = multiplier( iPar )%var(1:nLyr)*Param(iHru,34:36)
-        case('sd');       adjParam(iHru,37:39) = multiplier( iPar )%var(1:nLyr)*Param(iHru,37:39)
-        case('WcrFrac');  adjParam(iHru,41:43) = multiplier( iPar )%var(1:nLyr)*Param(iHru,41:43)
-        case('WpwpFrac'); adjParam(iHru,44:46) = multiplier( iPar )%var(1:nLyr)*Param(iHru,44:46)
+        case('binfilt');  adjParam(iHru,5)     = multiplier( iPar )%var(1)!*Param(iHru,5)
+        case('D1');       adjParam(iHru,6)     = multiplier( iPar )%var(1)!*Param(iHru,6)
+        case('D2');       adjParam(iHru,7)     = multiplier( iPar )%var(1)!*Param(iHru,7)
+        case('D3');       adjParam(iHru,8)     = multiplier( iPar )%var(1)!*Param(iHru,8)
+        case('D4');       adjParam(iHru,9)     = multiplier( iPar )%var(1)!*Param(iHru,9)
+        case('expt');     adjParam(iHru,10:12) = multiplier( iPar )%var(1:nLyr)!*Param(iHru,10:12)
+        case('ks');       adjParam(iHru,13:15) = multiplier( iPar )%var(1:nLyr)!*Param(iHru,13:15)
+        case('h1');       adjParam(iHru,23)    = multiplier( iPar )%var(1)!*Param(iHru,23)
+        case('h2');       adjParam(iHru,24)    = multiplier( iPar )%var(1)!*Param(iHru,24)
+        case('h3');       adjParam(iHru,25)    = multiplier( iPar )%var(1)!*Param(iHru,25)
+        case('bbl');      adjParam(iHru,28:30) = multiplier( iPar )%var(1:nLyr)!*Param(iHru,28:30)
+        case('bd');       adjParam(iHru,34:36) = multiplier( iPar )%var(1:nLyr)!*Param(iHru,34:36)
+        case('sd');       adjParam(iHru,37:39) = multiplier( iPar )%var(1:nLyr)!*Param(iHru,37:39)
+        case('WcrFrac');  adjParam(iHru,41:43) = multiplier( iPar )%var(1:nLyr)!*Param(iHru,41:43)
+        case('WpwpFrac'); adjParam(iHru,44:46) = multiplier( iPar )%var(1:nLyr)!*Param(iHru,44:46)
        end select
     end do
     ! Limit parameters to correct possible values without physical meaning: this applies for all configurations
@@ -257,6 +257,9 @@ subroutine adj_soil_param_vic(param, multiplier, adjParam,  err, message)
         adjParam(iHru,iPar) = 1880.
       endif
     enddo
+    if(adjParam(iHru,23) .gt. adjParam(iHru,24)) then
+      adjParam(iHru,23)=adjParam(iHru,24)
+    endif
   enddo 
   return
 end subroutine
