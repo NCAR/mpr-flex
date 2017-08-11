@@ -1,6 +1,5 @@
 module eval_model 
-
-  use public_var
+use public_var
   use data_type 
   use var_lookup
   use hydroSignature, only:cal_rr,cal_eqp,cal_mean_yr,cal_fms,cal_qp,cal_bfi,cal_events
@@ -74,8 +73,8 @@ function objfn( calParam )
   call cal_events(q1d, 0.2_dp, LFRE, LDUR, err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
 
-  write(*,*) rr,eqp,Qyr,FMS,Q90,Q5,BFI,HFRE,HDUR,LFRE,LDUR 
-
+  write(*,10) rr,eqp,Qyr,FMS,Q90,Q5,BFI,HFRE,HDUR,LFRE,LDUR 
+  10 format(1X,11(F8.3,1X))
   return 
 end function 
 

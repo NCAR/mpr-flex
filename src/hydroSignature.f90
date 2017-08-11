@@ -213,17 +213,18 @@ contains
     integer(i4b)                       :: iTime         ! loop index
     integer(i4b)                       :: nTime            
     real(dp)                           :: co 
-    real(dp),dimension(size(daily_q))  :: fDaily      ! probability
+    real(dp),dimension(size(daily_q))  :: bDaily        ! baseflow 
   
     err=0; message='qp'
     co=0.925_dp
     if (present(coef))  co=coef
     nTime=size(daily_q)
-    fDaily(1)=daily_q(1) 
+    bDaily(1)=daily_q(1) 
     do iTime=2,nTime
-      fdaily(iTime)=co*fdaily(iTime-1)+((1.0_dp+co)/2.0_dp)*(daily_q(iTime)-daily_q(iTime-1))
+      bDaily(iTime)=co*bDaily(iTime-1)+((1.0_dp-co)/2.0_dp)*(daily_q(iTime)+daily_q(iTime-1))
+      if (bDaily(iTime) > daily_q(iTime)) bDaily(iTime)=daily_q(iTime)
     end do
-    BFI=sum(fDaily)/sum(daily_q)
+    BFI=sum(bDaily)/sum(daily_q)
     return
   end subroutine
   
