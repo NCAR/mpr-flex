@@ -541,9 +541,9 @@ contains
         open(unit=100,file=trim(sim_dir)//'hydro_sig.txt', action='write', position='append')
         do I = 1,niter
           write(100,10) (HS(I,J),J=1,11) ! rr,eqp,Qyr,FMS,Q90,Q5,BFI,HFRE,HDUR,LFRE,LDUR 
-          close(100)
         end do
         10 format(1X,11(F8.3,1X))
+        close(100)
   
        ! PRINT restart file 
         open(unit=ISRE,file=trim(adjustl(restartFile)), action='write', status='replace')
