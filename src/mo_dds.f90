@@ -146,11 +146,13 @@ CONTAINS
     implicit none
 
     INTERFACE
-       function obj_func(pp)
+       function obj_func(pp,sig,prnt)
          use nrtype 
          implicit none
          real(dp), dimension(:), intent(in) :: pp
-         real(dp) :: obj_func
+         logical(lgc),           intent(in) :: prnt 
+         real(dp)                           :: obj_func
+         real(dp),               intent(out):: sig(11) 
        end function obj_func
     END INTERFACE
     real(dp),    dimension(:),             intent(in)  :: pini        ! inital value of decision (parameter) variables
@@ -179,6 +181,7 @@ CONTAINS
     real(dp), dimension(size(pini))         :: pnew                   ! Test value of decision (parameter) variables
     real(dp), dimension(size(pini))         :: pbest                  ! Best value of decision (parameter) variables 
     real(dp)                                :: ranval                 ! random value
+    real(dp)                                :: dummy(11)              ! dummy array 
     integer(i8b)                            :: i                      ! maxiter=i8b
     integer(i4b)                            :: j, dvn_count, dv       ! pnum=i4b
     integer(i4b)                            :: idummy                 ! dummy vaiable
@@ -280,7 +283,7 @@ CONTAINS
     ! and Initialise the other variables (e.g. of_best)
     ! imaxit is 1.0 for MIN problems, -1 for MAX problems
     pbest      = pval
-    of_new     = imaxit * obj_func(pval)
+    of_new     = imaxit * obj_func(pval,dummy,.false.)
     of_best    = of_new
     if (present(history)) history(1) = of_new
 
@@ -325,7 +328,7 @@ CONTAINS
 
        ! Step 5 of Fig 1 of Tolson and Shoemaker (2007)
        ! Evaluate obj function value for test
-       of_new = imaxit * obj_func(pnew)                       ! imaxit handles min(=1) and max(=-1) problems
+       of_new = imaxit * obj_func(pnew,dummy,.false.)                       ! imaxit handles min(=1) and max(=-1) problems
        ! update current best solution
        if (of_new <= of_best) then
           of_best = of_new

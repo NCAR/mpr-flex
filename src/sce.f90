@@ -102,11 +102,13 @@ contains
     implicit none
     ! input
     interface 
-      function obj_func(pp)
+      function obj_func(pp,sig,prnt)
         use nrtype
         implicit none
-        real(dp), intent(in) :: pp(:)
-        real(dp)             :: obj_func
+        real(dp),      intent(in) :: pp(:)
+        logical(lgc),  intent(in) :: prnt 
+        real(dp)                  :: obj_func
+        real(dp),     intent(out) :: sig(11) 
       end function obj_func
     end interface
     real(dp),              intent(in)    :: pini(:) 
@@ -158,7 +160,8 @@ contains
     real(dp)                             :: CF(2000)
     real(dp)                             :: SF(50)
     real(dp), dimension(200,size(pini))  :: SX
-    real(dp), dimension(200)             :: STF
+    real(dp), dimension(200)             :: STF           
+    real(dp), dimension(200,11)          :: HS              ! Hydrologic Signature storage for subcomples loop
     real(dp)                             :: DIST(2000)
     real(dp), dimension(size(pini))      :: XI              ! initial parameter values == pval == pini
     real(dp), dimension(size(pini))      :: XNSTD
@@ -171,6 +174,7 @@ contains
     real(dp)                             :: WORSTF 
     real(dp)                             :: ranval       ! random number 
     real(dp)                             :: FA           ! intinal function value
+    real(dp)                             :: hySig(11) 
     character(len=4)                     :: XNAME(100)   ! parameter names - maximum 100 parameters are allowed
     logical, dimension(size(pini))       :: maske        ! parameter to be optimized (true or false)
     logical                              :: isExistFile  ! logical to check if the file exist or not
@@ -261,7 +265,7 @@ contains
     end do
 
     ! COMPUTE THE FUNCTION VALUE OF THE INITIAL POINT
-    FA = obj_func(pval) 
+    FA = obj_func(pval, hySig, .true.) 
   
     ! PRINT THE INITIAL POINT AND ITS CRITERION VALUE
     if ( not (restart) .or. ( restart .and. (ICALL == 0) ) ) then 
@@ -293,7 +297,7 @@ contains
           end if
           XX(J) = X(1,J)
         end do
-        XF(1) = obj_func(XX) 
+        XF(1) = obj_func(XX, hySig, .true.) 
       end if
       ICALL = ICALL + 1
       ! PRINT THE RESULTS FOR 1ST POINT
@@ -357,7 +361,7 @@ contains
           endif
           XX(J) = X(I,J)
         end do
-        XF(I) = obj_func(XX)
+        XF(I) = obj_func(XX, hySig, .true.)
         ICALL = ICALL + 1
         ! PRINT THE RESULTS FOR CURRENT POPULATION
         if (IPRINT==2 .or. IPRINT==1 ) then
@@ -498,7 +502,7 @@ contains
           endif
 
           ! USE THE SUB-COMPLEX TO GENERATE NEW POINT(S)
-          call CCE(obj_func,pnum,nps,S,SF,SX,STF,niter,prange,XNSTD,ICALL,maxiter,grndState,maske)
+          call CCE(obj_func,pnum,nps,S,SF,SX,STF,niter,HS,prange,XNSTD,ICALL,maxiter,grndState,maske)
   
           ! IF THE SUB-COMPLEX IS ACCEPTED, REPLACE THE NEW SUB-COMPLEX
           ! INTO THE COMPLEX
@@ -533,6 +537,13 @@ contains
             write(ISCE,520) STF(I),(SX(I,J),J=1,pnum)
           end do
         end if
+        ! PRINT hydrologic signature
+        open(unit=100,file=trim(sim_dir)//'hydro_sig.txt', action='write', position='append')
+        do I = 1,niter
+          write(100,10) (HS(I,J),J=1,11) ! rr,eqp,Qyr,FMS,Q90,Q5,BFI,HFRE,HDUR,LFRE,LDUR 
+          close(100)
+        end do
+        10 format(1X,11(F8.3,1X))
   
        ! PRINT restart file 
         open(unit=ISRE,file=trim(adjustl(restartFile)), action='write', status='replace')
@@ -679,17 +690,19 @@ contains
   end subroutine
 
 !====================================================================
-  subroutine CCE(obj_func,pnum,nps,S,SF,SX,STF,niter,prange,XNSTD,ICALL,maxiter,grndState,maske)
+  subroutine CCE(obj_func,pnum,nps,S,SF,SX,STF,niter,HS,prange,XNSTD,ICALL,maxiter,grndState,maske)
     use mo_xor4096, only: xor4096g, n_save_state
   ! DOWNHILL SIMPLEX ALGORITHM TO GENERATE A NEW POINT(S) FROM A SUB-COMPLEX
   ! SUB-COMPLEX VARIABLES
     implicit none
     interface 
-      function obj_func(pp)
+      function obj_func(pp,sig,prnt)
         use nrtype
         implicit none
-        real(dp), intent(in) :: pp(:)
-        real(dp)             :: obj_func
+        real(dp),    intent(in) :: pp(:)
+        logical(lgc),intent(in):: prnt 
+        real(dp)                :: obj_func
+        real(dp),    intent(out):: sig(11) 
       end function obj_func
     end interface
     integer(i4b),          intent(in)    :: pnum
@@ -701,6 +714,7 @@ contains
     real(dp),              intent(inout) :: SF(:)
     real(dp),              intent(out)   :: SX(:,:)
     real(dp),              intent(out)   :: STF(:)
+    real(dp),              intent(out)   :: HS(:,:)
     integer(i4b),          intent(inout) :: niter
     integer(i4b),          intent(inout) :: ICALL
     integer(i8b),          intent(inout) :: grndState(:) 
@@ -711,6 +725,7 @@ contains
     integer(i4b)                         :: ibound 
     real(dp)                             :: zvalue 
     real(dp)                             :: FW
+    real(dp)                             :: hySig(11)
     real(dp)                             :: FNEW      ! FUNCTION VALUE OF THE WORST POINT
     real(dp)                             :: WO(pnum)  ! THE WORST POINT OF THE SIMPLEX
     real(dp)                             :: CE(pnum)  ! THE CENTROID OF THE SIMPLEX EXCLUDING WO
@@ -764,7 +779,7 @@ contains
     end if 
 
     ! COMPUTE THE FUNCTION VALUE AT SNEW
-    FNEW = obj_func(SNEW)
+    FNEW = obj_func(SNEW,hySig,.false.)
     ICALL = ICALL + 1
 
     ! RECORD SAMPLE POINT and FUNCTION VALUE
@@ -772,6 +787,9 @@ contains
     STF(niter)=FNEW
     do J=1,pnum
       SX(niter,J)= SNEW(J)
+    enddo
+    do J=1,size(hySig)
+      HS(niter,:)=hySig
     enddo
 
     !COMPARE FNEW WITH THE WORST FUNCTION VALUE FW
@@ -791,7 +809,7 @@ contains
     end do
 
     ! COMPUTE THE FUNCTION VALUE OF THE CONTRACTED POINT
-    FNEW = obj_func(SNEW)
+    FNEW = obj_func(SNEW,hySig,.false.)
     ICALL = ICALL + 1
 
     ! RECORD SAMPLE POINT and FUNCTION VALUE
@@ -799,6 +817,9 @@ contains
     STF(niter)=FNEW
     do J=1,pnum
       SX(niter,J)= SNEW(J)
+    enddo
+    do J=1,size(hySig)
+      HS(niter,:)=hySig
     enddo
 
     ! COMPARE FNEW TO THE WORST VALUE FW
@@ -827,7 +848,7 @@ contains
     end do
 
     ! COMPUTE THE FUNCTION VALUE AT THE RANDOM POINT
-    FNEW = obj_func(SNEW)
+    FNEW = obj_func(SNEW,hySig,.false.)
     ICALL = ICALL + 1
 
     ! RECORD SAMPLE POINT and FUNCTION VALUE
@@ -835,6 +856,9 @@ contains
     STF(niter)=FNEW
     do J=1,pnum
       SX(niter,J)= SNEW(J)
+    enddo
+    do J=1,size(hySig)
+      HS(niter,:)=hySig
     enddo
 
     ! REPLACE THE WORST POINT BY THE NEW POINT

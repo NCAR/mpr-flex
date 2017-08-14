@@ -16,26 +16,22 @@ contains
 !************************************
 ! Public functin: perform model evaluation 
 !************************************
-function objfn( calParam )
+function objfn( calParam, hySig, isPrint)
   use model_wrapper, only: read_prec
   implicit none
   !input variables
   real(dp),             intent(in)          :: calParam(:)        ! parameter in namelist, not necessarily all parameters are calibrated
+  logical(lgc),         intent(in)          :: isPrint
   !output variable
   real(dp)                                  :: objfn              ! object function value 
+  real(dp),             intent(out)         :: hySig(11)          ! Hydrologic signature 
   !local variables
   real(dp),dimension(nbasin,sim_len)        :: simBasinRouted     ! routed sim value : q [mm/day] (basin x number of time step)
   real(dp),dimension(nbasin,sim_len)        :: precp              ! observed precipitation [mm/day] (number of basins x number of time steps)
   real(dp),dimension(nbasin*sim_len)        :: obs                ! observation: q[mm/day]          (number of basin*number of time steps)
   real(dp),dimension(nbasin*sim_len)        :: q1d                ! routed sim value : q [mm/day]   (number of basins*number of time steps)
   real(dp),dimension(nbasin*sim_len)        :: p1d                ! observed precipitation [mm/day] (number of basins*number of time steps)
-  real(dp)                                  :: rr
-  real(dp)                                  :: eqp
-  real(dp)                                  :: Qyr
-  real(dp)                                  :: FMS
-  real(dp)                                  :: Q90,Q5
-  real(dp)                                  :: BFI 
-  real(dp)                                  :: HFRE,HDUR,LFRE,LDUR 
+  integer(i4b)                              :: iSig                 ! 
   integer(i4b)                              :: err                 ! error id 
   character(len=strLen)                     :: message             ! error message
   character(len=strLen)                     :: cmessage            ! error message from subroutine
@@ -54,27 +50,31 @@ function objfn( calParam )
   !Compute Hydrologic Signatures and print out them
   q1d=reshape( simBasinRouted, [nbasin*sim_len] ) 
   p1d=reshape( precp, [nbasin*sim_len] ) 
-  call cal_rr (q1d, p1d, rr, err, cmessage)
+  call cal_rr (q1d, p1d, hySig(1), err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-  call cal_eqp(q1d, p1d, eqp, err, cmessage)
+  call cal_eqp(q1d, p1d, hySig(2), err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-  call cal_mean_yr(q1d, Qyr, err, cmessage)
+  call cal_mean_yr(q1d, hySig(3), err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-  call cal_fms(q1d, FMS, err, cmessage)
+  call cal_fms(q1d, hySig(4), err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-  call cal_qp(q1d, Q90, 0.9_dp, err, cmessage)
+  call cal_qp(q1d, hySig(5), 0.9_dp, err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-  call cal_qp(q1d, Q5, 0.05_dp, err, cmessage)
+  call cal_qp(q1d, hySig(6), 0.05_dp, err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-  call cal_bfi(q1d, BFI, err, cmessage)
+  call cal_bfi(q1d, hySig(7), err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-  call cal_events(q1d, 9.0_dp, HFRE, HDUR, err, cmessage)
+  call cal_events(q1d, 9.0_dp, hySig(8), hySig(9), err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
-  call cal_events(q1d, 0.2_dp, LFRE, LDUR, err, cmessage)
+  call cal_events(q1d, 0.2_dp, hySig(10), hySig(11), err, cmessage)
   if(err/=0)then;print*,trim(message)//trim(cmessage);stop;endif
+  if ( isPrint ) then
+    open(unit=100,file=trim(sim_dir)//'hydro_sig.txt', action='write', position='append')
+    write(100,10) (HySig(iSig),iSig=1,11) ! rr,eqp,Qyr,FMS,Q90,Q5,BFI,HFRE,HDUR,LFRE,LDUR 
+    10 format(1X,11(F8.3,1X))
+    close(100)
+  endif
 
-  write(*,10) rr,eqp,Qyr,FMS,Q90,Q5,BFI,HFRE,HDUR,LFRE,LDUR 
-  10 format(1X,11(F8.3,1X))
   return 
 end function 
 
