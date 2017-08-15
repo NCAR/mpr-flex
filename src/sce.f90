@@ -265,7 +265,11 @@ contains
     end do
 
     ! COMPUTE THE FUNCTION VALUE OF THE INITIAL POINT
-    FA = obj_func(pval, hySig, .true.) 
+    if ( restart) then
+      FA = obj_func(pval, hySig, .false.) 
+    else
+      FA = obj_func(pval, hySig, .true.) 
+    end if
   
     ! PRINT THE INITIAL POINT AND ITS CRITERION VALUE
     if ( not (restart) .or. ( restart .and. (ICALL == 0) ) ) then 
