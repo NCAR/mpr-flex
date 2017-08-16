@@ -208,12 +208,9 @@ contains
 
     if (size(prange,1) /= pnum) stop 'Error sceua: size(prange,1) /= size(pini)'
     if (size(prange,2) /= 2)    stop 'Error sceua: size(prange,2) /= 2'
-    if (maxiter .le. 1)         stop 'Error sceua: maxiter must be greater than 1'
+    if (maxiter < 0)            stop 'Error sceua: maxiter must be greater than 0'
 
     ! INITIALIZE VARIABLES
-    open(ISCE,file=trim(adjustl(tmp_file)), action='write', status='unknown')
-    write(ISCE,400)
-    
     ICALL = 0
     NLOOP = 0
     LOOP = 0
@@ -227,6 +224,8 @@ contains
     ! 2. Number of Evaluation performed ICALL
     ! 3. parameter sample X(:,:) 
     ! 4. evaluation metrics XF(:).  
+    ! 5. XNSTD 
+    ! 6. starting index of complex through IGS, igs_start
     ! if restart file does not exist, start from beginning
     if (restart) then
       inquire(file=trim(adjustl(restartFile)), exist=isExistFile, size=iSize)
@@ -265,16 +264,18 @@ contains
     FA = obj_func(pval) 
   
     ! PRINT THE INITIAL POINT AND ITS CRITERION VALUE
-    write(ISCE,500)
-    write(ISCE,510) (XNAME(J),J=1,pnum)
-    write(ISCE,520) FA,(pval(J),J=1,pnum)
-    close(ISCE)
-    if (maxiter .eq. ICALL) return 
-
-    ! STEP 1.1  Generate 1st point 
-    ! GENERATE AN INITIAL SET OF npt1 POINTS IN THE PARAMETER SPACE
-    ! If restart is true AND if a number of INITIAL point saved is one
     if ( not (restart) .or. ( restart .and. (ICALL == 0) ) ) then 
+      open(ISCE,file=trim(adjustl(tmp_file)), action='write', status='unknown')
+      write(ISCE,400)
+      write(ISCE,500)
+      write(ISCE,510) (XNAME(J),J=1,pnum)
+      write(ISCE,520) FA,(pval(J),J=1,pnum)
+      close(ISCE)
+      if (maxiter .eq. ICALL) return 
+
+      ! STEP 1.1  Generate 1st point 
+      ! GENERATE AN INITIAL SET OF npt1 POINTS IN THE PARAMETER SPACE
+      ! If restart is true AND if a number of INITIAL point saved is one
       ! IF INIFLG IS EQUAL TO 1, SET X(1,:) TO INITIAL POINT pval(:)==pini(:)
       if (INIFLG .eq. 1) then
         do J = 1, pnum
@@ -296,7 +297,7 @@ contains
       end if
       ICALL = ICALL + 1
       ! PRINT THE RESULTS FOR 1ST POINT
-      if ( IPRINT==2 ) then
+      if ( IPRINT==2 .or. IPRINT==1 ) then
         open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
         write(ISCE,505) 
         write(ISCE,520) XF(1),(X(1,J),J=1,pnum)
@@ -338,7 +339,7 @@ contains
     ! STEP1.2 GENERATE npt1-1 RANDOM POINTS DISTRIBUTED UNIFORMLY IN THE PARAMETER
     ! SPACE, AND COMPUTE THE CORRESPONDING FUNCTION VALUES
     if ( not (restart) .or. ( restart .and. ( ICALL >= 1 .and. ICALL <= npt1-1 )) ) then ! if restart is used and if INITIAL points is less than npt1 
-      if ( restart .and. IPRINT==2 ) then
+      if ( restart .and. (IPRINT==2 .or. IPRINT==1) ) then
         open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
         do I = 1, ICALL 
           write(ISCE,645) NLOOP,I,XF(I),(X(I,J),J=1,pnum)
@@ -359,7 +360,7 @@ contains
         XF(I) = obj_func(XX)
         ICALL = ICALL + 1
         ! PRINT THE RESULTS FOR CURRENT POPULATION
-        if (IPRINT==2) then
+        if (IPRINT==2 .or. IPRINT==1 ) then
           open(unit=ISCE,file=trim(adjustl(tmp_file)), action='write', position='append')
           write(ISCE,520) XF(I),(X(I,J),J=1,pnum)
           close(ISCE)
