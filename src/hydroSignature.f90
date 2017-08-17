@@ -83,7 +83,7 @@ contains
       yr_p(iTime) = sum(daily_p(start_ind:end_ind))
       yr_p(iTime) = yr_p(iTime)/365.0_dp
 
-      if (iTime > 2) then
+      if (iTime >= 2) then
         diff_yr_p(iTime-1) = yr_p(iTime)-yr_p(iTime-1)
         diff_yr_q(iTime-1) = yr_q(iTime)-yr_q(iTime-1)
         yr_eqp(iTime-1)=diff_yr_q(iTime-1)/diff_yr_p(iTime-1)/rr
