@@ -321,6 +321,7 @@ subroutine calc_obj(sim, obs, objfntype, objfn, err, message)
     case('log-kge+kge');  call calc_log_kge   ( sim, obs, objfn, err, cmessage )
     case('month-kge');    call calc_month_kge ( sim, obs, objfn, err, cmessage )
     case('sigBias');      call calc_sigBias   ( sim, obs, objfn, err, cmessage )
+    case('corr');         call calc_corr      ( sim, obs, objfn, err, cmessage )
     case default; err=10; cmessage='objective function not recognized'
     if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
   end select
@@ -554,6 +555,32 @@ subroutine calc_month_nse(sim, obs, objfn, err, message)
 end subroutine
 
 !***********************************************************************
+! calculate daily correlation 
+!***********************************************************************
+subroutine calc_corr( sim, obs, objfn, err, message)
+  implicit none
+  ! input variables 
+  real(dp), dimension(:), intent(in)  :: sim 
+  real(dp), dimension(:), intent(in)  :: obs 
+  ! output variables
+  real(dp),               intent(out) :: objfn 
+  integer(i4b),           intent(out) :: err           ! error code
+  character(len=strLen),  intent(out) :: message       ! error message
+  ! local variables
+  integer(i4b)                        :: nTime           ! for monthly rmse calculation
+  real(dp)                            :: cc
+
+  ! initialize error control
+  err=0; message='calc_corr/'
+  nTime=size(sim)
+  if (nTime/=size(obs)) then; err=10;message=trim(message)//'size(obs)/=size(sim)'; return;endif
+  !compute correlation 
+  call pearsn(sim, obs, cc)
+  objfn = sqrt((cc-1.0)**2.0_dp) 
+  return
+end subroutine
+
+!***********************************************************************
 ! calculate daily Kling-Gupta Efficiency (KGE)
 !***********************************************************************
 subroutine calc_kge( sim, obs, objfn, err, message)
@@ -765,13 +792,6 @@ subroutine calc_sigBias(sim, obs, objfn, err, message)
   pBiasFMM= (log(simBasin(i50))-log(obsBasin(i50))) /( log(obsBasin(i50)) )
   call pearsn(simIn,obsIn, cc)
   objfn = ( (1.0_dp-cc)+abs(pBias)+abs(pBiasFHV)+abs(pBiasFLV)+abs(pBiasFMS)+abs(pBiasFMM) )/6.0_dp
-  print*,'Signature-Objectiver-function components'
-  print*,'pBias=',pBias
-  print*,'pBiasFMS=',pBiasFMS
-  print*,'pBiasFHV=',pBiasFHV
-  print*,'pBiasFLV=',pBiasFLV
-  print*,'pBiasFMM=',pBiasFMM
-  print*,'correlation=',cc
   return
 end subroutine
 

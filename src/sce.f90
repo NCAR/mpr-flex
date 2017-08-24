@@ -268,7 +268,10 @@ contains
     if ( restart) then
       FA = obj_func(pval, hySig, .false.) 
     else
-      FA = obj_func(pval, hySig, .true.) 
+      FA = obj_func(pval, hySig, .false.) 
+      open(unit=100,file=trim(sim_dir)//'hydro_sig.txt', action='write', status='unknown')
+      write(100,210) (hySig(I),I=1,11) ! rr,eqp,Qyr,FMS,Q90,Q5,BFI,HFRE,HDUR,LFRE,LDUR 
+      close(100)
     end if
   
     ! PRINT THE INITIAL POINT AND ITS CRITERION VALUE
@@ -301,7 +304,10 @@ contains
           end if
           XX(J) = X(1,J)
         end do
-        XF(1) = obj_func(XX, hySig, .true.) 
+        XF(1) = obj_func(XX, hySig, .false.) 
+        open(unit=100,file=trim(sim_dir)//'hydro_sig.txt', action='write', status='unknown')
+        write(100,210) (hySig(I),I=1,11) ! rr,eqp,Qyr,FMS,Q90,Q5,BFI,HFRE,HDUR,LFRE,LDUR 
+        close(100)
       end if
       ICALL = ICALL + 1
       ! PRINT THE RESULTS FOR 1ST POINT
@@ -544,9 +550,8 @@ contains
         ! PRINT hydrologic signature
         open(unit=100,file=trim(sim_dir)//'hydro_sig.txt', action='write', position='append')
         do I = 1,niter
-          write(100,10) (HS(I,J),J=1,11) ! rr,eqp,Qyr,FMS,Q90,Q5,BFI,HFRE,HDUR,LFRE,LDUR 
+          write(100,210) (HS(I,J),J=1,11) ! rr,eqp,Qyr,FMS,Q90,Q5,BFI,HFRE,HDUR,LFRE,LDUR 
         end do
-        10 format(1X,11(F8.3,1X))
         close(100)
   
        ! PRINT restart file 
@@ -667,6 +672,7 @@ contains
 
     return
   
+    210 format(1X,11(F8.3,1X))
     400 format(//,2X,50(1H=),/,2X,'ENTER THE SHUFFLED COMPLEX EVOLUTION GLOBAL SEARCH',/,2X,50(1H=))
     500 format(//,'*** PRINT THE INITIAL POINT AND ITS FUNCTION VALUE ***')
     505 format(/,' PRINT SAMPLED POINT and ITS FUNCTION VALUES')
